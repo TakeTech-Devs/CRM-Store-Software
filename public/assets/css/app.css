@@ -1,0 +1,17 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+table{
+    z-index: 00000;
+}
+
+table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td .btn-secondary{
+    width: 35px !important;
+    color: white !important;
+}
+
+#view-store-table th, #view-store-table td{
+    border:none;
+}
