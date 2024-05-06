@@ -30,18 +30,12 @@
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
                     aria-expanded="true" aria-controls="collapseTwo">
                     <i class="fas fa-boxes"></i>
-                    <span>Stock</span>
+                    <span>Billing</span>
                 </a>
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{url('admin/product')}}">Products</a>
-                        <a class="collapse-item" href="{{url('admin/brand')}}">Brand</a>
-                        <a class="collapse-item" href="{{url('admin/category')}}">Category</a>
-                        <a class="collapse-item" href="{{url('admin/subcategory')}}">Sub Category</a>
-                        <a class="collapse-item" href="{{url('admin/pack')}}">Pack</a>
-                        <a class="collapse-item" href="{{url('admin/supplier')}}">Supplier</a>
-                        <a class="collapse-item" href="{{url('admin/purchase-stock')}}">Purchase Entry Details</a>
-                        <a class="collapse-item" href="{{url('admin/store/assign')}}">Store Assign</a>
+                        <a class="collapse-item" href="{{url('admin/purchase-stock')}}">Customer Billing</a>
+                        <a class="collapse-item" href="{{url('admin/store/assign')}}">Staff Billing</a>
                     </div>
                 </div>
             </li>
@@ -50,34 +44,61 @@
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUserPages"
                     aria-expanded="true" aria-controls="collapseUserPages">
                     <i class="fas fa-users fa-folder"></i>
-                    <span>Users</span>
+                    <span>Report</span>
                 </a>
                 <div id="collapseUserPages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Add Employee</a>
-                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Add Customer</a>
-                        <a class="collapse-item" href="{{url('admin/add-doctor')}}">Add Doctor</a>
+                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Datewise Sales Report</a>
+                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Sold Producr Report</a>
+                        <a class="collapse-item" href="{{url('admin/add-doctor')}}">Stock Report</a>
+                        <a class="collapse-item" href="{{url('admin/add-doctor')}}">Expiry Date Report</a>
                     </div>
                 </div>
             </li>
 
             
-            <li class="nav-item">
-                <a class="nav-link" href="{{url('admin/store')}}">
-                    <i class="fas fa-home fa-folder"></i>
-                    <span>Store</span></a>
-            </li>
+            
 
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a class="nav-link" href="{{url('admin/backup')}}">
                     <i class="fas fa-recycle fa-folder"></i>
                     <span>Backup</span></a>
+            </li> -->
+
+            
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMyStore"
+                    aria-expanded="true" aria-controls="collapseMyStore">
+                    <i class="fas fa-home fa-folder"></i>
+                    <span>My Store</span>
+                </a>
+                <div id="collapseMyStore" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Store Details</a>
+                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Store Stock Transfer</a>
+                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Store Sync History</a>
+                    </div>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseBackup"
+                    aria-expanded="true" aria-controls="collapseBackup">
+                    <i class="fas fa-recycle fa-folder"></i>
+                    <span>Backup</span>
+                </a>
+                <div id="collapseBackup" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Backup</a>
+                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Restore</a>
+                    </div>
+                </div>
             </li>
             
             <li class="nav-item">
                 <a class="nav-link" href="{{url('admin/reports')}}">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>Report</span></a>
+                    <span>Logout</span></a>
             </li>
 
             <div class="text-center d-none d-md-inline">

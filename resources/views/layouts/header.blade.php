@@ -6,7 +6,7 @@
     <i class="fa fa-bars"></i>
 </button>
 
-<ul class="navbar-nav ml-auto">
+<!-- <ul class="navbar-nav ml-auto">
     <li class="nav-item no-arrow">
         
             <button class="btn btn-danger text-light py-1 px-4" data-toggle="modal" data-target="#logoutModal">
@@ -15,7 +15,7 @@
         </button>
     </li>
 
-</ul>
+</ul> -->
 
 </nav>
 <!-- End of Topbar -->
