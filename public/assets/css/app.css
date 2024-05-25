@@ -15,3 +15,19 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
 #view-store-table th, #view-store-table td{
     border:none;
 }
+
+
+.select2-container .select2-selection--single {
+    height: 38px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #7f7f7f !important;
+    line-height: 38px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px !important;
+}
+
+.select2-container {
+    width: 100% !important;
+}

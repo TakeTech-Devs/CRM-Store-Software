@@ -20,7 +20,7 @@
             <hr class="sidebar-divider my-0">
 
             <li class="nav-item active">
-                <a class="nav-link" href="{{url('admin/dashboard')}}">
+                <a class="nav-link" href="{{url('store/dashboard')}}">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>Dashboard</span></a>
             </li>
@@ -34,8 +34,8 @@
                 </a>
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{url('admin/purchase-stock')}}">Customer Billing</a>
-                        <a class="collapse-item" href="{{url('admin/store/assign')}}">Staff Billing</a>
+                        <a class="collapse-item" href="{{url('store/customer/billing')}}">Customer Billing</a>
+                        <a class="collapse-item" href="{{url('store/staff/billing')}}">Staff Billing</a>
                     </div>
                 </div>
             </li>
