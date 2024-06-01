@@ -23,7 +23,10 @@ Route::prefix('store')->group(function () {
 });
 
 // Route::prefix('store')->group(function () {
-Route::get('/fetch-data', [DataFetchController::class, 'dataFetch']);
+Route::get('/sync-data/{storeId}', [DataFetchController::class, 'dataFetch']);
+Route::post('/store', [DataFetchController::class, 'insertStore']);
+
+
 
 // });
 
