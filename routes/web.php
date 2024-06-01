@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\DataFetchController;
 
 Route::prefix('store')->group(function () {
     Route::get('/dashboard', function () {
@@ -21,6 +21,11 @@ Route::prefix('store')->group(function () {
         return view('store/billing/staff/create');
     });
 });
+
+// Route::prefix('store')->group(function () {
+Route::get('/fetch-data', [DataFetchController::class, 'dataFetch']);
+
+// });
 
 
 
