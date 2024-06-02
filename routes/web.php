@@ -2,29 +2,52 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DataFetchController;
+use App\Http\Controllers\Api\LoginController;
 
-Route::prefix('store')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('store/dashboard/home');
-    });
 
-    Route::get('/customer/billing', function () {
-        return view('store/billing/customer/billing');
-    });
-    Route::get('/customer/create/billing', function () {
-        return view('store/billing/customer/create');
-    });
-    Route::get('/staff/billing', function () {
-        return view('store/billing/staff/billing');
-    });
-    Route::get('/staff/create/billing', function () {
-        return view('store/billing/staff/create');
+
+Route::get('/', function (){
+    return view('verify');
+})->name('verify-page');
+
+Route::get('/login-page', function (){
+    return view('store.login.login');
+})->name('login-page');
+
+Route::post('/login', [LoginController::class, 'login']);
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/logout', [LoginController::class, 'logout']);
+
+    Route::prefix('store')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('store/dashboard/home');
+        });
+    
+        Route::get('/customer/billing', function () {
+            return view('store/billing/customer/billing');
+        });
+        Route::get('/customer/create/billing', function () {
+            return view('store/billing/customer/create');
+        });
+        Route::get('/staff/billing', function () {
+            return view('store/billing/staff/billing');
+        });
+        Route::get('/staff/create/billing', function () {
+            return view('store/billing/staff/create');
+        });
     });
 });
 
+
+
+// APIS
 // Route::prefix('store')->group(function () {
 Route::get('/sync-data/{storeId}', [DataFetchController::class, 'dataFetch']);
 Route::post('/store', [DataFetchController::class, 'insertStore']);
+Route::get('/verify/store', [DataFetchController::class, 'checkStore']);
+
 
 
 

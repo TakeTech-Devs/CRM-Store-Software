@@ -23,7 +23,9 @@
 </head>
 
 <body>
-
+    {{-- @php
+       dd(Session::get('storeId'));
+    @endphp --}}
     <!-- Page Wrapper -->
     <div id="wrapper">
         @include('layouts.sidebar')
@@ -35,6 +37,7 @@
                 @include('layouts.header')
 
                 <div class="container-fluid">
+
                     @yield('content')
                 </div>
             </div>

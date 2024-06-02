@@ -96,7 +96,7 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link" href="{{url('admin/reports')}}">
+                <a class="nav-link" href="{{url('/logout')}}">
                     <i class="fas fa-fw fa-table"></i>
                     <span>Logout</span></a>
             </li>

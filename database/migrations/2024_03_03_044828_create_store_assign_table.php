@@ -12,17 +12,17 @@ return new class extends Migration {
     {
         Schema::create('store_assign', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('purchase_stock_id');
+            // $table->unsignedBigInteger('purchase_stock_id');
             $table->unsignedBigInteger('store_id');
             $table->string('assign_bill_number');
             $table->string('total');
 
 
 
-            $table->foreign('purchase_stock_id')
-                ->references('id')
-                ->on('purchase_stock')
-                ->onDelete('cascade');
+            // $table->foreign('purchase_stock_id')
+            //     ->references('id')
+            //     ->on('purchase_stock')
+            //     ->onDelete('cascade');
             $table->foreign('store_id')
                 ->references('id')
                 ->on('store')

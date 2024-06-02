@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('store_meta_id')->nullable();
             $table->string('store_pass_key')->nullable();
             $table->string('store_status')->nullable();
+            $table->boolean('store_verify_status')->nullable();
+
             $table->timestamps();
         });
     }

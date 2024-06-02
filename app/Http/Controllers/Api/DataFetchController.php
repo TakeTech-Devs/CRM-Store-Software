@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use DB;
+use Illuminate\Support\Facades\Session;
+
 
 class DataFetchController extends Controller
 {
-    public function dataFetch($storeId)
+    public function dataFetch(Request $request, $storeId)
     {
         try {
             $remoteDatabrand = DB::connection('remote_mysql')->table('brand')->get();
@@ -129,19 +131,23 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-            $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')-> where('store_id', $storeId)->get();
+
+            $store_meta_id = $request->session()->get('storeId');
+            $remoteDataStore = DB::connection('remote_mysql')->table('store')-> where('store_meta_id', $store_meta_id)->first();
+
+            $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')-> where('store_id', $remoteDataStore->id)->get();
             foreach ($remoteDatastore_assign as $key => $value) {
                 $getStoreAssign =  DB::table('store_assign')->where(['assign_bill_number' => $value->assign_bill_number,])->first();
                 if ($getStoreAssign) {
                     DB::table('store_assign')->where('id', $getStoreAssign->id)->update([
-                        'purchase_stock_id' => $value->purchase_stock_id,
+                        // 'purchase_stock_id' => 1,
                         'store_id' => $value->store_id,
                         'assign_bill_number' => $value->assign_bill_number,
                         'total' => $value->total
                     ]);
                 } else {
                     DB::table('store_assign')->insert([
-                        'purchase_stock_id' => $value->purchase_stock_id,
+                        // 'purchase_stock_id' => 1,
                         'store_id' => $value->store_id,
                         'assign_bill_number' => $value->assign_bill_number,
                         'total' => $value->total
@@ -149,7 +155,7 @@ class DataFetchController extends Controller
                 }
             }
 
-            $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $storeId)->get();
+            $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $remoteDataStore->id)->get();
             foreach ($remoteDatapurchase_request as $key => $value) {
                 $getStoreAssign =  DB::table('purchase_request')->where([
                     'store_assign_id' => $value->store_assign_id,
@@ -159,7 +165,7 @@ class DataFetchController extends Controller
 
                 if ($getStoreAssign) {
                     DB::table('purchase_request')->where('id', $getStoreAssign->id)->update([
-                        'store_assign_id' => $value->store_assign_id,
+                        // 'store_assign_id' => $value->store_assign_id,
                         'brand_id' => $value->brand_id,
                         'product_id' => $value->product_id,
                         'pack_id' => $value->pack_id,
@@ -197,6 +203,7 @@ class DataFetchController extends Controller
                 "store_meta_id" => $request->store_meta_id,
                 "store_pass_key" => $request->store_pass_key,
                 "store_status" =>$request->store_status,
+                "store_verify_status" => 1
             ];
 
             $insertStore = DB::table('store')->insert($payload);
@@ -211,5 +218,31 @@ class DataFetchController extends Controller
         } catch (\Throwable $th) {
             throw $th;
         }
+    }
+
+    public function checkStore() {
+        try {
+            $getStore = DB::table('store')->get();
+
+            if (count($getStore) > 0) {
+                return response()->json([
+                    'status' => 200,
+                    'resStatus' => true,
+                    // 'data'=> $checkStore
+                ], 200);
+            }else{
+                return response()->json([
+                    'status' => 400,
+                    'resStatus' => false,
+                    // 'data'=> $checkStore
+                ], 200);
+            }
+
+          
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+
     }
 }

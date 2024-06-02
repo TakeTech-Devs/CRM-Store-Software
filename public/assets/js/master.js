@@ -1,8 +1,11 @@
-function ajaxPostData(url, data, onSuccess, onError, processData, contentType) {
-    $.ajax({
+function ajaxPostData(url, data, csrfToken,  onSuccess, onError, processData, contentType) {
+    $.ajax({ 
         type: "POST",
         url: url,
         data: data,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
         processData: processData !== undefined ? processData : true,
         contentType: contentType !== undefined ? contentType : "application/x-www-form-urlencoded",
         success: function (response) {
