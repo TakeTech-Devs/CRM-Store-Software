@@ -131,7 +131,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-
+            // dd($request->session()->get('storeId'));
             $store_meta_id = $request->session()->get('storeId');
             $remoteDataStore = DB::connection('remote_mysql')->table('store')-> where('store_meta_id', $store_meta_id)->first();
 
@@ -184,6 +184,61 @@ class DataFetchController extends Controller
                         'qty' => $value->qty,
                         'qty_left' => $value->qty_left,
                         'exp_date' => $value->exp_date,
+                    ]);
+                }
+            }
+
+            $remoteDataCustomer = DB::connection('remote_mysql')->table('customer')->get();
+            foreach ($remoteDataCustomer as $key => $value) {
+                $getCustomer =  DB::table('customer')->where([
+                    'name' => $value->name,
+                    'mail' => $value->mail,
+                    'phone' => $value->phone,
+                    'status' => $value->status,
+                ])->first();
+
+                if ($getCustomer) {
+                    DB::table('customer')->where('id', $getCustomer->id)->update([
+                        'name' => $value->name,
+                        'mail' => $value->mail,
+                        'phone' => $value->phone,
+                        'status' => $value->status,
+                    ]);
+                }else{
+                    DB::table('customer')->insert([
+                        'name' => $value->name,
+                        'mail' => $value->mail,
+                        'phone' => $value->phone,
+                        'status' => $value->status,
+                    ]);
+                }
+            }
+
+            $remoteDataDoctor = DB::connection('remote_mysql')->table('doctor')->get();
+            foreach ($remoteDataDoctor as $key => $value) {
+                $getDoctor =  DB::table('doctor')->where([
+                    'name' => $value->name,
+                    'mail' => $value->mail,
+                    'phone' => $value->phone,
+                    'degree' => $value->degree,
+                    'status' => $value->status
+                ])->first();
+
+                if ($getDoctor) {
+                    DB::table('doctor')->where('id', $getDoctor->id)->update([
+                        'name' => $value->name,
+                        'mail' => $value->mail,
+                        'phone' => $value->phone,
+                        'degree' => $value->degree,
+                        'status' => $value->status
+                    ]);
+                }else{
+                    DB::table('doctor')->insert([
+                        'name' => $value->name,
+                        'mail' => $value->mail,
+                        'phone' => $value->phone,
+                        'degree' => $value->degree,
+                        'status' => $value->status
                     ]);
                 }
             }

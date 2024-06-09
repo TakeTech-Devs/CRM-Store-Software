@@ -33,10 +33,10 @@
                     </div>
                     <div class="col-md-6"> 
                         <div class="form-group">
-                            <label for="supplier_id">Doctor Name</label>
+                            <label for="doctor_name">Doctor Name</label>
                             <div class="form-group d-flex align-items-center">
                                 
-                                <select data-enable-search="true"name="supplier_id[]" id="supplier_id" class="form-control ">
+                                <select data-enable-search="true"name="doctor_name[]" id="doctor_name" class="form-control ">
                                     <option value="">Choose Doctor Name...</option>
                                 </select>
                                 <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addBrandModal">
@@ -53,7 +53,7 @@
                             <label for="customer_name">Customer Name</label>
                             <div class="form-group d-flex align-items-center">
                                 
-                                <select data-enable-search="true"name="customer_name[]" id="customer_name" class="form-control ">
+                                <select data-enable-search="true"name="customer_name[]" id="customer_name" class="form-control " disabled>
                                     <option value="">Choose Customer Name...</option>
                                 </select>
                                
@@ -68,6 +68,8 @@
                                 
                                 <select data-enable-search="true"name="paymentType[]" id="paymentType" class="form-control ">
                                     <option value="">Choose Payment Type...</option>
+                                    <option value="online">Online</option>
+                                    <option value="offline">Offline</option>
                                 </select>
                                
                             </div>
@@ -107,7 +109,7 @@
 
                 <div class="new-row d-flex align-items-center justify-content-end mt-3">
                     <p class="total-amount mx-3">Total Amount: <span id="totalAmount">0</span></p>
-                    <button type="button" class="btn btn-sm btn-secondary text-light mb-2" onclick="addNewRow()">Add New Row</button>
+                    <button type="button" class="btn btn-sm btn-secondary text-light mb-2" id="add_row">Add New Row</button>
                 </div>
 
             
@@ -225,7 +227,120 @@
     </div>
 
     <script>
-        function addNewRow() {
+
+        $(document).ready(function () {
+            count = 0
+            customerData(null)
+            doctorData()
+            $(document).on('change', '#customer_phone', function () {
+                customerData(this.value)
+            });
+
+            $(document).on('change', '.product', function () {
+                ajaxGetData(`/products?id=${this.value}`, (res)=>{
+                    console.log(res, "res");
+                    categoryData(res?.data[0].category_id, count)
+                    subCategoryData(res?.data[0].sub_category_id, count)
+                    packData(null, count)
+                    priceData(null, count)
+                })
+            })
+
+            $(document).on('click', '#add_row', function () {
+                count = count + 1;
+                addNewRow(count)
+            })
+
+            $(document).on('click', '#submitBilling', function () {
+                let payload = {
+                    customer_phone:$('#customer_phone').val(),
+                    doctor_name:$('#doctor_name').val(),
+                    paymentType:$('#paymentType').val(),
+                    invoiceNo:$('#invoiceNo').val(),
+                }
+
+                const rows = document.querySelectorAll('#formBody tbody tr');
+                console.log(rows);
+
+                console.log(payload);
+            })
+           
+        });
+
+        function customerData(id) { 
+            if (id) {
+                ajaxGetData(`/customers?id=${id}`, (res)=>{
+                    $('#customer_name').html("")
+                    for (let index = 0; index < res?.data?.length; index++) {
+                        const element = res?.data[index];
+                        $('#customer_name').append('<option selected value="' + element.id + '">' + element.name + '</option>');
+                    }
+                })
+            }else{
+                ajaxGetData('/customers', (res)=>{
+                    for (let index = 0; index < res?.data?.length; index++) {
+                        const element = res?.data[index];
+                        $('#customer_phone').append('<option value="' + element.id + '">' + element.phone + '</option>');
+                    }
+                })
+            }
+          
+        }
+        
+        function doctorData() { 
+            ajaxGetData('/doctors', (res)=>{
+                for (let index = 0; index < res?.data?.length; index++) {
+                    const element = res?.data[index];
+                    $('#doctor_name').append('<option value="' + element.id + '">' + element.name + '</option>');
+                }
+            })
+        }
+
+        function productData() { 
+            ajaxGetData(`/products`, (res) =>{
+                for (let index = 0; index < res?.data?.length; index++) {
+                    const element = res?.data[index];
+                    $('.product').append('<option value="' + element.id + '">' + element.product_name + '</option>');
+                }
+            })
+        }
+
+        function categoryData(id, count) {
+            ajaxGetData(`/category?id=${id}`, (res)=>{
+                $(`#category${count}`).val(res?.data[0].category_name)
+            })
+        }
+
+        function subCategoryData(id, count) {
+            ajaxGetData(`/sub-category?id=${id}`, (res)=>{
+                $(`#subCategory${count}`).val(res?.data[0].sub_category_name)
+            })
+        }
+
+        function packData(id, count) {
+            ajaxGetData(`/pack?id=${id}`, (res) =>{
+                console.log(res);
+                for (let index = 0; index < res?.data?.length; index++) {
+                    const element = res?.data[index];
+                    $(`#pack${count}`).append('<option value="' + element.id + '">' + element.pack_name + '</option>');
+                }
+            })
+            // ajaxGetData(`/pack?id=${id}`, (res)=>{
+            //     $(`#pack${count}`).val(res?.data[0].name)
+            // })
+        }
+        function priceData(id, count) {
+            ajaxGetData(`/price?id=${id}`, (res) =>{
+                console.log(res);
+                for (let index = 0; index < res?.data?.length; index++) {
+                    const element = res?.data[index];
+                    $(`#mrp${count}`).append('<option value="' + element.id + '">' + element?.price_name + '</option>');
+                }
+            })
+        }
+
+        function addNewRow(id) {
+            productData()
             document.addEventListener('DOMContentLoaded', function() {
                 updateTotalAmount();
             });
@@ -234,48 +349,48 @@
             newRow.innerHTML = `
                 <td id="row" class="row_id d-none" ></td>
                 <td>
-                    <select data-enable-search="true" class="form-control" name="productName[]" id="product_name">
-                    
+                    <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name${id}">
+                        <option value="">Choose Product</option>
                     </select>
                 </td>
                 <td>
                     <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control " name="category" id="category" />
+                        <input type="text" class="form-control " name="category" id="category${id}" disabled />
                     </div>        
                 </td>
                 <td>
                     <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control " name="subCategory" id="subCategory" />
+                        <input type="text" class="form-control " name="subCategory" id="subCategory${id}" disabled />
                     </div>        
                 </td>
                 <td>
+                    <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}">
+                        <option value="">Choose Pack</option>
+                    </select>
+                </td>
+                <td>
                     <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control " name="pack" id="pack" />
+                        <input type="text" class="form-control " name="qty" id="qty${id}" />
+                    </div>
+                </td>
+                <td>
+                    <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}">
+                        <option value="">Choose MRP</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="form-group d-flex align-items-center">
+                        <input type="number" class="form-control " name="unit_value[]" id="unit_value${id}" />
                     </div>
                 </td>
                 <td>
                     <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control " name="pack" id="pack" />
+                        <input type="text" class="form-control" name="discount[]" id="discount${id}" />
                     </div>
                 </td>
                 <td>
                     <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control mrp" name="mrp" id="mrp" />
-                    </div>
-                </td>
-                <td>
-                    <div class="form-group d-flex align-items-center">
-                        <input type="number" class="form-control quantity" name="quantity[]" id="quantity" />
-                    </div>
-                </td>
-                <td>
-                    <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control" name="expiryDate[]" id="expiryDate" />
-                    </div>
-                </td>
-                <td>
-                    <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control totalAmount" value=0 name="totalAmount[]" id="totalAmount" readonly />
+                        <input type="text" class="form-control totalAmount" value=0 name="totalAmount[]" id="totalAmount${id}" readonly />
                     </div>
                 </td>
                 <td>
@@ -286,8 +401,20 @@
             `;
 
             document.getElementById("formBody").appendChild(newRow);
-            updateTotalAmount();
-            clearSelectOptions();
+            $(document).on('keyup', `#qty${count}`, function () {
+                $(`#totalAmount${count}`).val(Number($(`#qty${count}`).val()) * Number($(`#mrp${count} option:selected` ).text()) - $(`#discount${count}`).val())
+                console.log($(`#mrp${count} option:selected`).text());
+            })
+            $(document).on('change', `#mrp${count}`, function () {
+                $(`#totalAmount${count} option:selected`).val(Number($(`#qty${count}`).val()) * Number($(`#mrp${count} option:selected`).text()) - $(`#discount${count}`).val())
+                console.log($(this).val());
+            })
+            $(document).on('change', `#discount${count}`, function () {
+                $(`#totalAmount${count} option:selected`).val(Number($(`#qty${count}`).val()) * Number($(`#mrp${count} option:selected`).text()) - $(`#discount${count}`).val())
+                console.log($(this).val());
+            })
+            // updateTotalAmount();
+            // clearSelectOptions();
 
         }
 
