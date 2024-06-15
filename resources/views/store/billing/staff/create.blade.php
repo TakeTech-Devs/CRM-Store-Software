@@ -23,9 +23,9 @@
                             <div class="form-group d-flex align-items-center">
                                 
                                 <select data-enable-search="true"name="customer_phone[]" id="customer_phone" class="form-control ">
-                                    <option value="">Choose Customer Phone Number...</option>
+                                    <option value="">Choose Staff Phone Number...</option>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addBrandModal">
+                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addStaffNumber">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -39,7 +39,7 @@
                                 <select data-enable-search="true"name="supplier_id[]" id="supplier_id" class="form-control ">
                                     <option value="">Choose Doctor Name...</option>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addBrandModal">
+                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addDoctor">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -50,11 +50,11 @@
                 <div class="form-row mb-2">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="customer_name">Staff Name</label>
+                            <label for="staff_name">Staff Name</label>
                             <div class="form-group d-flex align-items-center">
                                 
-                                <select data-enable-search="true"name="customer_name[]" id="customer_name" class="form-control ">
-                                    <option value="">Choose Customer Name...</option>
+                                <select data-enable-search="true"name="staff_name[]" id="staff_name" class="form-control ">
+                                    <option value="">Choose Staff Name...</option>
                                 </select>
                                
                             </div>
@@ -92,7 +92,7 @@
                                 <th>Sub-Category</th>
                                 <th>Pack</th>
                                 <th>Qty</th>
-                                <th>MRP</th>
+                                <!-- <th>MRP</th> -->
                                 <th>Unit Value</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
@@ -117,107 +117,82 @@
                 </div>
             </form>
 
-            <!-- SUPPLIER MODEL  -->
-            <div class="modal fade" id="addBrandModal" tabindex="-1" role="dialog" aria-labelledby="addBrandModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog container" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                            <h5 class="modal-title" id="addBrandModalLabel">Add Supplier</h5>
-                        </div>
-                        <div class="modal-body">
-                            <form id="addBrand" action="{{url('/supplier')}}" method="POST" class="container">
-                                <div id="message" class="text-center bg-success text-light p-3"></div>
-                                <div class="form-group">
-                                    <label for="newBrand">Supplier Name</label>
-                                    <input type="text" class="form-control" id="supplier_name" name="supplier_name" required>
-                                </div>
-                                <div class="form-group d-none">
-                                    <label>Status:</label>
-                                    <div class="form-group d-flex justify-content-start align-items-center">
+            
+        </div>
+    </div>
+    
+    <!-- ADD STAFF PHONE NUMBER  -->
+    <div class="modal fade" id="addStaffNumber" tabindex="-1" role="dialog" aria-labelledby="addStaffNumberLabel" aria-hidden="true">
+        <div class="modal-dialog container" role="document">
+            <div class="modal-content">
+                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                    <h5 class="modal-title" id="addStaffNumberLabel">Add Staff Number</h5>
 
-                                        <div class="form-check mx-3">
-                                            <input type="radio" class="form-check-input" id="statusActive" name="status" value="1" checked>
-                                            <label class="form-check-label" for="statusActive">Active</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
-                                            <label class="form-check-label" for="statusInactive">Deactive</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="save-button d-flex align-items-center justify-content-center">
-                                    <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                                    <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
-                                </div>
-                            </form>
+                </div>
+                <div class="modal-body">
+                    <form id="addStaffNumber" class="container">
+                        <div class="form-group">
+                            <label for="staffPhone">Staff Phone Number</label>
+                            <input type="text" class="form-control" id="staffPhone" name="staffPhone" placeholder="Enter Staff Phone Number" required>
                         </div>
-                    </div>
+                        <div class="form-group d-none">
+                            <label>Status:</label>
+                            <div class="form-group d-flex justify-content-start align-items-center">
+
+                                <div class="form-check mx-3">
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <label class="form-check-label" for="statusActive">Active</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
+                                    <label class="form-check-label" for="statusInactive">Deactive</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
+        </div>
+    </div>
+            
+    <!-- ADD DOCTOR NUMBER  -->
+    <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel"
+        aria-hidden="true">
+        <div class="modal-dialog container" role="document">
+            <div class="modal-content">
+                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                    <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
 
-            <!-- PACK MODEL -->
-            <div class="modal fade" id="addPackModal" tabindex="-1" role="dialog" aria-labelledby="addPackModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog container" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                            <h5 class="modal-title" id="addPackModalLabel">Add Pack</h5>
-                        </div>
-                        <div class="modal-body">
-                            <form id="addPack" action="{{url('/pack')}}" method="POST" class="container">
-                                <div id="message" class="text-center bg-success text-light p-3"></div>
-                                <div class="form-group">
-                                    <label for="newBrand">Pack Name</label>
-                                    <input type="text" class="form-control" id="pack_name" name="pack_name" required>
-                                </div>
-                                <div class="form-group d-none">
-                                    <label>Status:</label>
-                                    <div class="form-group d-flex justify-content-start align-items-center">
-
-                                        <div class="form-check mx-3">
-                                            <input type="radio" class="form-check-input" id="statusActive" name="status" value="1" checked>
-                                            <label class="form-check-label" for="statusActive">Active</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
-                                            <label class="form-check-label" for="statusInactive">Deactive</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="save-button d-flex align-items-center justify-content-center">
-                                    <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                                    <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 </div>
-            </div>
+                <div class="modal-body">
+                    <form id="addBrand" action="{{url('/brands')}}" method="POST" class="container">
+                        <div class="form-group">
+                            <label for="newDoctor">Doctor Name</label>
+                            <input type="text" class="form-control" id="doctor_name" name="doctor_name" placeholder="Enter Doctor Name" required>
+                        </div>
+                        <div class="form-group d-none">
+                            <label>Status:</label>
+                            <div class="form-group d-flex justify-content-start align-items-center">
 
-            <!-- MRP MODEL  -->
-            <div class="modal fade" id="addMRPModal" tabindex="-1" role="dialog" aria-labelledby="addMRPModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog container" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                            <h5 class="modal-title" id="addMRPModalLabel">Add MRP</h5>
-                        </div>
-                        <div class="modal-body">
-                            <form id="addMRP" action="{{url('/prices')}}" method="POST" class="container">
-                                <div class="form-group">
-                                    <label for="price_name">MRP</label>
-                                    <input type="number" class="form-control" id="price_name" name="price_name" required>
+                                <div class="form-check mx-3">
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <label class="form-check-label" for="statusActive">Active</label>
                                 </div>
-                                <div class="save-button d-flex align-items-center justify-content-center">
-                                    <button type="submit" id="addMRPButton" class="btn btn-success mx-2">Save</button>
-                                    <button type="button" id="addBrandFormBtn" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
+                                    <label class="form-check-label" for="statusInactive">Deactive</label>
                                 </div>
-                                
-                            </button>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -257,11 +232,7 @@
                         <input type="text" class="form-control " name="pack" id="pack" />
                     </div>
                 </td>
-                <td>
-                    <div class="form-group d-flex align-items-center">
-                        <input type="text" class="form-control mrp" name="mrp" id="mrp" />
-                    </div>
-                </td>
+                
                 <td>
                     <div class="form-group d-flex align-items-center">
                         <input type="number" class="form-control quantity" name="quantity[]" id="quantity" />
