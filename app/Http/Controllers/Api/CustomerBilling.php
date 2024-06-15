@@ -28,7 +28,6 @@ class CustomerBilling extends Controller
                 'biilling_date'=>$biilling_date,
                 'total_amt'=>$total_amt,
             ]);
-
             foreach ($product_billing as $key => $value) {
                 DB::table('curtomer_product_billing')->insert([
                     'category' => $value['category'],
