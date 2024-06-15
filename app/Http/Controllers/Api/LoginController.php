@@ -18,7 +18,7 @@ class LoginController extends Controller
                 'store_meta_id' => $storeId,
                 'store_pass_key' => $password 
             ])->first();
-            // dd($storeId, $password);
+            // dd($checkCreds);
             if ($checkCreds) {
                 $request->session()->put('storeId', $storeId);
                 return redirect('/store/dashboard');

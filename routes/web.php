@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DataFetchController;
+use App\Http\Controllers\Api\DataController;
+use App\Http\Controllers\Api\CustomerBilling;
+
+
 use App\Http\Controllers\Api\LoginController;
 
 
@@ -47,6 +51,22 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/sync-data/{storeId}', [DataFetchController::class, 'dataFetch']);
 Route::post('/store', [DataFetchController::class, 'insertStore']);
 Route::get('/verify/store', [DataFetchController::class, 'checkStore']);
+Route::get('/customers', [DataController:: class , 'customer_data']);
+Route::get('/doctors', [DataController:: class , 'doctor_data']);
+Route::get('/products', [DataController:: class , 'product_data']);
+Route::get('/category', [DataController:: class , 'category_data']);
+Route::get('/sub-category', [DataController:: class , 'sub_category_data']);
+Route::get('/pack', [DataController:: class , 'pack_data']);
+Route::get('/price', [DataController:: class , 'price_data']);
+Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
+
+
+
+
+
+
+
+
 
 
 
