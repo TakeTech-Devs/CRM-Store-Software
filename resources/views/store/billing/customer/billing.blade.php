@@ -49,117 +49,116 @@
     </style>
 
     <div class="container-fluid">
-            <div class="d-flex align-items-center justify-content-between">
-                <h2 class="text-dark bold ">Customer Billing Page</h1>
-                <div class="text-right">
-                    <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
-                </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <h2 class="text-dark bold ">Customer Billing Page</h1>
+            <div class="text-right">
+                <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
             </div>
-            <div class="form-row d-flex align-items-center justify-content-between my-3">
-                <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-                    <div class="d-flex align-items-center justify-content-between">
-
-                        <div class="form-group mx-1">
-                            <label for="start_date_input">Start Date</label>
-                            <input type="date" class="form-control" id="start_date_input" name="start_date_input">
-                        </div>
-                        <div class="form-group mx-1">
-                            
-                            <label for="end_date_input">End Date</label>
-                            <input type="date" class="form-control" id="end_date_input" name="end_date_input">
-                        </div>
-                        <div class="form-group" style="margin-top: 1.85rem !important;">
-                            <button type="button" class="btn btn-success btn-md mx-1 filterBtn">Find</button>
-                        </div>
+        </div>
+        <div class="form-row d-flex align-items-center justify-content-between my-3">
+            <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="form-group mx-1">
+                        <label for="start_date_input">Start Date</label>
+                        <input type="date" class="form-control" id="start_date_input" name="start_date_input">
                     </div>
-                    <div class="d-flex align-items-center justify-content-around">
-                        <form class="d-flex align-items-center justify-content-between">
-                            <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                                <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                                <input type="text" class="form-control" id="search" placeholder="Search Billing No.">
-                            </div>  
-                        </form>   
-                    </div>
-                </div>
-            </div>
-            <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
-                <div class="d-flex align-items-center justify-content-center">
-
-                    <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                        <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                        <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showEntries" onchange="updatePagination()">
-                            <option>10</option>
-                            <option>25</option>
-                            <option>50</option>
-                            <option>100</option>
-                        </select>
-                    </div>
-                    <div class="download-buttons" style="margin-left:25px !important;">
-                        <div class="download-options d-flex align-items-baseline justify-content-between">
-                            
-                            
-                            <p>Export as : </p>&nbsp;&nbsp;&nbsp;
-                            <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
-                                <i class="fas fa-file-excel"></i>
-                            </button>
-                            <button type="button" class="btn mx-1 btn-md btn-primary">
-                                <i class="fas fa-file-word"></i>
-                            </button>
-                            <button type="button" class="btn mx-1 btn-md btn-danger">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div> 
-                <div class="totalAmount">
-                    <strong>Total Amount: 255000/-</strong>
-                </div>
-            </div>
-
-            
-            <div class="table-responsive border mt-3 mb-5">
-                <table id="purchase-entry-table" class="table p-2 text-center">
-                    <thead>
-                        <tr>
-                            <th class="text-dark">#</th>
-                            <th class="text-dark">Customer Bill No</th>
-                            <th class="text-dark">Customer Name</th>
-                            <th class="text-dark">Bill Date</th>
-                            <th class="text-dark">Payment Type</th>
-                            <th class="text-dark">Total Amount</th>
-                            <th class="text-dark">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                       <tr>
-                        <td>1</td>
-                        <td>#abcd</td>
-                        <td>Test</td>
-                        <td>20-03-2024</td>
-                        <td>Cash</td>
-                        <td>1500</td>
-                        <td><button class="btn btn-sm btn-secondary">View</button></td>
-                       </tr> 
+                    <div class="form-group mx-1">
                         
-                    </tbody>
-                </table>   
-                <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Purchase Entry found</div>
-                     
-            </div>
-            <div class="container mt-3">
-                <div class="row justify-content-end">
-                    <div class="col-auto">
-                        <nav aria-label="...">
-                            <ul class="pagination pagination-sm">
-                            </ul>
-                        </nav>
+                        <label for="end_date_input">End Date</label>
+                        <input type="date" class="form-control" id="end_date_input" name="end_date_input">
+                    </div>
+                    <div class="form-group" style="margin-top: 1.85rem !important;">
+                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn">Find</button>
                     </div>
                 </div>
+                <div class="d-flex align-items-center justify-content-around">
+                    <form class="d-flex align-items-center justify-content-between">
+                        <div class="form-group d-flex align-items-center justify-content-center mx-3">
+                            <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
+                            <input type="text" class="form-control" id="search" placeholder="Search Billing No.">
+                        </div>  
+                    </form>   
+                </div>
             </div>
+        </div>
+        <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
+                    <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
+                    <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showEntries" onchange="updatePagination()">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+                <div class="download-buttons" style="margin-left:25px !important;">
+                    <div class="download-options d-flex align-items-baseline justify-content-between">
+                        
+                        
+                        <p>Export as : </p>&nbsp;&nbsp;&nbsp;
+                        <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button type="button" class="btn mx-1 btn-md btn-primary">
+                            <i class="fas fa-file-word"></i>
+                        </button>
+                        <button type="button" class="btn mx-1 btn-md btn-danger">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+            </div> 
+            <div class="totalAmount">
+                <strong>Total Amount: 255000/-</strong>
+            </div>
+        </div>
+        
+        <div class="table-responsive border mt-3 mb-5">
+            <table id="purchase-entry-table" class="table p-2 text-center">
+                <thead>
+                    <tr>
+                        <th class="text-dark">#</th>
+                        <th class="text-dark">Customer Bill No</th>
+                        <th class="text-dark">Customer Name</th>
+                        <th class="text-dark">Bill Date</th>
+                        <th class="text-dark">Payment Type</th>
+                        <th class="text-dark">Total Amount</th>
+                        <th class="text-dark">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                   <tr>
+                    <td>1</td>
+                    <td>#abcd</td>
+                    <td>Test</td>
+                    <td>20-03-2024</td>
+                    <td>Cash</td>
+                    <td>1500</td>
+                    <td>
+                        <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
+                    </td>
+                   </tr> 
+                    
+                </tbody>
+            </table>   
+            <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Purchase Entry found</div>
+                 
+        </div>
+        <div class="container mt-3">
+            <div class="row justify-content-end">
+                <div class="col-auto">
+                    <nav aria-label="...">
+                        <ul class="pagination pagination-sm">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- PRINT MODEL  -->
-    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-labelledby="viewBillModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content" style="border: none;">
                 <div class="modal-body" style="padding: 25px; width:100%;">

@@ -31,3 +31,29 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
 .select2-container {
     width: 100% !important;
 }
+
+.sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 15% !important; 
+    height: 100%;
+    color: white;
+    overflow: hidden;
+    transition: width 0.3s; 
+}
+
+.sidebar.toggled {
+    width: 6.5% !important;
+}
+
+#wrapper #content-wrapper {
+    width: 85% !important; 
+    transition: width 0.3s; 
+    position: absolute;
+    right: 0% !important;
+}
+
+body.sidebar-toggled #wrapper #content-wrapper {
+    width: 93.5% !important;
+}

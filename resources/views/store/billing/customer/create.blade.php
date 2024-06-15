@@ -22,7 +22,7 @@
                                 <select data-enable-search="true" name="customer_phone[]" id="customer_phone" class="form-control">
                                     <option value="">Choose Customer Phone Number...</option>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addBrandModal">
+                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addStaffNumber">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -35,7 +35,7 @@
                                 <select data-enable-search="true" name="doctor_name[]" id="doctor_name" class="form-control">
                                     <option value="">Choose Doctor Name...</option>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addBrandModal">
+                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addDoctor">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -66,9 +66,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="form-row mb-2">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="invoiceNo">Invoice No</label>
@@ -82,13 +79,13 @@
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped" id="dynamicForm">
                         <thead>
-                            <tr class="table-info">
+                            <tr class="table">
                                 <th>Product</th>
                                 <th>Category</th>
                                 <th>Sub Category</th>
                                 <th>Pack</th>
                                 <th>Qty</th>
-                                <th>MRP</th>
+                                <!-- <th>MRP</th> -->
                                 <th>Unit Value</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
@@ -123,11 +120,11 @@
                                         <input type="text" class="form-control" name="qty" id="qty1" />
                                     </div>
                                 </td>
-                                <td>
+                                <!-- <td>
                                     <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp1">
                                         <option value="">Choose MRP</option>
                                     </select>
-                                </td>
+                                </td> -->
                                 <td>
                                     <div class="form-group d-flex align-items-center">
                                         <input type="number" class="form-control" name="unit_value[]" id="unit_value1" />
@@ -168,8 +165,86 @@
             </form>
         </div>
     </div>
-    <script>
+    
+    <!-- ADD STAFF PHONE NUMBER  -->
+    <div class="modal fade" id="addStaffNumber" tabindex="-1" role="dialog" aria-labelledby="addStaffNumberLabel"
+        aria-hidden="true">
+        <div class="modal-dialog container" role="document">
+            <div class="modal-content">
+                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                    <h5 class="modal-title" id="addStaffNumberLabel">Add Customer Number</h5>
 
+                </div>
+                <div class="modal-body">
+                    <form id="addStaffNumber" class="container">
+                        <div class="form-group">
+                            <label for="customerPhone">Customer Phone Number</label>
+                            <input type="text" class="form-control" id="customerPhone" name="customerPhone" placeholder="Enter Customer Phone Number" required>
+                        </div>
+                        <div class="form-group d-none">
+                            <label>Status:</label>
+                            <div class="form-group d-flex justify-content-start align-items-center">
+
+                                <div class="form-check mx-3">
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <label class="form-check-label" for="statusActive">Active</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
+                                    <label class="form-check-label" for="statusInactive">Deactive</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD DOCTOR NUMBER  -->
+    <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel"
+        aria-hidden="true">
+        <div class="modal-dialog container" role="document">
+            <div class="modal-content">
+                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                    <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
+
+                </div>
+                <div class="modal-body">
+                    <form id="addBrand" action="{{url('/brands')}}" method="POST" class="container">
+                        <div class="form-group">
+                            <label for="newDoctor">Doctor Name</label>
+                            <input type="text" class="form-control" id="doctor_name" name="doctor_name" placeholder="Enter Doctor Name" required>
+                        </div>
+                        <div class="form-group d-none">
+                            <label>Status:</label>
+                            <div class="form-group d-flex justify-content-start align-items-center">
+
+                                <div class="form-check mx-3">
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <label class="form-check-label" for="statusActive">Active</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
+                                    <label class="form-check-label" for="statusInactive">Deactive</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
         $(document).ready(function () {
             count = 0
             customerData(null)
@@ -308,11 +383,7 @@
                             <input type="text" class="form-control" name="qty" id="qty${id}" />
                         </div>
                     </td>
-                    <td>
-                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}">
-                            <option value="">Choose MRP</option>
-                        </select>
-                    </td>
+                    
                     <td>
                         <div class="form-group d-flex align-items-center">
                             <input type="number" class="form-control" name="unit_value[]" id="unit_value${id}" />
