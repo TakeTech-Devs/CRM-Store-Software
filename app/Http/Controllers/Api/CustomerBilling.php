@@ -17,6 +17,7 @@ class CustomerBilling extends Controller
             $product_billing = $request->product_billings;
             $biilling_date = $request->biilling_date;
             $customer_name = $request->customer_name;
+            $billingType = $request->billingType;
             $total_amt = $request->total_amt;
 
             $insert_cb =  DB::table('curtomer_billing')->insertGetId([
@@ -26,6 +27,7 @@ class CustomerBilling extends Controller
                 'invoiceNo'=>$invoiceNo,
                 'paymentType'=>$paymentType,
                 'biilling_date'=>$biilling_date,
+                'billingType'=>$billingType,
                 'total_amt'=>$total_amt,
             ]);
             foreach ($product_billing as $key => $value) {
@@ -51,5 +53,53 @@ class CustomerBilling extends Controller
         } catch (\Throwable $th) {
             throw $th;
         }
+    }
+
+    public function listBilling(Request $request){
+        try {
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+            $search = $request->query('search');
+            $page = $request->query('page') ;
+            $limit = $request->query('limit');
+            $billingType = $request->billingType;
+            $query = DB::table('curtomer_billing');
+
+            if ($billingType) {
+                $query->where('billingType', '=', $billingType);
+            }
+            
+            if ($startDate) {
+                $query->where('biilling_date', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->where('biilling_date', '<=', $endDate);
+            }
+            if ($search) {
+                $query->where('invoiceNo', 'like', '%' . $search . '%');
+            }
+            if ($page && $limit ) { 
+                $billing_details = $query->paginate($limit, ['*'], 'page', $page ?? 1);
+                
+            }else{
+
+                $billing_details = $query->get();
+            }
+
+            if ($billing_details->count() > 0) {
+                return response()->json([
+                    'status' => 200,
+                    'data' => $billing_details
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 404,
+                    'data' => 'No records found'
+                ], 404);
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
     }
 }

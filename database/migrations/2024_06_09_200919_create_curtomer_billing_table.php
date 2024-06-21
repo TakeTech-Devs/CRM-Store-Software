@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('paymentType');
             $table->string('biilling_date');
             $table->string('total_amt');
+            $table->string('billingType');
             $table->timestamps();
         });
     }

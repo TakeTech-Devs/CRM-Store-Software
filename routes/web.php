@@ -58,7 +58,6 @@ Route::get('/category', [DataController:: class , 'category_data']);
 Route::get('/sub-category', [DataController:: class , 'sub_category_data']);
 Route::get('/pack', [DataController:: class , 'pack_data']);
 Route::get('/price', [DataController:: class , 'price_data']);
-Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
 
 
 
