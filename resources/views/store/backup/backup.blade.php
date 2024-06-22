@@ -14,7 +14,7 @@
                 </div> -->
                 <div class="form-group mt-3">
                     
-                    <button type="button" class="btn btn-md btn-secondary" data-toggle="modal" data-target="#addBackupModal">
+                    <button type="button" class="btn btn-md btn-secondary" id="gen_back_up">
                         Generate Backup
                     </button>
                 </div>
@@ -38,25 +38,8 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning">Restore</button>
-                                    <button class="btn btn-sm btn-danger">Delete</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning">Restore</button>
-                                    <button class="btn btn-sm btn-danger">Delete</button>
-                                </td>
-                            </tr>
+                        <tbody id="backupId">
+                          
                         </tbody>
                     </table>
                 </div>
@@ -66,6 +49,63 @@
     <!-- END BACKUP LIST TABLE -->
 
 </div>    
+
+<script>
+    $(document).ready(function () {
+        list()
+       
+
+        $(document).on('click', '#download', function() {
+            const fileUrl = $(this).data('file-url');
+            console.log(fileUrl);
+            
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.target = '_blank';
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        $(document).on('click', '#del', function(){
+            console.log()
+            ajaxGetData(`/api/backup/${$(this).val()}`, (response)=>{
+                alert("deleted");
+                list()
+            })
+        })
+
+        $(document).on('click', '#gen_back_up', function(){
+            console.log()
+            ajaxGetData(`/api/store/backup`, (response)=>{
+                list()
+            })
+        })
+        
+
+    });
+
+    function list(){
+        ajaxGetData(`/api/backups`, (response)=>{
+            $('#backupId').html('')
+            for (let index = 0; index < response?.data.length; index++) {
+                const element = response?.data[index];
+                $('#backupId').append(`
+                      <tr>
+                                <td>${index+1}</td>
+                                <td>${element?.file_name}</td>
+                                <td>${element?.date}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" id="download" data-file-url="${element?.file_path}" >Downlaod</button>
+                                    <button class="btn btn-sm btn-warning" id="del" value = ${element?.id}>Delete</button>
+                                </td>
+                            </tr>
+                `)
+            }
+        })
+    }
+</script>
 
     <!-- Include Bootstrap JS and Popper.js -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

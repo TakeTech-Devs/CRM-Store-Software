@@ -85,7 +85,7 @@
                                 <th>Sub Category</th>
                                 <th>Pack</th>
                                 <th>Qty</th>
-                                <!-- <th>MRP</th> -->
+                                <th>MRP</th>
                                 <th>Unit Value</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
@@ -120,11 +120,11 @@
                                         <input type="text" class="form-control" name="qty" id="qty1" />
                                     </div>
                                 </td>
-                                <!-- <td>
+                                <td>
                                     <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp1">
                                         <option value="">Choose MRP</option>
                                     </select>
-                                </td> -->
+                                </td>
                                 <td>
                                     <div class="form-group d-flex align-items-center">
                                         <input type="number" class="form-control" name="unit_value[]" id="unit_value1" />
@@ -169,17 +169,25 @@
     <!-- ADD STAFF PHONE NUMBER  -->
     <div class="modal fade" id="addStaffNumber" tabindex="-1" role="dialog" aria-labelledby="addStaffNumberLabel"
         aria-hidden="true">
-        <div class="modal-dialog container" role="document">
+        <div class="modal-dialog container modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
                     <h5 class="modal-title" id="addStaffNumberLabel">Add Customer Number</h5>
 
                 </div>
                 <div class="modal-body">
-                    <form id="addStaffNumber" class="container">
-                        <div class="form-group">
-                            <label for="customerPhone">Customer Phone Number</label>
-                            <input type="text" class="form-control" id="customerPhone" name="customerPhone" placeholder="Enter Customer Phone Number" required>
+                    <form id="addCustomer" class="container d-flex align-items-center justify-content-between flex-wrap">
+                        <div class="form-group col-md-6">
+                            <label for="newCustomer">Customer Name</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter Customer Name" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="newCustomer">Customer Email</label>
+                            <input type="email" class="form-control" id="customer_mail" name="customer_mail" placeholder="Enter Customer Email" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="newCustomer">Customer Phone Number</label>
+                            <input type="mobile" class="form-control" id="customer_phone" name="customer_phone" placeholder="Enter Customer Number" required>
                         </div>
                         <div class="form-group d-none">
                             <label>Status:</label>
@@ -195,7 +203,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="save-button d-flex align-items-center justify-content-center">
+                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
                             <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
                             <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
@@ -208,17 +216,29 @@
     <!-- ADD DOCTOR NUMBER  -->
     <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel"
         aria-hidden="true">
-        <div class="modal-dialog container" role="document">
+        <div class="modal-dialog container modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
                     <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
 
                 </div>
                 <div class="modal-body">
-                    <form id="addBrand" action="{{url('/brands')}}" method="POST" class="container">
-                        <div class="form-group">
+                    <form id="addDoctor" action="{{url('/brands')}}" method="POST" class="container d-flex align-items-center justify-content-between flex-wrap">
+                        <div class="form-group col-md-6">
                             <label for="newDoctor">Doctor Name</label>
                             <input type="text" class="form-control" id="doctor_name" name="doctor_name" placeholder="Enter Doctor Name" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="newDoctor">Doctor Email</label>
+                            <input type="email" class="form-control" id="doctor_mail" name="doctor_mail" placeholder="Enter Doctor Name" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="newDoctor">Doctor Phone Number</label>
+                            <input type="mobile" class="form-control" id="doctor_phone" name="doctor_phone" placeholder="Enter Doctor Name" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="newDoctor">Doctor Degree</label>
+                            <input type="text" class="form-control" id="doctor_degree" name="doctor_degree" placeholder="Enter Doctor Name" required>
                         </div>
                         <div class="form-group d-none">
                             <label>Status:</label>
@@ -234,7 +254,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="save-button d-flex align-items-center justify-content-center">
+                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
                             <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
                             <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
@@ -253,6 +273,8 @@
                 customerData(this.value)
             });
 
+            
+
             $(document).on('change', '.product', function () {
                 ajaxGetData(`/products?id=${this.value}`, (res)=>{
                     console.log(res, "res");
@@ -270,11 +292,10 @@
 
             $(document).on('click', '#submitBilling', function () {
                 const payload = gatherFormData();
-                console.log(typeof  (payload));
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
 
-                    console.log(res);
+                    console.log("Response: ", response);
                 })
             })
            
@@ -332,7 +353,6 @@
 
         function packData(id, count) {
             ajaxGetData(`/pack?id=${id}`, (res) =>{
-                console.log(res);
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
                     $(`#pack${count}`).append('<option value="' + element.id + '">' + element.pack_name + '</option>');
@@ -383,7 +403,11 @@
                             <input type="text" class="form-control" name="qty" id="qty${id}" />
                         </div>
                     </td>
-                    
+                    <td>
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" class="form-control" name="mrp[]" id="mrp${id}" />
+                        </div>
+                    </td>
                     <td>
                         <div class="form-group d-flex align-items-center">
                             <input type="number" class="form-control" name="unit_value[]" id="unit_value${id}" />

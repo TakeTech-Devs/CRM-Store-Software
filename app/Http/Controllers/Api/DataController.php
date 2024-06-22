@@ -25,6 +25,23 @@ class DataController extends Controller
         }
         
     }
+    public function staff_data(){
+        try {
+            $id = request()->id ?? null;
+            $dataQuery =  DB::table('staff');
+            if ($id) {
+                $dataQuery->where('id', $id);
+            }
+            $data = $dataQuery->get();
+            return response()->json([
+                'status' => 200,
+                'data' => $data
+            ], 200);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+        
+    }
     public function doctor_data(){
         try {
             $id = request()->id ?? null;

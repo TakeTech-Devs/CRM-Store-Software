@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Facades\Session;
-
+use Illuminate\Support\Facades\Storage;
 
 class DataFetchController extends Controller
 {
     public function dataFetch(Request $request, $storeId)
     {
         try {
+
             $remoteDatabrand = DB::connection('remote_mysql')->table('brand')->get();
             foreach ($remoteDatabrand as $key => $value) {
                 $getBrand = DB::table('brand')->where(['brand_name' => $value->brand_name])->first();
@@ -242,7 +243,20 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => 'Succeed'
+            ]);
+            return response()->json([
+                'status' => 200,
+                'resStatus' => true,
+            ], 200);
+
         } catch (\Throwable $th) {
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => "Succeed"
+            ]);
             throw $th;
         }
     }
@@ -283,7 +297,7 @@ class DataFetchController extends Controller
                 return response()->json([
                     'status' => 200,
                     'resStatus' => true,
-                    // 'data'=> $checkStore
+                    'data'=> $getStore
                 ], 200);
             }else{
                 return response()->json([
@@ -298,6 +312,105 @@ class DataFetchController extends Controller
             throw $th;
         }
 
+
+    }
+
+    public function getSyncHist(Request $request){
+        try { 
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+            $search = $request->query('search');
+            $page = $request->query('page') ;
+            $limit = $request->query('limit');
+            $query = DB::table('sync_history');
+            // $history = DB::table('sync_history')->get();
+            if ($startDate) {
+                $query->where('sync_date', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->where('sync_date', '<=', $endDate);
+            }
+            if ($page && $limit ) { 
+                $history = $query->paginate($limit, ['*'], 'page', $page ?? 1);
+                
+            }else{
+
+                $history = $query->get();
+            }
+
+            if ($history->count() > 0) {
+                return response()->json([
+                    'status' => 200,
+                    'data' => $history
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 404,
+                    'data' => 'No records found'
+                ], 200);
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+        
+    public function backupSQL ()
+    {
+        $database = env('DB_DATABASE');
+        $username = env('DB_USERNAME');
+        $password = env('DB_PASSWORD');
+        $host = env('DB_HOST');
+        $port = env('DB_PORT');
+
+        $fileName = "backup-" . date('Y-m-d_H-i-s') . ".sql";
+        $relativeFilePath = "backup/{$fileName}";
+        $filePath = storage_path("app/public/{$relativeFilePath}");
+
+        if (!file_exists(storage_path('app/public/backup'))) {
+            mkdir(storage_path('app/public/backup'), 0777, true);
+        }
+
+        $command = "mysqldump --user={$username} --password={$password} --host={$host} --port={$port} {$database} > {$filePath}";
+
+        $result = null;
+        $output = null;
+        exec($command, $output, $result);
+
+        if ($result !== 0) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to create backup.'], 500);
+        }
+
+        $fileUrl = url("storage/{$relativeFilePath}");
+            DB::table('backup')->insert([
+                'date' => date('Y-m-d H:i:s'),
+                'file_path' => $fileUrl,
+                'file_name' => $fileName
+            ]);
+    
+            return response()->json(['status' => 'success', 'file' => $fileName, 'file_url' => $fileUrl]);
+    }
+
+    public function deleteBackup($id)
+    {
+        $backup = DB::table('backup')->where('id', $id)->first();
+
+        if (!$backup) {
+            return response()->json(['status' => 'error', 'message' => 'Backup not found.'], 404);
+        }
+            $relativeFilePath = "public/backup/{$backup->file_name}";
+            if (Storage::exists($relativeFilePath)) {
+                Storage::delete($relativeFilePath);
+            } else {
+                return response()->json(['status' => 'error', 'message' => 'File not found.'], 404);
+            }
+        DB::table('backup')->where('id', $id)->delete();
+
+        return response()->json(['status' => 'success', 'message' => 'Backup File deleted successfully.']);
+    }
+
+    public function getBackup(){
+        $backupFile = DB::table('backup')->get();
+        return response()->json(['status' => 'success', 'data' => $backupFile]);
 
     }
 }
