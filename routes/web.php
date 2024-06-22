@@ -42,6 +42,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/staff/create/billing', function () {
             return view('store/billing/staff/create');
         });
+        Route::get('/details', function () {
+            return view('store/storeSync/storeDetails');
+        });
+        Route::get('/sync/history', function () {
+            return view('store/storeSync/storeSyncHist');
+        });
     });
 });
 

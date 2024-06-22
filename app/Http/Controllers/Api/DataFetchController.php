@@ -13,6 +13,7 @@ class DataFetchController extends Controller
     public function dataFetch(Request $request, $storeId)
     {
         try {
+
             $remoteDatabrand = DB::connection('remote_mysql')->table('brand')->get();
             foreach ($remoteDatabrand as $key => $value) {
                 $getBrand = DB::table('brand')->where(['brand_name' => $value->brand_name])->first();
@@ -242,7 +243,20 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => 'Succeed'
+            ]);
+            return response()->json([
+                'status' => 200,
+                'resStatus' => true,
+            ], 200);
+
         } catch (\Throwable $th) {
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => "Succeed"
+            ]);
             throw $th;
         }
     }
@@ -283,7 +297,7 @@ class DataFetchController extends Controller
                 return response()->json([
                     'status' => 200,
                     'resStatus' => true,
-                    // 'data'=> $checkStore
+                    'data'=> $getStore
                 ], 200);
             }else{
                 return response()->json([
@@ -299,5 +313,44 @@ class DataFetchController extends Controller
         }
 
 
+    }
+
+    public function getSyncHist(Request $request){
+        try { 
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+            $search = $request->query('search');
+            $page = $request->query('page') ;
+            $limit = $request->query('limit');
+            $query = DB::table('sync_history');
+            // $history = DB::table('sync_history')->get();
+            if ($startDate) {
+                $query->where('sync_date', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->where('sync_date', '<=', $endDate);
+            }
+            if ($page && $limit ) { 
+                $history = $query->paginate($limit, ['*'], 'page', $page ?? 1);
+                
+            }else{
+
+                $history = $query->get();
+            }
+
+            if ($history->count() > 0) {
+                return response()->json([
+                    'status' => 200,
+                    'data' => $history
+                ], 200);
+            } else {
+                return response()->json([
+                    'status' => 404,
+                    'data' => 'No records found'
+                ], 200);
+            }
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
 }
