@@ -48,6 +48,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/sync/history', function () {
             return view('store/storeSync/storeSyncHist');
         });
+        Route::get('/backup', function () {
+            return view('store/backup/backup');
+        });
     });
 });
 

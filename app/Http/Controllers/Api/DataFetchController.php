@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Facades\Session;
-
+use Illuminate\Support\Facades\Storage;
 
 class DataFetchController extends Controller
 {
@@ -352,5 +352,65 @@ class DataFetchController extends Controller
         } catch (\Throwable $th) {
             throw $th;
         }
+    }
+        
+    public function backupSQL ()
+    {
+        $database = env('DB_DATABASE');
+        $username = env('DB_USERNAME');
+        $password = env('DB_PASSWORD');
+        $host = env('DB_HOST');
+        $port = env('DB_PORT');
+
+        $fileName = "backup-" . date('Y-m-d_H-i-s') . ".sql";
+        $relativeFilePath = "backup/{$fileName}";
+        $filePath = storage_path("app/public/{$relativeFilePath}");
+
+        if (!file_exists(storage_path('app/public/backup'))) {
+            mkdir(storage_path('app/public/backup'), 0777, true);
+        }
+
+        $command = "mysqldump --user={$username} --password={$password} --host={$host} --port={$port} {$database} > {$filePath}";
+
+        $result = null;
+        $output = null;
+        exec($command, $output, $result);
+
+        if ($result !== 0) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to create backup.'], 500);
+        }
+
+        $fileUrl = url("storage/{$relativeFilePath}");
+            DB::table('backup')->insert([
+                'date' => date('Y-m-d H:i:s'),
+                'file_path' => $fileUrl,
+                'file_name' => $fileName
+            ]);
+    
+            return response()->json(['status' => 'success', 'file' => $fileName, 'file_url' => $fileUrl]);
+    }
+
+    public function deleteBackup($id)
+    {
+        $backup = DB::table('backup')->where('id', $id)->first();
+
+        if (!$backup) {
+            return response()->json(['status' => 'error', 'message' => 'Backup not found.'], 404);
+        }
+            $relativeFilePath = "public/backup/{$backup->file_name}";
+            if (Storage::exists($relativeFilePath)) {
+                Storage::delete($relativeFilePath);
+            } else {
+                return response()->json(['status' => 'error', 'message' => 'File not found.'], 404);
+            }
+        DB::table('backup')->where('id', $id)->delete();
+
+        return response()->json(['status' => 'success', 'message' => 'Backup File deleted successfully.']);
+    }
+
+    public function getBackup(){
+        $backupFile = DB::table('backup')->get();
+        return response()->json(['status' => 'success', 'data' => $backupFile]);
+
     }
 }

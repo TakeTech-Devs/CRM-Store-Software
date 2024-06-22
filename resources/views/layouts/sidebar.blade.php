@@ -89,8 +89,8 @@
                 </a>
                 <div id="collapseBackup" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Backup</a>
-                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Restore</a>
+                        <a class="collapse-item" href="{{url('store/backup')}}">Backup</a>
+                        {{-- <a class="collapse-item" href="{{url('admin/add-customer')}}">Restore</a> --}}
                     </div>
                 </div>
             </li>

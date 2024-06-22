@@ -15,4 +15,7 @@ Route::get('/customer/billing/list', [CustomerBilling:: class , 'listBilling']);
 
 
 Route::get('/get/sync/history', [DataFetchController:: class , 'getSyncHist']);
+Route::get('/store/backup', [DataFetchController:: class , 'backupSQL']);
+Route::get('/backups', [DataFetchController:: class , 'getBackup']);
+Route::get('/backup/{id}', [DataFetchController::class, 'deleteBackup']);
 
