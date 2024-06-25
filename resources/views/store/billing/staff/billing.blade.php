@@ -57,25 +57,25 @@
         </div>
         <div class="form-row d-flex align-items-center justify-content-between my-3">
             <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-                <div class="d-flex align-items-center justify-content-between">
+                <div class="form-group d-flex align-items-end justify-content-around">
                     <div class="form-group mx-1">
                         <label for="start_date_input">Start Date</label>
                         <input type="date" class="form-control" id="start_date_input" name="start_date_input">
                     </div>
                     <div class="form-group mx-1">
-                        
+
                         <label for="end_date_input">End Date</label>
                         <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                     </div>
-                    <div class="form-group" style="margin-top: 1.85rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn">Find</button>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button>
                     </div>
                 </div>
                 <div class="d-flex align-items-center justify-content-around">
                     <form class="d-flex align-items-center justify-content-between">
                         <div class="form-group d-flex align-items-center justify-content-center mx-3">
                             <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <input type="text" class="form-control" id="search" placeholder="Search Billing No.">
+                            <input type="text" class="form-control" id="search" placeholder="Search Bill No.">
                         </div>  
                     </form>   
                 </div>
@@ -94,6 +94,8 @@
                 </div>
                 <div class="download-buttons" style="margin-left:25px !important;">
                     <div class="download-options d-flex align-items-baseline justify-content-between">
+                        
+                        
                         <p>Export as : </p>&nbsp;&nbsp;&nbsp;
                         <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
                             <i class="fas fa-file-excel"></i>
@@ -107,8 +109,8 @@
                     </div>
                 </div>
             </div> 
-            <div class="totalAmount">
-                <strong>Total Amount: 255000/-</strong>
+            <div class="grandTotalAmount text-right mt-3">
+                <strong>Total Amount: 0.00/-</strong>
             </div>
         </div>
         
@@ -126,21 +128,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                   <tr>
-                    <td>1</td>
-                    <td>#abcd</td>
-                    <td>Test</td>
-                    <td>20-03-2024</td>
-                    <td>Cash</td>
-                    <td>1500</td>
-                    <td>
-                        <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
-                    </td>
-                   </tr> 
+                   
                     
                 </tbody>
             </table>   
-            <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Purchase Entry found</div>           
+            <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
+                 
         </div>
         <div class="container mt-3">
             <div class="row justify-content-end">
@@ -153,8 +146,8 @@
             </div>
         </div>
     </div>
-    
-    <!-- VIEW MODEL  -->
+
+    <!-- PRINT MODEL  -->
     <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-labelledby="viewBillModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content" style="border: none;">
@@ -226,5 +219,136 @@
             </div>
         </div>
     </div>
+
+
+    <script>
+        $(document).ready(function() {
+            api_for_bill();
+            
+            // SEARCH FUNCATIONALITY 
+            $('#search').on('input', function() {
+                var searchText = $(this).val().toLowerCase();
+                var found = false;
+                $('.bill-row').each(function() {
+                    var brandName = $(this).find('td:eq(1)').text().toLowerCase();
+                    if (brandName.includes(searchText)) {
+                        $(this).show();
+                        found = true;
+                    } else {
+                        $(this).hide();
+                    }
+                });
+                if (found) {
+                    $('#noBrandFoundMessage').hide();
+                } else {
+                    $('#noBrandFoundMessage').show();
+                }
+            });
+            // DATE FILTER 
+            $(document).on('click', '.storeFilterBtn', function() {
+                let startDate = $('#start_date_input').val();
+                let endDate = $('#end_date_input').val();
+                $.ajax({
+                    url: '/api/staff/bill/filter/',
+                    method: 'GET',
+                    data: {
+                        start_date_input: startDate,
+                        end_date_input: endDate
+                    },
+                    success: function(response) {
+                        if (response.status === 200) {
+                            displayFilteredData(response.data);
+                        } else {
+                            console.error('Failed to fetch data:', response);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching data:', error);
+                    }
+                });
+            });
+            
+        });
+
+
+        function api_for_bill() {
+            $('#loader').show();
+            ajaxGetData(`/api/staff/billing/list`, (response) => {
+                $('#loader').hide();
+                bill_list(response.data);
+            });
+        }
+
+
+        function bill_list(response) {
+            $('#purchase-entry-table tbody').empty();
+            let grandTotal = 0;
+            if (Array.isArray(response) > 0) {
+                response.reverse();
+                $.each(response, function(index, brand) {
+                    let totalAmount = parseFloat(brand?.total_amt) || 0;
+                    grandTotal += totalAmount;
+                    let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
+                    $('#purchase-entry-table tbody').append(`
+                        <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                            <td scope="row"> ${index+1} </td>
+                            <td> ${brand?.invoiceNo} </td>
+                            <td> ${brand?.staff_name} </td>
+                            <td> ${brand?.billing_date} </td>
+                            <td> ${brand?.paymentType} </td>
+                            <td> ${totalAmount.toFixed(2)} </td>
+                            <td>
+                                <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id=${brand.id}>&#x1F441;</button>
+                                
+                                <i class="fa fa-download bg-warning text-light px-2 py-2">
+
+                            </td>
+                        </tr>
+                    `);
+                });
+                $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+            } else {
+                $('##purchase-entry-table tbody').append(`
+                    <tr>
+                        <td class="text-center" colspan="4">No Brand Found</td>
+                    </tr>
+                `);
+                $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
+
+            }
+        }
+
+        // DISPLAY DATE FILTER 
+        function displayFilteredData(data) {
+            let tableBody = $('#purchase-entry-table tbody');
+            tableBody.empty();
+            if (data.length > 0) {
+                data.forEach((customerBill, index) => {
+                    tableBody.append(`
+                    <tr>
+                    <td scope="row">${index + 1}</td>   
+                        <td>${customerBill.invoiceNo}</td>   
+                        <td>${customerBill.staff_name}</td>
+                        <td>${customerBill.billing_date}</td>
+                        <td>${customerBill.paymentType}</td>
+                        <td>${customerBill.total_amt}</td>
+                        <td>
+                            <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="${customerBill.id}">&#x1F441;</button>
+                                
+                            <i class="fa fa-download bg-warning text-light px-2 py-2">
+                            
+                        </td>
+                    </tr>
+                    `);
+                });
+            } else {
+                tableBody.append('<tr><td colspan="6">No records found</td></tr>');
+            }
+        }
+    </script>
+
+    
+
+
 @endsection
                     
