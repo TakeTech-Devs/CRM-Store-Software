@@ -12,7 +12,7 @@
         </div>
 
         <div class="mt-4 position-relative">
-            <form action="{{ url('') }}" method="POST" id="customerBillingCreate">
+            <form  id="customerBillingCreate">
                 @csrf
                 <div class="form-row mb-2">
                     <div class="col-md-6">
@@ -22,7 +22,7 @@
                                 <select data-enable-search="true" name="customer_phone[]" id="customer_phone" class="form-control">
                                     <option value="">Choose Customer Phone Number...</option>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addStaffNumber">
+                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addCustomer">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -85,7 +85,6 @@
                                 <th>Sub Category</th>
                                 <th>Pack</th>
                                 <th>Qty</th>
-                                <th>MRP</th>
                                 <th>Unit Value</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
@@ -93,65 +92,13 @@
                             </tr>
                         </thead>
                         <tbody id="formBody">
-                            {{-- <tr>
-                                <td id="row" class="row_id d-none">1</td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name1">
-                                        <option value="">Choose Product</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="category" id="category1" disabled />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="subCategory" id="subCategory1" disabled />
-                                    </div>
-                                </td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control" name="pack[]" id="pack1">
-                                        <option value="">Choose Pack</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="qty" id="qty1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp1">
-                                        <option value="">Choose MRP</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="number" class="form-control" name="unit_value[]" id="unit_value1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="discount[]" id="discount1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control totalAmount" value="0" name="totalAmount[]" id="totalAmount1" readonly />
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="delete-icon btn btn-danger text-white p-2 px-1" onclick="deleteRow(this)">
-                                        <i class="fas fa-trash"></i>
-                                    </span>
-                                </td>
-                            </tr> --}}
+                            
                         </tbody>
                     </table>
                 </div>
 
-                <button type="button" name="add_row" id="add_row" class="btn btn-sm btn-info mb-3">
-                    Add More
+                <button type="button" name="add_row" id="add_row" class="btn btn-sm btn-secondary mb-3  float-right ml-3">
+                    Add New Row
                 </button>
 
                 <div class="form-group text-right">
@@ -166,35 +113,32 @@
         </div>
     </div>
     
-    <!-- ADD STAFF PHONE NUMBER  -->
-    <div class="modal fade" id="addStaffNumber" tabindex="-1" role="dialog" aria-labelledby="addStaffNumberLabel"
-        aria-hidden="true">
-        <div class="modal-dialog container modal-lg" role="document">
+    <!-- ADD CUSTOMER PHONE NUMBER  -->
+    <div class="modal fade" id="addCustomer" tabindex="-1" role="dialog" aria-labelledby="addCustomerLabel" aria-hidden="true">
+        <div class="modal-dialog container" role="document">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                    <h5 class="modal-title" id="addStaffNumberLabel">Add Customer Number</h5>
-
+                    <h5 class="modal-title" id="addCustomerLabel">Add Customer</h5>
                 </div>
                 <div class="modal-body">
-                    <form id="addCustomer" class="container d-flex align-items-center justify-content-between flex-wrap">
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Name</label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter Customer Name" required>
+                    <form id="addCustomerForm" class="container">
+                        <div class="form-group">
+                            <label for="name">Customer Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Email</label>
-                            <input type="email" class="form-control" id="customer_mail" name="customer_mail" placeholder="Enter Customer Email" required>
+                        <div class="form-group">
+                            <label for="mail">Customer Mail</label>
+                            <input type="email" class="form-control" id="mail" name="mail" required>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Phone Number</label>
-                            <input type="mobile" class="form-control" id="customer_phone" name="customer_phone" placeholder="Enter Customer Number" required>
+                        <div class="form-group">
+                            <label for="phone">Customer Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
                         </div>
                         <div class="form-group d-none">
                             <label>Status:</label>
                             <div class="form-group d-flex justify-content-start align-items-center">
-
                                 <div class="form-check mx-3">
-                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1" checked>
                                     <label class="form-check-label" for="statusActive">Active</label>
                                 </div>
                                 <div class="form-check">
@@ -203,9 +147,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
-                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addCustomerFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -213,39 +157,36 @@
         </div>
     </div>
 
-    <!-- ADD DOCTOR NUMBER  -->
-    <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel"
-        aria-hidden="true">
-        <div class="modal-dialog container modal-lg" role="document">
+    <!-- ADD DOCTOR MODAL -->
+    <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel" aria-hidden="true">
+        <div class="modal-dialog container" role="document">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
                     <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
-
                 </div>
                 <div class="modal-body">
-                    <form id="addDoctor" action="{{url('/brands')}}" method="POST" class="container d-flex align-items-center justify-content-between flex-wrap">
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Name</label>
-                            <input type="text" class="form-control" id="doctor_name" name="doctor_name" placeholder="Enter Doctor Name" required>
+                    <form id="addDoctorForm" class="container">
+                        <div class="form-group">
+                            <label for="name">Doctor Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Email</label>
-                            <input type="email" class="form-control" id="doctor_mail" name="doctor_mail" placeholder="Enter Doctor Name" required>
+                        <div class="form-group">
+                            <label for="mail">Doctor Mail</label>
+                            <input type="email" class="form-control" id="mail" name="mail" required>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Phone Number</label>
-                            <input type="mobile" class="form-control" id="doctor_phone" name="doctor_phone" placeholder="Enter Doctor Name" required>
+                        <div class="form-group">
+                            <label for="phone">Doctor Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
                         </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Degree</label>
-                            <input type="text" class="form-control" id="doctor_degree" name="doctor_degree" placeholder="Enter Doctor Name" required>
+                        <div class="form-group">
+                            <label for="degree">Doctor Degree</label>
+                            <input type="text" class="form-control" id="degree" name="degree" required>
                         </div>
                         <div class="form-group d-none">
                             <label>Status:</label>
                             <div class="form-group d-flex justify-content-start align-items-center">
-
                                 <div class="form-check mx-3">
-                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
+                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1" checked>
                                     <label class="form-check-label" for="statusActive">Active</label>
                                 </div>
                                 <div class="form-check">
@@ -254,9 +195,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
-                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
+                        <div class="save-button d-flex align-items-center justify-content-center">
+                            <button type="submit" id="addDoctorFormBtn" class="btn btn-success mx-2">Save</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -273,8 +214,6 @@
                 customerData(this.value)
             });
 
-            
-
             $(document).on('change', '.product', function () {
                 ajaxGetData(`/products?id=${this.value}`, (res)=>{
                     console.log(res, "res");
@@ -290,16 +229,87 @@
                 addNewRow(count)
             })
 
+            // CREATING BILL
             $(document).on('click', '#submitBilling', function () {
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
 
                     console.log("Response: ", response);
+                    Swal.fire({
+                        title: "Customer Billing !",
+                        icon: "success",
+                        text: "Customer Billing Added Successfully.",
+                    }).then((response)=>{
+                        window.location.href = "/store/customer/billing";
+                    });
+
                 })
-            })
-           
-        });
+            })       
+
+            // ADDING CUSTOMER 
+            $('#addCustomer').on('submit', function(event) {
+                event.preventDefault();
+
+                $.ajax({
+                    url: '/api/customer', 
+                    type: 'POST',
+                    data: {
+                        name: $('#name').val(),
+                        mail: $('#mail').val(),
+                        phone: $('#phone').val(),
+                        status: $('input[name="status"]:checked').val(),
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') 
+                    },
+                    success: function(response) {
+                        customerData();
+                        Swal.fire({
+                            title: "Customer !",
+                            icon: "success",
+                            text: "Customer Added Successfully.",
+                        });
+                        $('#addCustomer').modal('hide');
+                    },
+                    error: function(xhr) {
+                        alert('An error occurred: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // ADD DOCTOR 
+            $('#addDoctorForm').on('submit', function(event) {
+                event.preventDefault();
+
+                $.ajax({
+                    url: '/api/doctor', 
+                    type: 'POST',
+                    data: {
+                        name: $('#name').val(),
+                        mail: $('#mail').val(),
+                        phone: $('#phone').val(),
+                        degree: $('#degree').val(),
+                        status: $('input[name="status"]:checked').val(),
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') 
+                    },
+                    success: function(response) {
+                        doctorData();
+                        Swal.fire({
+                            title: "Doctor !",
+                            icon: "success",
+                            text: "Doctor Added Successfully.",
+                        });
+                        $('#addDoctor').modal('hide');
+                    },
+                    error: function(xhr) {
+                        alert('An error occurred: ' + xhr.responseText);
+                    }
+                });
+            });
+        });  
 
         function customerData(id) { 
             if (id) {
@@ -374,56 +384,51 @@
 
         function addNewRow(id) {
             productData();
-
             const newRow = `
                 <tr>
-                    <td id="row" class="row_id d-none product">${id}</td>
-                    <td>
+                    <td id="row" class="table-row-id row_id d-none product">${id}</td>
+                    <td class="table-row">
                         <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name${id}">
                             <option value="">Choose Product</option>
                         </select>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="category" id="category${id}" disabled />
-                        </div>        
+                            <input type="text" class="form-control" name="category" id="category${id}" readonly />
+                        </div>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="subCategory" id="subCategory${id}" disabled />
-                        </div>        
+                            <input type="text" class="form-control" name="subCategory" id="subCategory${id}" readonly />
+                        </div>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}">
                             <option value="">Choose Pack</option>
                         </select>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control" name="qty" id="qty${id}" />
                         </div>
                     </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="mrp[]" id="mrp${id}" />
-                        </div>
-                    </td>
-                    <td>
+                    
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="number" class="form-control" name="unit_value[]" id="unit_value${id}" />
                         </div>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control" name="discount[]" id="discount${id}" />
                         </div>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control totalAmount" value="0" name="totalAmount[]" id="totalAmount${id}" readonly />
                         </div>
                     </td>
-                    <td>
+                    <td class="table-row">
                         <span class="delete-icon btn btn-danger text-white p-2 px-1" onclick="deleteRow(this)">
                             <i class="fas fa-trash"></i>
                         </span>
@@ -431,35 +436,44 @@
                 </tr>
             `;
 
-            document.getElementById("formBody").insertAdjacentHTML('beforeend', newRow);
+            $('table tbody').append(newRow);
 
-            // Add event listeners to the newly added row
-            $(document).on('keyup', `#qty${id}`, function () {
-                updateRowTotal(id);
+            $(`#qty${id}, #unit_value${id}, #discount${id}`).on('input', function() {
+                const row = $(this).closest('tr');
+                updateTotalForRow(row);
+                updateOverallTotal();
             });
-            $(document).on('change', `#mrp${id}`, function () {
-                updateRowTotal(id);
-            });
-            $(document).on('change', `#discount${id}`, function () {
-                updateRowTotal(id);
-            });
-
-            function updateRowTotal(id) {
-                const qty = Number($(`#qty${id}`).val());
-                const mrp = Number($(`#mrp${id} option:selected`).text());
-                const discount = Number($(`#discount${id}`).val());
-                $(`#totalAmount${id}`).val((qty * mrp) - discount);
-                updateTotalAmount();
-            }
         }
 
-        function updateTotalAmount() {
-            let total = 0;
-            $('.totalAmount').each(function() {
-                total += parseFloat($(this).val()) || 0;
-            });
-            $('#totalAmount').text(total);
+        function updateTotalForRow(row) {
+            const qty = parseFloat(row.find('input[name="qty"]').val()) || 0;
+            const unitValue = parseFloat(row.find('input[name="unit_value[]"]').val()) || 0;
+            const discount = parseFloat(row.find('input[name="discount[]"]').val()) || 0;
+
+            const totalAmount = (qty * unitValue) - ((qty * unitValue) * discount / 100);
+            row.find('input[name="totalAmount[]"]').val(totalAmount.toFixed(2));
         }
+
+        $(document).on('input', 'input[name="qty"], input[name="unit_value[]"], input[name="discount[]"]', function() {
+            const row = $(this).closest('tr');
+            updateTotalForRow(row);
+            updateOverallTotal();
+        });
+
+        function updateOverallTotal() {
+            let overallTotal = 0;
+            $('input[name="totalAmount[]"]').each(function() {
+                overallTotal += parseFloat($(this).val()) || 0;
+            });
+            $('#totalAmount').text(overallTotal.toFixed(2));
+        }
+
+        $(document).ready(function() {
+            $('tr').each(function() {
+                updateTotalForRow($(this));
+            });
+            updateOverallTotal();
+        });
 
 
         function deleteRow(element) {
@@ -477,7 +491,6 @@
                 const subCategory = row.querySelector(`[name="subCategory"]`).value;
                 const pack = row.querySelector(`[name="pack[]"]`).value;
                 const qty = row.querySelector(`[name="qty"]`).value;
-                const mrp = row.querySelector(`[name="mrp[]"]`).value;
                 const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
                 const discount = row.querySelector(`[name="discount[]"]`).value;
                 const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
@@ -488,26 +501,19 @@
                     subCategory,
                     pack,
                     qty,
-                    mrp,
                     unitValue,
                     discount,
                     totalAmount
                 });
             });
-            // Get today's date
             let today = new Date();
 
-            // Get the day, month, and year
             let day = String(today.getDate()).padStart(2, '0');
-            let month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+            let month = String(today.getMonth() + 1).padStart(2, '0');
             let year = today.getFullYear();
 
-            // Combine them to form the desired format
             let formattedDate = `${day}/${month}/${year}`;
-
-            // console.log(formattedDate);
-
-
+            console.log(formattedDate);
             const payload = {
                 customer_phone: $('#customer_phone').val(),
                 doctor_name: $('#doctor_name').val(),
@@ -515,9 +521,12 @@
                 invoiceNo: $('#invoiceNo').val(),
                 customer_name: $('#customer_name option:selected').text(),
                 total_amt: $('#totalAmount').text(),
-                biilling_date:formattedDate,
+                billing_date:formattedDate,
+                billingType:"Customer Billing",
                 product_billings: products
             };
+
+            console.log(payload);
 
             return payload;
         }

@@ -3,6 +3,23 @@
     padding: 0;
 }
 
+
+::-webkit-scrollbar{
+    width: .3em;
+    height: .2em;
+  }
+   
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    padding: 2px;
+  }
+   
+::-webkit-scrollbar-thumb {
+    background-color: darkgrey;
+    border-radius: 25px;
+    width: 25px !important;
+
+  }
 table{
     z-index: 00000;
 }
@@ -56,4 +73,8 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
 
 body.sidebar-toggled #wrapper #content-wrapper {
     width: 93.5% !important;
+}
+
+.viewBill{
+    border: none !important;
 }

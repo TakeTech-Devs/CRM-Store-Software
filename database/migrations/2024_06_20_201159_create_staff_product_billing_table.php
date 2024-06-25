@@ -16,7 +16,6 @@ return new class extends Migration
             $table->unsignedBigInteger('cb_id');
             $table->string('category');
             $table->string('discount');
-            $table->string('mrp');
             $table->string('pack');
             $table->string('productId');
             $table->string('qty');
