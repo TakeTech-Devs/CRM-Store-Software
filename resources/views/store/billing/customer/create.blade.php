@@ -277,11 +277,13 @@
 
             $(document).on('change', '.product', function () {
                 ajaxGetData(`/products?id=${this.value}`, (res)=>{
-                    console.log(res, "res");
                     categoryData(res?.data[0].category_id, count)
                     subCategoryData(res?.data[0].sub_category_id, count)
-                    packData(null, count)
-                    priceData(null, count)
+                })
+                ajaxGetData(`/purchase/request?id=${this.value}`, (res)=>{
+                    packData(res?.data[0]?.pack_id, count)
+                    priceData(res?.data[0]?.price_id, count)
+                    $(`#qty${count}`).val(res?.data[0]?.qty)
                 })
             })
 
@@ -341,6 +343,7 @@
 
         function categoryData(id, count) {
             ajaxGetData(`/category?id=${id}`, (res)=>{
+                console.log(res, count,"plpl");
                 $(`#category${count}`).val(res?.data[0].category_name)
             })
         }
@@ -355,7 +358,7 @@
             ajaxGetData(`/pack?id=${id}`, (res) =>{
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
-                    $(`#pack${count}`).append('<option value="' + element.id + '">' + element.pack_name + '</option>');
+                    $(`#pack${count}`).append('<option value="' + element.id + ' " selected>' + element.pack_name + '</option>');
                 }
             })
             // ajaxGetData(`/pack?id=${id}`, (res)=>{
@@ -364,10 +367,10 @@
         }
         function priceData(id, count) {
             ajaxGetData(`/price?id=${id}`, (res) =>{
-                console.log(res);
+                console.log(res, "price");
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
-                    $(`#mrp${count}`).append('<option value="' + element.id + '">' + element?.price_name + '</option>');
+                    $(`#mrp${count}`).append('<option value="' + element.id + '" selected>' + element?.price_name + '</option>');
                 }
             })
         }
@@ -404,9 +407,10 @@
                         </div>
                     </td>
                     <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="mrp[]" id="mrp${id}" />
-                        </div>
+                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}">
+                            <option value="">Choose Price</option>
+                        </select>
+                     
                     </td>
                     <td>
                         <div class="form-group d-flex align-items-center">
@@ -509,6 +513,7 @@
 
 
             const payload = {
+                billingType: "customer",
                 customer_phone: $('#customer_phone').val(),
                 doctor_name: $('#doctor_name').val(),
                 paymentType: $('#paymentType').val(),

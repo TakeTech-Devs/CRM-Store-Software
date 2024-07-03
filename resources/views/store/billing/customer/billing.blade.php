@@ -110,7 +110,7 @@
                 </div>
             </div> 
             <div class="totalAmount">
-                <strong>Total Amount: 255000/-</strong>
+                <strong>Total Amount: <span id= "total">255000/- </span></strong>
             </div>
         </div>
         
@@ -127,18 +127,8 @@
                         <th class="text-dark">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                   <tr>
-                    <td>1</td>
-                    <td>#abcd</td>
-                    <td>Test</td>
-                    <td>20-03-2024</td>
-                    <td>Cash</td>
-                    <td>1500</td>
-                    <td>
-                        <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
-                    </td>
-                   </tr> 
+                <tbody id="billing">
+                 
                     
                 </tbody>
             </table>   
@@ -229,5 +219,44 @@
             </div>
         </div>
     </div>
+
+    <script>
+        
+        $(document).ready(function () {
+            apiBillingList()
+        });
+        function apiBillingList(){
+            ajaxGetData(`/api/customer/billing/list`, (res)=>{
+                billingList(res)
+            })
+        }
+        function billingList(response){
+            
+            let sum = 0
+            console.log(response, "res");
+            $('#billing').html("")
+            for (let index = 0; index < response?.data?.length; index++) {
+                const element = response?.data[index];
+                console.log(element);               
+                sum = Number(sum) + Number(element?.total_amt)
+                $('#billing').append(
+                    `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${element?.invoiceNo}</td>
+                            <td>${element?.customer_name}</td>
+                            <td>${element?.biilling_date}</td>
+                            <td>${element?.paymentType}</td>
+                            <td>${element?.total_amt}</td>
+                            <td>
+                                <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
+                            </td>
+                       </tr> 
+                    `
+                )
+            }
+            $('#total').html(`${sum}/-`)
+        }
+    </script>
 @endsection
                     
