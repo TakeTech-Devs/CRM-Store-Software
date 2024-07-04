@@ -59,6 +59,23 @@ class DataController extends Controller
         }
         
     }
+    public function purchase_bill(){
+        try {
+            $id = request()->id ?? null;
+            $dataQuery =  DB::table('purchase_request');
+            if ($id) {
+                $dataQuery->where('product_id', $id);
+            }
+            $data = $dataQuery->get();
+            return response()->json([
+                'status' => 200,
+                'data' => $data
+            ], 200);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
     public function product_data(){
         try {
             $id = request()->id ?? null;
@@ -129,11 +146,11 @@ class DataController extends Controller
     }
     public function pack_data(){
         try {
-            // $id = request()->id ?? null;
+            $id = request()->id ?? null;
             $dataQuery =  DB::table('pack');
-            // if ($id) {
-            //     $dataQuery->where('id', $id);
-            // }
+            if ($id) {
+                $dataQuery->where('id', $id);
+            }
             $data = $dataQuery->get();
             return response()->json([
                 'status' => 200,
@@ -146,11 +163,11 @@ class DataController extends Controller
     }
     public function price_data(){
         try {
-            // $id = request()->id ?? null;
+            $id = request()->id ?? null;
             $dataQuery =  DB::table('price');
-            // if ($id) {
-            //     $dataQuery->where('id', $id);
-            // }
+            if ($id) {
+                $dataQuery->where('id', $id);
+            }
             $data = $dataQuery->get();
             return response()->json([
                 'status' => 200,
