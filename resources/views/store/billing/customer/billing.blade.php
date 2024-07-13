@@ -68,14 +68,14 @@
                         <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                     </div>
                     <div class="form-group" style="margin-top: 1.85rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn">Find</button>
+                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
                     </div>
                 </div>
                 <div class="d-flex align-items-center justify-content-around">
                     <form class="d-flex align-items-center justify-content-between">
                         <div class="form-group d-flex align-items-center justify-content-center mx-3">
                             <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <input type="text" class="form-control" id="search" placeholder="Search Billing No.">
+                            <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
                         </div>  
                     </form>   
                 </div>
@@ -85,14 +85,14 @@
             <div class="d-flex align-items-center justify-content-center">
                 <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
                     <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                    <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showEntries" onchange="updatePagination()">
-                        <option>10</option>
+                    <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries" onchange="updatePagination()">
+                        <option selected >10</option>
                         <option>25</option>
                         <option>50</option>
                         <option>100</option>
                     </select>
                 </div>
-                <div class="download-buttons" style="margin-left:25px !important;">
+                {{-- <div class="download-buttons" style="margin-left:25px !important;">
                     <div class="download-options d-flex align-items-baseline justify-content-between">
                         
                         
@@ -107,10 +107,10 @@
                             <i class="fas fa-file-pdf"></i>
                         </button>
                     </div>
-                </div>
+                </div> --}}
             </div> 
             <div class="totalAmount">
-                <strong>Total Amount: <span id= "total">255000/- </span></strong>
+                <strong>Total Amount: <span id= "total">0/- </span></strong>
             </div>
         </div>
         
@@ -221,13 +221,43 @@
     </div>
 
     <script>
-        
         $(document).ready(function () {
-            apiBillingList()
+            let page = 1;
+            let limit = $('#showbillingEntries').val() ?? ""
+            let search = $('#searchBillingNumber').val() ?? ""
+            let start_date = $('#start_date_input').val() ?? ""
+            let end_date = $('#end_date_input').val() ?? ""
+            apiBillingList(page, limit, search, start_date, end_date)
+            $(document).on('click', '.page-item', function() {
+                if (!$(this).hasClass('disabled')) {
+                    if ($(this).text().trim() === 'Previous') {
+                        page = Number($('.page-item.active .page-link').text()) - 1;
+                    } else if ($(this).text().trim() === 'Next') {
+                        page = Number($('.page-item.active .page-link').text()) + 1;
+                    } else {
+                        page = $(this).find('.page-link').text();
+                    }
+                    apiBillingList(page, limit)
+                }
+            });
+
+            $(document).on('keyup', '#searchBillingNumber', function () {
+                search = $('#searchBillingNumber').val()
+                apiBillingList(page, limit, search, start_date, end_date)
+            })
+
+            $(document).on('click', '#filterBilling', function(){
+                start_date = $('#start_date_input').val() ?? ""
+                end_date = $('#end_date_input').val() ?? ""
+
+                apiBillingList(page, limit, search, start_date, end_date);
+            })
+
         });
-        function apiBillingList(){
-            ajaxGetData(`/api/customer/billing/list`, (res)=>{
+        function apiBillingList(page, limit, search, start_date, end_date){
+            ajaxGetData(`/api/customer/billing/list?page=${page}&limit=${limit}&search=${search}&start_date=${start_date}&end_date=${end_date}`, (res)=>{
                 billingList(res)
+                pagination(page, res?.data)
             })
         }
         function billingList(response){
@@ -235,8 +265,8 @@
             let sum = 0
             console.log(response, "res");
             $('#billing').html("")
-            for (let index = 0; index < response?.data?.length; index++) {
-                const element = response?.data[index];
+            for (let index = 0; index < response?.data?.data?.length; index++) {
+                const element = response?.data?.data[index];
                 console.log(element);               
                 sum = Number(sum) + Number(element?.total_amt)
                 $('#billing').append(
@@ -257,6 +287,8 @@
             }
             $('#total').html(`${sum}/-`)
         }
+
+        
     </script>
 @endsection
                     

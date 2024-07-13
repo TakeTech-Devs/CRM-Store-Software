@@ -86,7 +86,6 @@
                                 <th>Pack</th>
                                 <th>Qty</th>
                                 <th>MRP</th>
-                                <th>Unit Value</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
                                 <th>Action</th>
@@ -412,11 +411,7 @@
                         </select>
                      
                     </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="number" class="form-control" name="unit_value[]" id="unit_value${id}" />
-                        </div>
-                    </td>
+                
                     <td>
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control" name="discount[]" id="discount${id}" />
@@ -482,7 +477,7 @@
                 const pack = row.querySelector(`[name="pack[]"]`).value;
                 const qty = row.querySelector(`[name="qty"]`).value;
                 const mrp = row.querySelector(`[name="mrp[]"]`).value;
-                const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
+                // const unitValue = row.querySelector(`[name="unit_value[]"]`)?.value ?? 0;
                 const discount = row.querySelector(`[name="discount[]"]`).value;
                 const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
 
@@ -493,7 +488,7 @@
                     pack,
                     qty,
                     mrp,
-                    unitValue,
+                    unitValue:0,
                     discount,
                     totalAmount
                 });
@@ -505,13 +500,7 @@
             let day = String(today.getDate()).padStart(2, '0');
             let month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
             let year = today.getFullYear();
-
-            // Combine them to form the desired format
-            let formattedDate = `${day}/${month}/${year}`;
-
-            // console.log(formattedDate);
-
-
+            let formattedDate = `${year}-${month}-${day}`;
             const payload = {
                 billingType: "customer",
                 customer_phone: $('#customer_phone').val(),

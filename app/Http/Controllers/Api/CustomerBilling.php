@@ -86,17 +86,17 @@ class CustomerBilling extends Controller
                 $billing_details = $query->get();
             }
 
-            if ($billing_details->count() > 0) {
+            // if ($billing_details->count() > 0) {
                 return response()->json([
                     'status' => 200,
                     'data' => $billing_details
                 ], 200);
-            } else {
-                return response()->json([
-                    'status' => 404,
-                    'data' => 'No records found'
-                ], 404);
-            }
+            // } else {
+            //     return response()->json([
+            //         'status' => 404,
+            //         'data' => 'No records found'
+            //     ], 404);
+            // }
         } catch (\Throwable $th) {
             throw $th;
         }
