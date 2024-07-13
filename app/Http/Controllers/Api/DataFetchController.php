@@ -447,4 +447,15 @@ class DataFetchController extends Controller
         return response()->json(['status' => 'success', 'data' => $backupFile]);
 
     }
+
+    public function purchase_request_all(){
+        try {
+            $purchase_request = DB::table('purchase_request')->get();
+
+        return response()->json(['status' => 'success', 'purchase_request' => $purchase_request]);
+
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
 }
