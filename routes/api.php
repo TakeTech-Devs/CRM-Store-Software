@@ -19,3 +19,4 @@ Route::get('/store/backup', [DataFetchController:: class , 'backupSQL']);
 Route::get('/backups', [DataFetchController:: class , 'getBackup']);
 Route::get('/backup/{id}', [DataFetchController::class, 'deleteBackup']);
 
+Route::get('/purchase_request', [DataFetchController::class, 'purchase_request_all']);

@@ -295,7 +295,7 @@
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
-
+                    window.location.href = '/customer/billing';
                     console.log("Response: ", response);
                 })
             })
@@ -332,17 +332,26 @@
         }
 
         function productData() { 
-            ajaxGetData(`/products`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $('.product').append('<option value="' + element.id + '">' + element.product_name + '</option>');
+            ajaxGetData(`/api/purchase_request`, (res) =>{
+                for (let index = 0; index < res?.purchase_request?.length; index++) {
+                    const element = res?.purchase_request[index];
+                    productData_fetch(element?.product_id, element?.pack_id,  count)
+                   
                 }
             })
         }
-
+        function productData_fetch(id, pack_id, count) {
+            let pack_name;
+            ajaxGetData(`/pack?id=${pack_id}`, (res) =>{
+                pack_name = res?.data[0].pack_name
+            })
+            ajaxGetData(`/products?id=${id}`, (res)=>{
+                // $('.product').append('<option value="' + res?.data[0].id + '">' + res?.data[0].product_name '-' pack_name + '</option>');
+                $('.product').append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
+            })
+        }
         function categoryData(id, count) {
             ajaxGetData(`/category?id=${id}`, (res)=>{
-                console.log(res, count,"plpl");
                 $(`#category${count}`).val(res?.data[0].category_name)
             })
         }
@@ -360,13 +369,9 @@
                     $(`#pack${count}`).append('<option value="' + element.id + ' " selected>' + element.pack_name + '</option>');
                 }
             })
-            // ajaxGetData(`/pack?id=${id}`, (res)=>{
-            //     $(`#pack${count}`).val(res?.data[0].name)
-            // })
         }
         function priceData(id, count) {
             ajaxGetData(`/price?id=${id}`, (res) =>{
-                console.log(res, "price");
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
                     $(`#mrp${count}`).append('<option value="' + element.id + '" selected>' + element?.price_name + '</option>');
@@ -396,7 +401,7 @@
                         </div>        
                     </td>
                     <td>
-                        <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}">
+                        <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}" disabled>
                             <option value="">Choose Pack</option>
                         </select>
                     </td>
@@ -406,7 +411,7 @@
                         </div>
                     </td>
                     <td>
-                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}">
+                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}" disabled>
                             <option value="">Choose Price</option>
                         </select>
                      
