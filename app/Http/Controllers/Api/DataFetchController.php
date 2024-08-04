@@ -26,6 +26,8 @@ class DataFetchController extends Controller
             $currentPurchaseRequestId = DB::table('purchase_request')->max('id');
             $currentCustomerId = DB::table('customer')->max('id');
             $currentDoctorId = DB::table('doctor')->max('id');
+            $currentStoreId = DB::table('store')->max('id');
+
     
             // Fetch remote data and update or insert into the local database
             $remoteDatabrand = DB::connection('remote_mysql')->table('brand')->get();
@@ -179,37 +181,39 @@ class DataFetchController extends Controller
                     ]);
                 }
 
-
-                $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $getStoreAssign->id)->get();
-                // dd($remoteDatapurchase_request);
-                foreach ($remoteDatapurchase_request as $value) {
-                    $getStoreAssign = DB::table('purchase_request')->where([
-                        'store_assign_id' => $value->store_assign_id,
-                        'brand_id' => $value->brand_id,
-                        'product_id' => $value->product_id
-                    ])->first();
-                    if ($getStoreAssign) {
-                        DB::table('purchase_request')->where('id', $getStoreAssign->id)->update([
-                            'brand_id' => $value->brand_id,
-                            'product_id' => $value->product_id,
-                            'pack_id' => $value->pack_id,
-                            'price_id' => $value->price_id,
-                            'qty' => $value->qty,
-                            'qty_left' => $value->qty_left,
-                            'exp_date' => $value->exp_date,
-                        ]);
-                    } else {
-                        DB::table('purchase_request')->insert([
-                            'id' => ++$currentPurchaseRequestId,
+                // dd($getStoreAssign);
+                if ($getStoreAssign) {
+                    $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $getStoreAssign->id)->get();
+                    // dd($remoteDatapurchase_request);
+                    foreach ($remoteDatapurchase_request as $value) {
+                        $getStoreAssign = DB::table('purchase_request')->where([
                             'store_assign_id' => $value->store_assign_id,
                             'brand_id' => $value->brand_id,
-                            'product_id' => $value->product_id,
-                            'pack_id' => $value->pack_id,
-                            'price_id' => $value->price_id,
-                            'qty' => $value->qty,
-                            'qty_left' => $value->qty_left,
-                            'exp_date' => $value->exp_date,
-                        ]);
+                            'product_id' => $value->product_id
+                        ])->first();
+                        if ($getStoreAssign) {
+                            DB::table('purchase_request')->where('id', $getStoreAssign->id)->update([
+                                'brand_id' => $value->brand_id,
+                                'product_id' => $value->product_id,
+                                'pack_id' => $value->pack_id,
+                                'price_id' => $value->price_id,
+                                'qty' => $value->qty,
+                                'qty_left' => $value->qty_left,
+                                'exp_date' => $value->exp_date,
+                            ]);
+                        } else {
+                            DB::table('purchase_request')->insert([
+                                'id' => ++$currentPurchaseRequestId,
+                                'store_assign_id' => $value->store_assign_id,
+                                'brand_id' => $value->brand_id,
+                                'product_id' => $value->product_id,
+                                'pack_id' => $value->pack_id,
+                                'price_id' => $value->price_id,
+                                'qty' => $value->qty,
+                                'qty_left' => $value->qty_left,
+                                'exp_date' => $value->exp_date,
+                            ]);
+                        }
                     }
                 }
             }
@@ -262,7 +266,7 @@ class DataFetchController extends Controller
                     ]);
                 } else {
                     DB::table('doctor')->insert([
-                        'id' => ++$currentDoctorId,
+                        'id' => ++$currentStoreId,
                         'name' => $value->name,
                         'mail' => $value->mail,
                         'phone' => $value->phone,
@@ -272,6 +276,67 @@ class DataFetchController extends Controller
                 }
             }
     
+            $remoteDataStore = DB::connection('remote_mysql')->table('store')->get();
+            foreach ($remoteDataStore as $value) {
+                $getStore = DB::table('store')->where([
+                    'name' =>  $value->name,
+                ])->first();
+                if ($getStore) {
+                    if ($value->store_meta_id == $storeId) {
+                        DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
+                            'id' => ++$currentDoctorId,
+                            'name' =>  $value->name,
+                            'store_address' =>$value->store_address,
+                            'store_mail' =>$value->store_mail,
+                            'store_start_date' =>$value->store_start_date,
+                            'store_meta_id' =>$value->store_meta_id,
+                            'store_pass_key' =>$value->store_pass_key,
+                            'store_status' =>$value->store_status,
+                            'store_verify_status' =>0
+                        ]);
+                    }else{
+
+                        DB::table('store')->where('id', $getStore->id)->update([
+                            'name' =>  $value->name,
+                            'store_address' =>'',
+                            'store_mail' =>'',
+                            'store_start_date' =>'',
+                            'store_meta_id' =>'',
+                            'store_pass_key' =>'',
+                            'store_status' =>'',
+                            'store_verify_status' =>0
+                        ]);
+                    }
+                } else {
+                    if ($value->store_meta_id == $storeId) {
+                        DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
+                            'id' => ++$currentDoctorId,
+                            'name' =>  $value->name,
+                            'store_address' =>$value->store_address,
+                            'store_mail' =>$value->store_mail,
+                            'store_start_date' =>$value->store_start_date,
+                            'store_meta_id' =>$value->store_meta_id,
+                            'store_pass_key' =>$value->store_pass_key,
+                            'store_status' =>$value->store_status,
+                            'store_verify_status' =>$value->store_verify_status
+                        ]);
+                    }else{
+
+                        DB::table('store')->insert([
+                            'id' => ++$currentDoctorId,
+                            'name' =>  $value->name,
+                            'store_address' =>'',
+                            'store_mail' =>'',
+                            'store_start_date' =>'',
+                            'store_meta_id' =>'',
+                            'store_pass_key' =>'',
+                            'store_status' =>'',
+                            'store_verify_status' =>0
+                        ]);
+                    }
+                }
+            }
+
             DB::table('sync_history')->insert([
                 'sync_date' => date('Y-m-d'),
                 'sync_status' => 'Succeed'
