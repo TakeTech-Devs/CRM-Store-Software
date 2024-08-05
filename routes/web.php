@@ -65,6 +65,7 @@ Route::get('/customers', [DataController:: class , 'customer_data']);
 Route::get('/staffs', [DataController:: class , 'staff_data']);
 Route::get('/doctors', [DataController:: class , 'doctor_data']);
 Route::get('/products', [DataController:: class , 'product_data']);
+Route::get('/purchase/request', [DataController:: class , 'purchase_bill']);
 Route::get('/category', [DataController:: class , 'category_data']);
 Route::get('/sub-category', [DataController:: class , 'sub_category_data']);
 Route::get('/pack', [DataController:: class , 'pack_data']);

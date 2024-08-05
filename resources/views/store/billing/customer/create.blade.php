@@ -85,7 +85,11 @@
                                 <th>Sub Category</th>
                                 <th>Pack</th>
                                 <th>Qty</th>
+<<<<<<< HEAD
                                 <th>Unit Value</th>
+=======
+                                <th>MRP</th>
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                                 <th>Discount</th>
                                 <th>Total Amount</th>
                                 <th>Action</th>
@@ -216,11 +220,13 @@
 
             $(document).on('change', '.product', function () {
                 ajaxGetData(`/products?id=${this.value}`, (res)=>{
-                    console.log(res, "res");
                     categoryData(res?.data[0].category_id, count)
                     subCategoryData(res?.data[0].sub_category_id, count)
-                    packData(null, count)
-                    priceData(null, count)
+                })
+                ajaxGetData(`/purchase/request?id=${this.value}`, (res)=>{
+                    packData(res?.data[0]?.pack_id, count)
+                    priceData(res?.data[0]?.price_id, count)
+                    $(`#qty${count}`).val(res?.data[0]?.qty)
                 })
             })
 
@@ -234,7 +240,7 @@
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
-
+                    window.location.href = '/customer/billing';
                     console.log("Response: ", response);
                     Swal.fire({
                         title: "Customer Billing !",
@@ -341,14 +347,24 @@
         }
 
         function productData() { 
-            ajaxGetData(`/products`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $('.product').append('<option value="' + element.id + '">' + element.product_name + '</option>');
+            ajaxGetData(`/api/purchase_request`, (res) =>{
+                for (let index = 0; index < res?.purchase_request?.length; index++) {
+                    const element = res?.purchase_request[index];
+                    productData_fetch(element?.product_id, element?.pack_id,  count)
+                   
                 }
             })
         }
-
+        function productData_fetch(id, pack_id, count) {
+            let pack_name;
+            ajaxGetData(`/pack?id=${pack_id}`, (res) =>{
+                pack_name = res?.data[0].pack_name
+            })
+            ajaxGetData(`/products?id=${id}`, (res)=>{
+                // $('.product').append('<option value="' + res?.data[0].id + '">' + res?.data[0].product_name '-' pack_name + '</option>');
+                $('.product').append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
+            })
+        }
         function categoryData(id, count) {
             ajaxGetData(`/category?id=${id}`, (res)=>{
                 $(`#category${count}`).val(res?.data[0].category_name)
@@ -365,19 +381,15 @@
             ajaxGetData(`/pack?id=${id}`, (res) =>{
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
-                    $(`#pack${count}`).append('<option value="' + element.id + '">' + element.pack_name + '</option>');
+                    $(`#pack${count}`).append('<option value="' + element.id + ' " selected>' + element.pack_name + '</option>');
                 }
             })
-            // ajaxGetData(`/pack?id=${id}`, (res)=>{
-            //     $(`#pack${count}`).val(res?.data[0].name)
-            // })
         }
         function priceData(id, count) {
             ajaxGetData(`/price?id=${id}`, (res) =>{
-                console.log(res);
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
-                    $(`#mrp${count}`).append('<option value="' + element.id + '">' + element?.price_name + '</option>');
+                    $(`#mrp${count}`).append('<option value="' + element.id + '" selected>' + element?.price_name + '</option>');
                 }
             })
         }
@@ -402,8 +414,13 @@
                             <input type="text" class="form-control" name="subCategory" id="subCategory${id}" readonly />
                         </div>
                     </td>
+<<<<<<< HEAD
                     <td class="table-row">
                         <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}">
+=======
+                    <td>
+                        <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}" disabled>
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                             <option value="">Choose Pack</option>
                         </select>
                     </td>
@@ -412,6 +429,7 @@
                             <input type="text" class="form-control" name="qty" id="qty${id}" />
                         </div>
                     </td>
+<<<<<<< HEAD
                     
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
@@ -419,6 +437,16 @@
                         </div>
                     </td>
                     <td class="table-row">
+=======
+                    <td>
+                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}" disabled>
+                            <option value="">Choose Price</option>
+                        </select>
+                     
+                    </td>
+                
+                    <td>
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control" name="discount[]" id="discount${id}" />
                         </div>
@@ -491,7 +519,12 @@
                 const subCategory = row.querySelector(`[name="subCategory"]`).value;
                 const pack = row.querySelector(`[name="pack[]"]`).value;
                 const qty = row.querySelector(`[name="qty"]`).value;
+<<<<<<< HEAD
                 const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
+=======
+                const mrp = row.querySelector(`[name="mrp[]"]`).value;
+                // const unitValue = row.querySelector(`[name="unit_value[]"]`)?.value ?? 0;
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                 const discount = row.querySelector(`[name="discount[]"]`).value;
                 const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
 
@@ -501,7 +534,12 @@
                     subCategory,
                     pack,
                     qty,
+<<<<<<< HEAD
                     unitValue,
+=======
+                    mrp,
+                    unitValue:0,
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                     discount,
                     totalAmount
                 });
@@ -511,10 +549,15 @@
             let day = String(today.getDate()).padStart(2, '0');
             let month = String(today.getMonth() + 1).padStart(2, '0');
             let year = today.getFullYear();
+<<<<<<< HEAD
 
             let formattedDate = `${day}/${month}/${year}`;
             console.log(formattedDate);
+=======
+            let formattedDate = `${year}-${month}-${day}`;
+>>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
             const payload = {
+                billingType: "customer",
                 customer_phone: $('#customer_phone').val(),
                 doctor_name: $('#doctor_name').val(),
                 paymentType: $('#paymentType').val(),

@@ -69,7 +69,6 @@
         });
 
         $(document).on('click', '#del', function(){
-            console.log()
             ajaxGetData(`/api/backup/${$(this).val()}`, (response)=>{
                 alert("deleted");
                 list()
@@ -77,13 +76,12 @@
         })
 
         $(document).on('click', '#gen_back_up', function(){
-            console.log()
             ajaxGetData(`/api/store/backup`, (response)=>{
                 list()
             })
         })
-        
-
+        // 4357b2fb-7fbd-4123-8ff7-dc48b4032de7
+        // $2y$12$ZIBkZ4iOb/5/vDOk3Bc1Fe1LrlmnpgUr0535/751nk3Mc8JAbwkGC
     });
 
     function list(){
@@ -97,7 +95,7 @@
                                 <td>${element?.file_name}</td>
                                 <td>${element?.date}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary" id="download" data-file-url="${element?.file_path}" >Downlaod</button>
+                                    <button class="btn btn-sm btn-danger" id="download" data-file-url="${element?.file_path}" >Downlaod</button>
                                     <button class="btn btn-sm btn-warning" id="del" value = ${element?.id}>Delete</button>
                                 </td>
                             </tr>
@@ -106,11 +104,5 @@
         })
     }
 </script>
-
-    <!-- Include Bootstrap JS and Popper.js -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
 @endsection
                     
