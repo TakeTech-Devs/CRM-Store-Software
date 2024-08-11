@@ -67,24 +67,18 @@
                         <label for="end_date_input">End Date</label>
                         <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                     </div>
-<<<<<<< HEAD
-                    <div class="form-group">
-                        <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button>
-=======
+                    <!-- <div class="form-group"> -->
+                        <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
                     <div class="form-group" style="margin-top: 1.85rem !important;">
                         <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
->>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                     </div>
                 </div>
                 <div class="d-flex align-items-center justify-content-around">
                     <form class="d-flex align-items-center justify-content-between">
                         <div class="form-group d-flex align-items-center justify-content-center mx-3">
                             <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-<<<<<<< HEAD
-                            <input type="text" class="form-control" id="search" placeholder="Search Bill No.">
-=======
+                            <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
                             <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
->>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                         </div>  
                     </form>   
                 </div>
@@ -118,13 +112,10 @@
                     </div>
                 </div> --}}
             </div> 
-<<<<<<< HEAD
             <div class="grandTotalAmount text-right mt-3">
                 <strong>Total Amount: 0.00/-</strong>
-=======
             <div class="totalAmount">
                 <strong>Total Amount: <span id= "total">0/- </span></strong>
->>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
             </div>
         </div>
         
@@ -141,13 +132,9 @@
                         <th class="text-dark">Actions</th>
                     </tr>
                 </thead>
-<<<<<<< HEAD
-                <tbody>
                    
-=======
                 <tbody id="billing">
                  
->>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
                     
                 </tbody>
             </table>   
@@ -239,7 +226,6 @@
         </div>
     </div>
 
-<<<<<<< HEAD
 
     <script>
         $(document).ready(function() {
@@ -370,7 +356,6 @@
     
 
 
-=======
     <script>
         $(document).ready(function () {
             let page = 1;
@@ -441,6 +426,5 @@
 
         
     </script>
->>>>>>> 0c1659c2265b5027aec42d182d9b76fb84bbc4f7
 @endsection
                     

@@ -164,11 +164,12 @@ class DataFetchController extends Controller
             $remoteDataStore = DB::connection('remote_mysql')->table('store')->where('store_meta_id', $store_meta_id)->first();
     
             $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')->where('store_id', $remoteDataStore->id)->get();
+            // dd($remoteDatastore_assign);
             foreach ($remoteDatastore_assign as $value) {
                 $getStoreAssign = DB::table('store_assign')->where(['assign_bill_number' => $value->assign_bill_number])->first();
                 if ($getStoreAssign) {
                     DB::table('store_assign')->where('id', $getStoreAssign->id)->update([
-                        'store_id' => $value->store_id,
+                        // 'store_id' => $value->store_id,
                         'assign_bill_number' => $value->assign_bill_number,
                         'total' => $value->total
                     ]);
@@ -181,9 +182,9 @@ class DataFetchController extends Controller
                     ]);
                 }
 
-                // dd($getStoreAssign);
-                if ($getStoreAssign) {
-                    $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $getStoreAssign->id)->get();
+                // dd($getStoreAssign->store_id);
+                if ($value) {
+                    $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $value->purchase_stock_id)->get();
                     // dd($remoteDatapurchase_request);
                     foreach ($remoteDatapurchase_request as $value) {
                         $getStoreAssign = DB::table('purchase_request')->where([
@@ -191,8 +192,10 @@ class DataFetchController extends Controller
                             'brand_id' => $value->brand_id,
                             'product_id' => $value->product_id
                         ])->first();
+                // dd($getStoreAssign);
+
                         if ($getStoreAssign) {
-                            DB::table('purchase_request')->where('id', $getStoreAssign->id)->update([
+                            DB::table('purchase_request')->where('id', $getStoreAssign->store_assign_id)->update([
                                 'brand_id' => $value->brand_id,
                                 'product_id' => $value->product_id,
                                 'pack_id' => $value->pack_id,
@@ -266,7 +269,7 @@ class DataFetchController extends Controller
                     ]);
                 } else {
                     DB::table('doctor')->insert([
-                        'id' => ++$currentStoreId,
+                        'id' => ++$currentDoctorId,
                         'name' => $value->name,
                         'mail' => $value->mail,
                         'phone' => $value->phone,
@@ -284,7 +287,7 @@ class DataFetchController extends Controller
                 if ($getStore) {
                     if ($value->store_meta_id == $storeId) {
                         DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
-                            'id' => ++$currentDoctorId,
+                            // 'id' => ++$currentStoreId,
                             'name' =>  $value->name,
                             'store_address' =>$value->store_address,
                             'store_mail' =>$value->store_mail,
@@ -310,7 +313,7 @@ class DataFetchController extends Controller
                 } else {
                     if ($value->store_meta_id == $storeId) {
                         DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
-                            'id' => ++$currentDoctorId,
+                            // 'id' => ++$currentStoreId,
                             'name' =>  $value->name,
                             'store_address' =>$value->store_address,
                             'store_mail' =>$value->store_mail,
@@ -323,7 +326,7 @@ class DataFetchController extends Controller
                     }else{
 
                         DB::table('store')->insert([
-                            'id' => ++$currentDoctorId,
+                            'id' => ++$currentStoreId,
                             'name' =>  $value->name,
                             'store_address' =>'',
                             'store_mail' =>'',
