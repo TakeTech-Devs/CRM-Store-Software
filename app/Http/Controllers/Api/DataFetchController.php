@@ -166,6 +166,78 @@ class DataFetchController extends Controller
             $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')->where('store_id', $remoteDataStore->id)->get();
             foreach ($remoteDatastore_assign as $value) {
                 $getStoreAssign = DB::table('store_assign')->where(['assign_bill_number' => $value->assign_bill_number])->first();
+                // dd($value)
+                if($value->purchase_stock_id){
+                    $remoteData_purchase_stock = DB::connection('remote_mysql')->table('purchase_stock')->where('id', $value->purchase_stock_id   )->get();
+                    // dd($remoteData_purchase_stock);
+
+
+                    foreach ($remoteData_purchase_stock as $purchase_stock_value){
+                        $get_purchase_stock_value = DB::table('purchase_stock')
+                        ->where([
+                           'id'=>$purchase_stock_value->id
+                        ])
+                        ->first();
+                        // dd($get_purchase_stock_value);
+                        if ($get_purchase_stock_value) {
+                            DB::table('purchase_stock')->where('id', $purchase_stock_value->id)->update([
+                                'sku_date'=>$purchase_stock_value->sku_date,
+                                'sku_id'=>$purchase_stock_value->sku_id,
+                                'supplier_id'=>$purchase_stock_value->supplier_id,
+                                'purchase_bill_number'=>$purchase_stock_value->purchase_bill_number,
+                                'total'=>$purchase_stock_value->total,
+                            ]);
+                        }else{
+                    // dd($purchase_stock_value);
+                            $fff = DB::connection('mysql')->table('purchase_stock')->insertGetId([
+                                'sku_date'=>$purchase_stock_value->sku_date,
+                                'sku_id'=>$purchase_stock_value->sku_id,
+                                'supplier_id'=>$purchase_stock_value->supplier_id,
+                                'purchase_bill_number'=>$purchase_stock_value->purchase_bill_number,
+                                'total'=>$purchase_stock_value->total,
+                            ]);
+                            // dd($fff);
+                        }
+
+                        if ($purchase_stock_value) {
+                            $remoteData_purchase_stock_entry = DB::connection('remote_mysql')->table('purchase_stock_entry')->where('purchase_stock_id', $value->purchase_stock_id)->get();
+
+                          
+
+                            foreach ($remoteData_purchase_stock_entry as $purchase_stock_entry_value) {
+                                $get_purchase_stock_entry = DB::table('purchase_stock_entry')->where('id', $purchase_stock_entry_value->id)->first();
+                                
+                                if ($get_purchase_stock_entry) {
+                                    DB::table('purchase_stock_entry')->where('id', $get_purchase_stock_entry->id)->update([
+                                        'purchase_stock_id'=>$purchase_stock_entry_value->purchase_stock_id,
+                                        'brand_id'=>$purchase_stock_entry_value->brand_id,
+                                        'category_id'=>$purchase_stock_entry_value->category_id,
+                                        'sub_category_id'=>$purchase_stock_entry_value->sub_category_id,
+                                        'product_id'=>$purchase_stock_entry_value->product_id,
+                                        'pack_id'=>$purchase_stock_entry_value->pack_id,
+                                        'price_id'=>$purchase_stock_entry_value->price_id,
+                                        'qty'=>$purchase_stock_entry_value->qty,
+                                        'exp_date'=>$purchase_stock_entry_value->exp_date,
+                                    ]);
+                                }else{
+                                    DB::table('purchase_stock_entry')->insert([
+                                        'purchase_stock_id'=>$fff,
+                                        'brand_id'=>$purchase_stock_entry_value->brand_id,
+                                        'category_id'=>$purchase_stock_entry_value->category_id,
+                                        'sub_category_id'=>$purchase_stock_entry_value->sub_category_id,
+                                        'product_id'=>$purchase_stock_entry_value->product_id,
+                                        'pack_id'=>$purchase_stock_entry_value->pack_id,
+                                        'price_id'=>$purchase_stock_entry_value->price_id,
+                                        'qty'=>$purchase_stock_entry_value->qty,
+                                        'exp_date'=>$purchase_stock_entry_value->exp_date,
+                                    ]);
+                                }
+                            }
+                            
+                        }
+
+                    }
+                }
                 if ($getStoreAssign) {
                     DB::table('store_assign')->where('id', $getStoreAssign->id)->update([
                         'store_id' => $value->store_id,
@@ -181,10 +253,8 @@ class DataFetchController extends Controller
                     ]);
                 }
 
-                // dd($getStoreAssign);
                 if ($getStoreAssign) {
                     $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $getStoreAssign->id)->get();
-                    // dd($remoteDatapurchase_request);
                     foreach ($remoteDatapurchase_request as $value) {
                         $getStoreAssign = DB::table('purchase_request')->where([
                             'store_assign_id' => $value->store_assign_id,
@@ -216,6 +286,8 @@ class DataFetchController extends Controller
                         }
                     }
                 }
+                
+
             }
     
             
@@ -284,7 +356,7 @@ class DataFetchController extends Controller
                 if ($getStore) {
                     if ($value->store_meta_id == $storeId) {
                         DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
-                            'id' => ++$currentDoctorId,
+                            // 'id' => ++$currentDoctorId,
                             'name' =>  $value->name,
                             'store_address' =>$value->store_address,
                             'store_mail' =>$value->store_mail,
@@ -515,7 +587,7 @@ class DataFetchController extends Controller
 
     public function purchase_request_all(){
         try {
-            $purchase_request = DB::table('purchase_request')->get();
+            $purchase_request = DB::table('purchase_stock_entry')->get();
 
         return response()->json(['status' => 'success', 'purchase_request' => $purchase_request]);
 
