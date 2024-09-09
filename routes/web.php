@@ -45,6 +45,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/details', function () {
             return view('store/storeSync/storeDetails');
         });
+        Route::get('/stock/transfer', function () {
+            return view('store/stockTransfer/stockTransferList');
+        });
+        Route::get('/create/stockTransfer', function () {
+            return view('store/stockTransfer/stockTransferCreate');
+        });
         Route::get('/sync/history', function () {
             return view('store/storeSync/storeSyncHist');
         });

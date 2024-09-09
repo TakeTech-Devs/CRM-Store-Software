@@ -264,5 +264,44 @@ class CustomerBilling extends Controller
         ]);
     }
 
+    public function getBillDetails($billId)
+    {
+        try {
+            $bill = DB::table('customer_billing')
+                ->where('id', '=', $billId)
+                ->first();
+
+            if (!$bill) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Bill not found'
+                ], 404);
+            }
+
+            $billItems = DB::table('customer_product_billing')
+                ->where('cb_id', '=', $billId)
+                ->get();
+
+            $customer = DB::table('customer')
+                ->where('id', '=', $bill->id)
+                ->first();
+
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'bill' => $bill,
+                    'items' => $billItems,
+                    'customer' => $customer
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching the bill details',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
     
 }

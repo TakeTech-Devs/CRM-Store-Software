@@ -75,7 +75,7 @@
                 <div id="collapseMyStore" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="{{url('store/details')}}">Store Details</a>
-                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Store Stock Transfer</a>
+                        <a class="collapse-item" href="{{url('store/stock/transfer')}}">Store Stock Transfer</a>
                         <a class="collapse-item" href="{{url('store/sync/history')}}">Store Sync History</a>
                     </div>
                 </div>

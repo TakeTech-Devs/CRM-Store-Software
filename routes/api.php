@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StockerTransferController;
 // })->middleware('auth:sanctum');
 Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
 Route::get('/customer/billing/list', [CustomerBilling:: class , 'listBilling']);
+route::get('/customer/bill/{billId}', [CustomerBilling::class, 'getBillDetails']);
 Route::post('/customer', [CustomerBilling:: class , 'create_customer']);
 Route::get('/customer', [CustomerBilling:: class , 'list_customer']);
 Route::get('customer/bill/filter/', [CustomerBilling::class , 'datefilter']);
@@ -26,6 +27,7 @@ Route::get('/staff/billing/list', [StaffBilling:: class , 'listBilling']);
 Route::post('/staff', [StaffBilling:: class , 'create_staff']);
 Route::get('/staff', [StaffBilling:: class , 'list_staff']);
 Route::get('staff/bill/filter/', [StaffBilling::class , 'datefilter']);
+route::get('/staff/bill/{billId}', [StaffBilling::class, 'getBillDetails']);
 
 Route::get('/get/sync/history', [DataFetchController:: class , 'getSyncHist']);
 Route::get('/store/backup', [DataFetchController:: class , 'backupSQL']);
@@ -33,4 +35,6 @@ Route::get('/backups', [DataFetchController:: class , 'getBackup']);
 Route::get('/backup/{id}', [DataFetchController::class, 'deleteBackup']);
 
 Route::get('/purchase_request', [DataFetchController::class, 'purchase_request_all']);
-Route::post('/store/transfer', [StockerTransferController::class, 'transfer']);
+Route::get('store-transfer', function () {
+    return response()->json(['message' => 'API is working']);
+});

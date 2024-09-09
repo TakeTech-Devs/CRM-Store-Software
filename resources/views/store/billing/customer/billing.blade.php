@@ -38,9 +38,6 @@
             bottom: 25px;
             position: absolute;
         }
-        #printButton{
-            display: none;
-        }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -154,275 +151,337 @@
     </div>
 
     <!-- PRINT MODEL  -->
-    <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-labelledby="viewBillModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
             <div class="modal-content" style="border: none;">
-                <div class="modal-body" style="padding: 25px; width:100%;">
-                    <div style="padding: 1rem; display: flex; align-items:center; justify-content:space-between; margin-bottom:0px;">
-                        <h2 style="color: black; display:inline-block;">Invoice - <span id="printPurchaseBillNo"></span></h2>
+                <div class="modal-body" style="padding: 10px; width:100%;">
+                    <div id="printArea">              
+                        <table class="border p-2 my-2">
+                            <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>        
+                            <div class="col-md-12">
+                                <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                    <div class="left">
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Invoice No: <span class="invoiceNo" style="font-size: 14px !important; font-weight:400;"></span> </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date: <span class="billingDate" style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">GSTIN: <span class="gstin" style="font-size: 14px !important; font-weight:400;">GST123456</span></p>
+                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Customer: <span class="customerName" style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Dr Name: <span class="drName" style="font-size: 14px !important; font-weight:400;"></span></p>
+                                    </div>
+                                    <div class="right">
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL. No. : HL-1046-S</p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Helpline : 8100968101</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div style="float:right; text-align:right;">
-                            <img class="logo" src="{{asset('./assets/img/logo.png')}}" alt="">
-                        </div>
-                    </div>
+                            <div class="product-details text-center m-0 col-md-12">
 
-                    <div style="margin-top: 10px; position:relative; color:dark;">
-                        <table style="width: 35%; border-collapse: collapse;">
-                            <tr>
-                                <th style="padding: 0 0.5rem;">SKU Date - </th>
-                                <td id="printSkuDate" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                            <tr>
-                                <th style="padding: 0 0.5rem;">SKU ID - </th>
-                                <td id="printSkuId" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                            <tr>
-                                <th style="padding: 0 0.5rem;">Supplier Name - </th>
-                                <td id="printSupplierName" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                        </table>
-                        <table style="width: 100%; border-collapse: none; border:none; margin-top: 15px; text-align:center;">
+                                <table class="w-100" id="invoice_table">
+                                    <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                        <tr>
+                                            <th>SNo.</th>
+                                            <th>Desc</th>
+                                            <th>Qty</th>
+                                            <th>Pack</th>
+                                            <th>MRP</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
 
-                            <tr class="border:none">
-                                <th style="padding: 0 0.5rem;">Brand Name</th>
-                                <th style="padding: 0 0.5rem;">Category</th>
-                                <th style="padding: 0 0.5rem;">Sub Category</th>
-                                <th style="padding: 0 0.5rem;">Product</th>
-                                <th style="padding: 0 0.5rem;">Pack</th>
-                                <th style="padding: 0 0.5rem;">MRP</th>
-                                <th style="padding: 0 0.5rem;">Quantity</th>
-                                <th style="padding: 0 0.5rem;">Expiry Date</th>
-                                <th style="padding: 0 0.5rem;">Total Amount</th>
-
-                            </tr>
-                            
-                            <tbody id="purchaseEntryPrintTable" class="border:none;">
+                                    <tbody style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+                                            
+                                    </tbody>
+                                </table>
+                                <div class="col-md-12 my-3" style="text-align:right !important">
+                                    <th>Grand Total: <span class="grandTotal"></span>/-</th>
+                                </div>
                                 
-                                <tr class="border-collapse:none; border:none;">
-                                    <div class="loader"></div>
-                                    <td id="brandName" style="padding: 0 0.5rem;"></td>
-                                    <td id="categoryName" style="padding: 0 0.5rem;"></td>
-                                    <td id="subCategoryName" style="padding: 0 0.5rem;"></td>
-                                    <td id="productName" style="padding: 0 0.5rem;"></td>
-                                    <td id="packSize" style="padding: 0 0.5rem;"></td>
-                                    <td id="printMRP" style="padding: 0 0.5rem;"></td>
-                                    <td id="printQuantity" style="padding: 0 0.5rem;"></td>
-                                    <td id="exDate" style="padding: 0 0.5rem;"></td>
-                                    <td id="printTotal" style="padding: 0 0.5rem;"></td>
-                                </tr>
-                            </tbody>
+                                <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
+                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata 700020</span><br>
+                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor, "Merlin Grove Behala
+                                        Kolkata-700008</span>
+                                </div>
+                                <div class="note text-center" style="font-size: 12px !important;">
+                                    <p>Medicine once sold would not be returned or exchanged</p>
+                                    <span>******** Thank You ********</span>
+                                </div>
+                            </div>
 
                         </table>
-                        <div class="col-md-12 mb-5">
-
-                            <span class="grandTotal" style="color:black; font-size:18px; float:right; margin-top: 15px; font-weight: 600;"></span>
-                        </div>
-                        <div style="text-align:center; margin-top: 50px; width: 100%;">
-                            <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
-                        </div>
-                    </div>
+                    </div> 
+                    <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
+                        <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
+                    </div> 
                 </div>
             </div>
         </div>
     </div>
 
+    
+</div>
+
+
 
     <script>
-        $(document).ready(function() {
-            api_for_bill();
-            
-            // SEARCH FUNCATIONALITY 
-            $('#search').on('input', function() {
-                var searchText = $(this).val().toLowerCase();
-                var found = false;
-                $('.bill-row').each(function() {
-                    var brandName = $(this).find('td:eq(1)').text().toLowerCase();
-                    if (brandName.includes(searchText)) {
-                        $(this).show();
-                        found = true;
-                    } else {
-                        $(this).hide();
-                    }
-                });
-                if (found) {
-                    $('#noBrandFoundMessage').hide();
+    $(document).ready(function() {
+        api_for_bill();
+
+        // SEARCH FUNCATIONALITY 
+        $('#search').on('input', function() {
+            var searchText = $(this).val().toLowerCase();
+            var found = false;
+            $('.bill-row').each(function() {
+                var brandName = $(this).find('td:eq(1)').text().toLowerCase();
+                if (brandName.includes(searchText)) {
+                    $(this).show();
+                    found = true;
                 } else {
-                    $('#noBrandFoundMessage').show();
+                    $(this).hide();
                 }
             });
-            // DATE FILTER 
-            $(document).on('click', '.storeFilterBtn', function() {
-                let startDate = $('#start_date_input').val();
-                let endDate = $('#end_date_input').val();
-                $.ajax({
-                    url: '/api/customer/bill/filter/',
-                    method: 'GET',
-                    data: {
-                        start_date_input: startDate,
-                        end_date_input: endDate
-                    },
-                    success: function(response) {
-                        if (response.status === 200) {
-                            displayFilteredData(response.data);
-                        } else {
-                            console.error('Failed to fetch data:', response);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error fetching data:', error);
+            if (found) {
+                $('#noBrandFoundMessage').hide();
+            } else {
+                $('#noBrandFoundMessage').show();
+            }
+        });
+
+        // DATE FILTER 
+        $(document).on('click', '.storeFilterBtn', function() {
+            let startDate = $('#start_date_input').val();
+            let endDate = $('#end_date_input').val();
+            $.ajax({
+                url: '/api/customer/bill/filter/',
+                method: 'GET',
+                data: {
+                    start_date_input: startDate,
+                    end_date_input: endDate
+                },
+                success: function(response) {
+                    if (response.status === 200) {
+                        displayFilteredData(response.data);
+                    } else {
+                        console.error('Failed to fetch data:', response);
                     }
-                });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data:', error);
+                }
             });
-            
+        });
+
+        let productList = {};
+        let doctorList = {};
+
+        // Fetch products list
+        function fetchProducts() {
+            return $.ajax({
+                url: '/products', // Adjust the endpoint as necessary
+                method: 'GET'
+            }).done(function(response) {
+                if (response.status === 200) {
+                    productList = response.data.reduce((acc, product) => {
+                        acc[product.id] = product.product_name;
+                        return acc;
+                    }, {});
+                } else {
+                    console.error('Failed to fetch products:', response);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error fetching products:', error);
+            });
+        }
+
+        function fetchDoctors() {
+            return $.ajax({
+                url: '/doctors', 
+                method: 'GET'
+            }).done(function(response) {
+                if (response.status === 200) {
+                    doctorList = response.data.reduce((acc, doctor) => {
+                        acc[doctor.id] = doctor.name;
+                        return acc;
+                    }, {});
+                } else {
+                    console.error('Failed to fetch doctors:', response);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error fetching doctors:', error);
+            });
+        }
+
+        $(document).ready(function() {
+            $.when(fetchProducts(), fetchDoctors()).done(function() {
+                console.log('Data loaded successfully');
+            });
         });
 
 
-        function api_for_bill() {
-            $('#loader').show();
-            ajaxGetData(`/api/customer/billing/list`, (response) => {
-                $('#loader').hide();
-                bill_list(response.data);
-            });
-        }
+        $(document).on('click', '.viewBill', function() {
+        let billId = $(this).data('store-id');
 
+        $.ajax({
+            url: `/api/customer/bill/${billId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.status === 200) {
+                    let data = response.data;
+                    let bill = data.bill;
+                    let items = data.items;
 
-        function bill_list(response) {
-            $('#purchase-entry-table tbody').empty();
-            let grandTotal = 0;
-            if (Array.isArray(response) > 0) {
-                response.reverse();
-                $.each(response, function(index, brand) {
-                    let totalAmount = parseFloat(brand?.total_amt) || 0;
-                    grandTotal += totalAmount;
-                    let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
-                    $('#purchase-entry-table tbody').append(`
-                        <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                            <td scope="row"> ${index+1} </td>
-                            <td> ${brand?.invoiceNo} </td>
-                            <td> ${brand?.customer_name} </td>
-                            <td> ${brand?.billing_date} </td>
-                            <td> ${brand?.paymentType} </td>
-                            <td> ${totalAmount.toFixed(2)} </td>
-                            <td>
-                                <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id=${brand.id}>&#x1F441;</button>
-                                
-                                <i class="fa fa-download bg-warning text-light px-2 py-2">
+                    var grandTotalElement = document.querySelector('.grandTotal');
+                    var invoiceElement = document.querySelector('.invoiceNo');
+                    var billingDateElement = document.querySelector('.billingDate');
+                    var customernameElement = document.querySelector('.customerName');
+                    var drNameElement = document.querySelector('.drName');
 
-                            </td>
-                        </tr>
-                    `);
-                });
-                $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-            } else {
-                $('##purchase-entry-table tbody').append(`
-                    <tr>
-                        <td class="text-center" colspan="4">No Brand Found</td>
-                    </tr>
-                `);
-                $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
+                    if (grandTotalElement) {
+                        grandTotalElement.textContent = bill.total_amt;
+                    }
+                    if (invoiceElement) {
+                        invoiceElement.textContent = bill.invoiceNo;
+                    }
+                    if (billingDateElement) {
+                        billingDateElement.textContent = bill.billing_date;
+                    }
+                    if (customernameElement) {
+                        customernameElement.textContent = bill.customer_name;
+                    }
+                    if (drNameElement) {
+                        drNameElement.textContent = doctorList[bill.doctor_name] || 'N/A';
+                    }
 
+                    $('#invoice_table tbody').empty();
+                    items.forEach((item, index) => {
+                        $('#invoice_table tbody').append(`
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${productList[item.productId] || 'N/A'}</td>
+                                <td>${item.qty || '0'}</td>
+                                <td>${item.pack || 'N/A'}</td>
+                                <td>${item.unitValue || '0.00'}/-</td>
+                                <td>${item.totalAmount || '0.00'}/-</td>
+                            </tr>
+                        `);
+                    });
+
+                    $('#printModal').modal('show');
+                } else {
+                    console.error('Failed to fetch bill details:', response);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error fetching bill details:', error);
             }
-        }
+        });
+    });
 
-        // DISPLAY DATE FILTER 
-        function displayFilteredData(data) {
-            let tableBody = $('#purchase-entry-table tbody');
-            tableBody.empty();
-            if (data.length > 0) {
-                data.forEach((customerBill, index) => {
-                    tableBody.append(`
-                    <tr>
-                    <td scope="row">${index + 1}</td>   
-                        <td>${customerBill.invoiceNo}</td>   
-                        <td>${customerBill.customer_name}</td>
-                        <td>${customerBill.billing_date}</td>
-                        <td>${customerBill.paymentType}</td>
-                        <td>${customerBill.total_amt}</td>
+    function api_for_bill() {
+        $('#loader').show();
+        ajaxGetData(`/api/customer/billing/list`, (response) => {
+            $('#loader').hide();
+            bill_list(response.data);
+        });
+    }
+
+    function bill_list(response) {
+        $('#purchase-entry-table tbody').empty();
+        let grandTotal = 0;
+        if (Array.isArray(response) > 0) {
+            response.reverse();
+            $.each(response, function(index, brand) {
+                let totalAmount = parseFloat(brand?.total_amt) || 0;
+                grandTotal += totalAmount;
+                let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
+                $('#purchase-entry-table tbody').append(`
+                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                        <td scope="row"> ${index+1} </td>
+                        <td> ${brand?.invoiceNo} </td>
+                        <td> ${brand?.customer_name} </td>
+                        <td> ${brand?.billing_date} </td>
+                        <td> ${brand?.paymentType} </td>
+                        <td> ${totalAmount.toFixed(2)} </td>
                         <td>
-                            <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="${customerBill.id}">&#x1F441;</button>
-                                
-                            <i class="fa fa-download bg-warning text-light px-2 py-2">
-                            
+                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
                         </td>
                     </tr>
-                    `);
-                });
-            } else {
-                tableBody.append('<tr><td colspan="6">No records found</td></tr>');
-            }
-        }
-    </script>
-
-    
-
-
-    <script>
-        $(document).ready(function () {
-            let page = 1;
-            let limit = $('#showbillingEntries').val() ?? ""
-            let search = $('#searchBillingNumber').val() ?? ""
-            let start_date = $('#start_date_input').val() ?? ""
-            let end_date = $('#end_date_input').val() ?? ""
-            apiBillingList(page, limit, search, start_date, end_date)
-            $(document).on('click', '.page-item', function() {
-                if (!$(this).hasClass('disabled')) {
-                    if ($(this).text().trim() === 'Previous') {
-                        page = Number($('.page-item.active .page-link').text()) - 1;
-                    } else if ($(this).text().trim() === 'Next') {
-                        page = Number($('.page-item.active .page-link').text()) + 1;
-                    } else {
-                        page = $(this).find('.page-link').text();
-                    }
-                    apiBillingList(page, limit)
-                }
+                `);
             });
-
-            $(document).on('keyup', '#searchBillingNumber', function () {
-                search = $('#searchBillingNumber').val()
-                apiBillingList(page, limit, search, start_date, end_date)
-            })
-
-            $(document).on('click', '#filterBilling', function(){
-                start_date = $('#start_date_input').val() ?? ""
-                end_date = $('#end_date_input').val() ?? ""
-
-                apiBillingList(page, limit, search, start_date, end_date);
-            })
-
-        });
-        function apiBillingList(page, limit, search, start_date, end_date){
-            ajaxGetData(`/api/customer/billing/list?page=${page}&limit=${limit}&search=${search}&start_date=${start_date}&end_date=${end_date}`, (res)=>{
-                billingList(res)
-                pagination(page, res?.data)
-            })
+            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+        } else {
+            $('#purchase-entry-table tbody').append(`
+                <tr>
+                    <td class="text-center" colspan="4">No Brand Found</td>
+                </tr>
+            `);
+            $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
         }
-        function billingList(response){
-            
-            let sum = 0
-            console.log(response, "res");
-            $('#billing').html("")
-            for (let index = 0; index < response?.data?.data?.length; index++) {
-                const element = response?.data?.data[index];
-                console.log(element);               
-                sum = Number(sum) + Number(element?.total_amt)
-                $('#billing').append(
-                    `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${element?.invoiceNo}</td>
-                            <td>${element?.customer_name}</td>
-                            <td>${element?.biilling_date}</td>
-                            <td>${element?.paymentType}</td>
-                            <td>${element?.total_amt}</td>
-                            <td>
-                                <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
-                            </td>
-                       </tr> 
-                    `
-                )
-            }
-            $('#total').html(`${sum}/-`)
+    }
+
+    // DISPLAY DATE FILTER 
+    function displayFilteredData(data) {
+        let tableBody = $('#purchase-entry-table tbody');
+        tableBody.empty();
+        if (data.length > 0) {
+            data.forEach((customerBill, index) => {
+                tableBody.append(`
+                <tr>
+                <td scope="row">${index + 1}</td>   
+                    <td>${customerBill.invoiceNo}</td>   
+                    <td>${customerBill.customer_name}</td>
+                    <td>${customerBill.billing_date}</td>
+                    <td>${customerBill.paymentType}</td>
+                    <td>${customerBill.total_amt}</td>
+                    <td>
+                        <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
+                        <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
+                    </td>
+                </tr>
+                `);
+            });
+        } else {
+            tableBody.append('<tr><td colspan="6">No records found</td></tr>');
         }
+    }
+
+    function populateModal(bill) {
+        console.log(bill);
+        $('#printModal .modal-body').html(`
+            <p><strong>Invoice No:</strong> ${bill.invoiceNo}</p>
+            <p><strong>Customer Name:</strong> ${bill.customer_name}</p>
+            <p><strong>Billing Date:</strong> ${bill.billing_date}</p>
+            <p><strong>Payment Type:</strong> ${bill.paymentType}</p>
+            <p><strong>Total Amount:</strong> ${bill.total_amt}</p>
+        `);
+    }
+    function printModalContent() {
+        var printContent = document.getElementById("printArea").innerHTML;
+        var originalContent = document.body.innerHTML;
+
+        printContent = printContent.replace('<button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>', '');
+
+        var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
+        if (modalBackdrop) {
+            modalBackdrop.remove();
+        }
+
+        document.body.innerHTML = printContent;
+
+        window.print();
+
+        document.body.innerHTML = originalContent;
+
+        $('#printModal').modal('show');
+    }
+
+    document.getElementById("printButton").addEventListener("click", function() {
+        printModalContent();
+    });
+
+
+});
+</script>
+
 
         
     </script>

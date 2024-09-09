@@ -6,7 +6,7 @@
 
 ::-webkit-scrollbar{
     width: .3em;
-    height: .2em;
+    height: .5em;
   }
    
 ::-webkit-scrollbar-track {
@@ -77,4 +77,8 @@ body.sidebar-toggled #wrapper #content-wrapper {
 
 .viewBill{
     border: none !important;
+}
+
+#dynamicForm .form-control{
+    width: 175px !important;
 }

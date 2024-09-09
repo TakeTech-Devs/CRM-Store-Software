@@ -7,7 +7,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-dark">Create Staff Billing</h2>
             <div class="text-right">
-                <a href="{{ url('store/staff/billing') }}" class="btn btn-secondary btn-sm">View Staff Billing List</a>
+                <a href="{{ url('store/customer/billing') }}" class="btn btn-secondary btn-sm">View Staff Billing List</a>
             </div>
         </div>
 
@@ -48,9 +48,7 @@
                         <div class="form-group">
                             <label for="staff_name">Staff Name</label>
                             <div class="form-group d-flex align-items-center">
-                                <select data-enable-search="true" name="staff_name[]" id="staff_name" class="form-control" disabled>
-                                    <option value="">Choose Staff Name...</option>
-                                </select>
+                                <input type="text" name="staff_name" id="staff_name" class="form-control" disabled>
                             </div>
                         </div>
                     </div>
@@ -70,7 +68,7 @@
                         <div class="form-group">
                             <label for="invoiceNo">Invoice No</label>
                             <div class="form-group d-flex align-items-center">
-                                <input type="text" name="invoiceNo" id="invoiceNo" class="form-control" value="{{ uniqid() }}">
+                                <input type="text" name="invoiceNo" id="invoiceNo" class="form-control" value="{{ uniqid() }}" disabled>
                             </div>
                         </div>
                     </div>
@@ -84,8 +82,9 @@
                                 <th>Category</th>
                                 <th>Sub Category</th>
                                 <th>Pack</th>
-                                <th>Qty</th>
+                                <th>Remaining Qty</th>
                                 <th>Unit Value</th>
+                                <th>Qty</th>
                                 <th>Discount</th>
                                 <th>Total Amount</th>
                                 <th>Action</th>
@@ -97,11 +96,11 @@
                     </table>
                 </div>
 
-                <button type="button" name="add_row" id="add_row" class="btn btn-sm btn-secondary mb-3  float-right ml-3">
+                <button type="button" name="add_row" id="add_row" class="btn btn-sm btn-secondary mb-3  mt-3 float-right ml-3">
                     Add New Row
                 </button>
 
-                <div class="form-group text-right">
+                <div class="form-group text-right mt-3 mx-4">
                     <label for="totalAmount">Total Amount: </label>
                     <span id="totalAmount">0</span>
                 </div>
@@ -113,12 +112,12 @@
         </div>
     </div>
     
-    <!-- ADD CUSTOMER PHONE NUMBER  -->
+    <!-- ADD Staff PHONE NUMBER  -->
     <div class="modal fade" id="addStaff" tabindex="-1" role="dialog" aria-labelledby="addStaffLabel" aria-hidden="true">
         <div class="modal-dialog container" role="document">
             <div class="modal-content">
                 <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                    <h5 class="modal-title" id="addStaffLabel">Add Staff</h5>
+                    <h5 class="modal-title" id="addStaffLabel">Add Customer</h5>
                 </div>
                 <div class="modal-body">
                     <form id="addStaffForm" class="container">
@@ -208,21 +207,64 @@
     <script>
         $(document).ready(function () {
             count = 0
-            staffData(null)
+            customerData(null)
             doctorData()
             $(document).on('change', '#staff_phone', function () {
-                staffData(this.value)
+                customerData(this.value)
             });
 
             $(document).on('change', '.product', function () {
-                ajaxGetData(`/products?id=${this.value}`, (res)=>{
-                    console.log(res, "res");
-                    categoryData(res?.data[0].category_id, count)
-                    subCategoryData(res?.data[0].sub_category_id, count)
-                    packData(null, count)
-                    priceData(null, count)
-                })
-            })
+                const count = $(this).data('count'); 
+
+                ajaxGetData(`/products?id=${this.value}`, (res) => {
+
+                    if (res?.data && res.data.length > 0) {
+                        const productData = res.data[0];
+                        categoryData(productData.category_id, count);
+                        subCategoryData(productData.sub_category_id, count);
+                        console.log("Product data: ",productData);
+                    } else {
+                        console.error('Product data not found');
+                    }
+                });
+
+                ajaxGetData(`/api/purchase_request?id=${this.value}`, (res) => {
+                    if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
+                        const requestData = res.purchase_request.find(item => item.id);
+                        console.log("Request data Find Statement:", requestData.id);
+                        console.log("request data: ",requestData);
+                        
+                        
+
+                        if (requestData) {
+                            $(`#qty${count}`).val(requestData.qty);
+                            
+                            if (typeof priceData === 'function') {
+                                priceData(requestData.price_id, count);
+                            } else {
+                                console.error('priceData function is not defined');
+                            }
+                            
+                            if (typeof packData === 'function') {
+                                packData(requestData.pack_id, count);
+                            } else {
+                                console.error('packData function is not defined');
+                            }
+                        } else {
+                            $(`#qty${count}`).val('');
+                            $(`#unit_value${count}`).val('');
+                            $(`#pack${count}`).val('');
+                        }
+                    } else {
+                        $(`#qty${count}`).val('');
+                        $(`#unit_value${count}`).val('');
+                        $(`#pack${count}`).val('');
+                    }
+                });
+            });
+
+
+            
 
             $(document).on('click', '#add_row', function () {
                 count = count + 1;
@@ -234,20 +276,21 @@
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/staff/billing/create', payload, csrfToken, (response)=>{
-
-                    console.log("Response: ", response);
+                    window.location.href = '/store/staff/billing';
                     Swal.fire({
                         title: "Staff Billing !",
                         icon: "success",
                         text: "Staff Billing Added Successfully.",
                     }).then((response)=>{
-                        window.location.href = "/store/staff/billing";
+                        if(response.isConfirmed){
+                            window.location.href = "/store/staff/billing";
+                        }
                     });
 
                 })
             })       
 
-            // ADDING CUSTOMER 
+            // ADDING Staff 
             $('#addStaff').on('submit', function(event) {
                 event.preventDefault();
 
@@ -264,7 +307,7 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') 
                     },
                     success: function(response) {
-                        staffData();
+                        customerData();
                         Swal.fire({
                             title: "Staff !",
                             icon: "success",
@@ -311,14 +354,10 @@
             });
         });  
 
-        function staffData(id) { 
+        function customerData(id) { 
             if (id) {
                 ajaxGetData(`/staffs?id=${id}`, (res)=>{
-                    $('#staff_name').html("")
-                    for (let index = 0; index < res?.data?.length; index++) {
-                        const element = res?.data[index];
-                        $('#staff_name').append('<option selected value="' + element.id + '">' + element.name + '</option>');
-                    }
+                    $('#staff_name').val(res?.data[0]?.name || '');
                 })
             }else{
                 ajaxGetData('/staffs', (res)=>{
@@ -341,17 +380,41 @@
         }
 
         function productData() { 
-            ajaxGetData(`/products`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $('.product').append('<option value="' + element.id + '">' + element.product_name + '</option>');
+            ajaxGetData(`/api/purchase_request`, (res) => {
+                for (let index = 0; index < res?.purchase_request?.length; index++) {
+                    const element = res?.purchase_request[index];
+                    productData_fetch(element?.product_id, element?.pack_id, count);
                 }
-            })
+            });
+        }
+
+        function productData_fetch(id, pack_id, count) {
+            ajaxGetData(`/pack?id=${pack_id}`, (res) => {
+                const pack_name = res?.data[0].pack_name;
+
+                ajaxGetData(`/products?id=${id}`, (res) => {
+                    $(`.product[data-count="${count}"]`).append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
+                });
+            });
         }
 
         function categoryData(id, count) {
             ajaxGetData(`/category?id=${id}`, (res)=>{
                 $(`#category${count}`).val(res?.data[0].category_name)
+            })
+        }
+
+        function packData(id, count){
+            console.log(id)
+            ajaxGetData(`/pack?id=${id}`, (res) =>{
+                $(`#pack${count}`).val(res?.data[0].pack_name)
+
+            })
+        }
+        function priceData(id, count){
+            ajaxGetData(`/price?id=${id}`, (res) =>{
+                $(`#unit_value${count}`).val(res?.data[0].price_name)
+
             })
         }
 
@@ -361,88 +424,63 @@
             })
         }
 
-        function packData(id, count) {
-            ajaxGetData(`/pack?id=${id}`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $(`#pack${count}`).append('<option value="' + element.id + '">' + element.pack_name + '</option>');
-                }
-            })
-            // ajaxGetData(`/pack?id=${id}`, (res)=>{
-            //     $(`#pack${count}`).val(res?.data[0].name)
-            // })
-        }
-        function priceData(id, count) {
-            ajaxGetData(`/price?id=${id}`, (res) =>{
-                console.log(res);
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $(`#mrp${count}`).append('<option value="' + element.id + '">' + element?.price_name + '</option>');
-                }
-            })
-        }
-
         function addNewRow(id) {
-            productData();
+            productData(); 
+
             const newRow = `
                 <tr>
-                    <td id="row" class="table-row-id row_id d-none product">${id}</td>
+                    <td class="table-row-id row_id d-none product">${id}</td>
                     <td class="table-row">
-                        <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name${id}">
+                        <select data-enable-search="true" class="form-control product" data-count="${id}" name="productName[]" id="product_name${id}">
                             <option value="">Choose Product</option>
                         </select>
                     </td>
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="category" id="category${id}" readonly />
+                            <input type="text" class="form-control" name="category[]" id="category${id}" readonly />
                         </div>
                     </td>
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="subCategory" id="subCategory${id}" readonly />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}">
-                            <option value="">Choose Pack</option>
-                        </select>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="qty" id="qty${id}" />
-                        </div>
-                    </td>
-                    
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="number" class="form-control" name="unit_value[]" id="unit_value${id}" />
+                            <input type="text" class="form-control" name="subCategory[]" id="subCategory${id}" readonly />
                         </div>
                     </td>
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="discount[]" id="discount${id}" />
+                            <input type="text" class="form-control" name="pack[]" id="pack${id}" readonly />
                         </div>
                     </td>
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control totalAmount" value="0" name="totalAmount[]" id="totalAmount${id}" readonly />
+                            <input type="number" class="form-control" name="qty[]" id="qty${id}" readonly/>
                         </div>
                     </td>
                     <td class="table-row">
-                        <span class="delete-icon btn btn-danger text-white p-2 px-1" onclick="deleteRow(this)">
-                            <i class="fas fa-trash"></i>
-                        </span>
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" class="form-control" name="unit_value[]" id="unit_value${id}" readonly />
+                        </div>
+                    </td>
+                    <td class="table-row">
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" class="form-control" name="assignQty[]" id="assignQty${id}"  />
+                        </div>
+                    </td>
+                    <td class="table-row">
+                        <div class="form-group d-flex align-items-center">
+                            <input type="number" class="form-control" name="discount[]" id="discount${id}" />
+                        </div>
+                    </td>
+                    <td class="table-row">
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" class="form-control" name="totalAmount[]" id="totalAmount${id}" readonly />
+                        </div>
+                    </td>
+                    <td class="table-row">
+                        <button type="button" class="btn btn-sm btn-danger remove-row" data-count="${id}"><i class="fa fa-trash"></i></button>
                     </td>
                 </tr>
             `;
-
-            $('table tbody').append(newRow);
-
-            $(`#qty${id}, #unit_value${id}, #discount${id}`).on('input', function() {
-                const row = $(this).closest('tr');
-                updateTotalForRow(row);
-                updateOverallTotal();
-            });
+            $('#formBody').append(newRow);
         }
 
         function updateTotalForRow(row) {
@@ -475,11 +513,32 @@
             updateOverallTotal();
         });
 
+        function calculateTotalAmount() {
+            let totalAmount = 0;
+            $('#formBody').find('tr').each(function () {
+                const qty = parseFloat($(this).find('[name="assignQty[]"]').val()) || 0;
+                const unitValue = parseFloat($(this).find('[name="unit_value[]"]').val()) || 0;
+                const discount = parseFloat($(this).find('[name="discount[]"]').val()) || 0;
+                const discountDecimal = discount / 100;
+                const discountAmount = qty * unitValue * discountDecimal;
+                const amount = (qty * unitValue) - discountAmount;
+
+                $(this).find('[name="totalAmount[]"]').val(amount.toFixed(2));
+                totalAmount += amount;
+            });
+            $('#totalAmount').text(totalAmount.toFixed(2));
+        }
+
+        $(document).on('input', '[name="qty[]"], [name="unitValue[]"], [name="discount[]"]', function () {
+            calculateTotalAmount();
+        });
+
+
 
         function deleteRow(element) {
             const row = element.closest("tr");
             row.remove();
-            updateTotalAmount();
+            calculateTotalAmount(); 
         }
         function gatherFormData() {
             const rows = document.querySelectorAll('#dynamicForm tbody tr');
@@ -487,14 +546,15 @@
 
             rows.forEach(row => {
                 const productId = row.querySelector(`[name="productName[]"]`).value;
-                const category = row.querySelector(`[name="category"]`).value;
-                const subCategory = row.querySelector(`[name="subCategory"]`).value;
+                const category = row.querySelector(`[name="category[]"]`).value;
+                const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
                 const pack = row.querySelector(`[name="pack[]"]`).value;
-                const qty = row.querySelector(`[name="qty"]`).value;
                 const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
+                const qty = row.querySelector(`[name="assignQty[]"]`).value;
                 const discount = row.querySelector(`[name="discount[]"]`).value;
                 const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
 
+               
                 products.push({
                     productId,
                     category,
@@ -511,15 +571,14 @@
             let day = String(today.getDate()).padStart(2, '0');
             let month = String(today.getMonth() + 1).padStart(2, '0');
             let year = today.getFullYear();
-
-            let formattedDate = `${day}/${month}/${year}`;
-            console.log(formattedDate);
+            let formattedDate = `${year}-${month}-${day}`;
             const payload = {
+                billingType: "staff",
                 staff_phone: $('#staff_phone').val(),
                 doctor_name: $('#doctor_name').val(),
                 paymentType: $('#paymentType').val(),
                 invoiceNo: $('#invoiceNo').val(),
-                staff_name: $('#staff_name option:selected').text(),
+                staff_name: $('#staff_name').val(),
                 total_amt: $('#totalAmount').text(),
                 billing_date:formattedDate,
                 billingType:"Staff Billing",
@@ -530,6 +589,7 @@
 
             return payload;
         }
+
 
     </script>
 @endsection

@@ -260,4 +260,43 @@ class StaffBilling extends Controller
             'data' => $filteredEntries,
         ]);
     }
+
+    public function getBillDetails($billId)
+    {
+        try {
+            $bill = DB::table('staff_billing')
+                ->where('id', '=', $billId)
+                ->first();
+
+            if (!$bill) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Bill not found'
+                ], 404);
+            }
+
+            $billItems = DB::table('staff_product_billing')
+                ->where('cb_id', '=', $billId)
+                ->get();
+
+            $staff = DB::table('staff')
+                ->where('id', '=', $bill->id)
+                ->first();
+
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'bill' => $bill,
+                    'items' => $billItems,
+                    'staff' => $staff
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching the bill details',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }
