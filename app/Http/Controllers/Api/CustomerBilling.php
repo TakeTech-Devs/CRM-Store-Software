@@ -22,6 +22,26 @@ class CustomerBilling extends Controller
             $billingType = $request->billingType;
             $total_amt = $request->total_amt;
 
+            DB::beginTransaction();
+    
+            foreach ($product_billing as $key => $value) {
+                $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
+                $remainingQty = $product->qty - $value['qty'];
+    
+                if ($remainingQty < 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Insufficient stock for the product.'
+                    ], 400);
+                }
+    
+                DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
+                    'qty' => $remainingQty,
+                    'updated_at' => now(),
+                ]);
+            }
+
             $insert_cb =  DB::table('customer_billing')->insertGetId([
                 'customer_phone'=>$customer_phone,
                 'customer_name'=>$customer_name,
@@ -51,14 +71,18 @@ class CustomerBilling extends Controller
                 ]);
                 
             }
+            DB::commit();
+    
             return response()->json([
-                'status'=>200,
-                'data'=>"Success"
-            ],200);
+                'status' => 200,
+                'data' => 'Success'
+            ], 200);
         } catch (\Throwable $th) {
+            DB::rollBack();
             throw $th;
         }
     }
+
 
     public function listBilling(Request $request){
         try {

@@ -17,16 +17,16 @@
                 <div class="form-row mb-2">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label for="store_id">Store ID</label>
-                            <input type="text" name="store_id" id="store_id" class="form-control" value="{{ session('storeId', 'Store not found') }}" readonly>
+                            <label for="stock_from">Store ID</label>
+                            <input type="text" name="stock_from" id="stock_from" class="form-control" value="{{ session('storeId', 'Store not found') }}" readonly>
                         </div>
                     </div>
 
                     <div class="col-md-4">
                         
                         <div class="form-group">
-                            <label for="store">Store To</label>
-                            <select data-enable-search="true"name="store_to" id="store_to" class="form-control">
+                            <label for="stock_to">Store To</label>
+                            <select data-enable-search="true"name="stock_to" id="stock_to" class="form-control">
                             </select>
                         </div>
                     </div>
@@ -81,9 +81,9 @@
                     type: 'GET',
                     success: function(response) {
                         var stores = response.data;
-                        $('#store_to').html('<option value="">Select Store</option>');
+                        $('#stock_to').html('<option value="">Select Store</option>');
                         $.each(stores, function(index, store) {
-                            $('#store_to').append('<option value="' + store.id + '">' + store.name + '</option>');
+                            $('#stock_to').append('<option value="' + store.id + '">' + store.name + '</option>');
                         });
                     }
                 });
@@ -154,14 +154,16 @@
 
             $(document).on('click', '#submitBilling', function () {
                 const payload = gatherFormData();
+                console.log("Payload:", payload);
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 
-                ajaxPostData('http://localhost:8000/api/store-transfer', payload, csrfToken, (response) => {
-                    if (response.status === 200) {
+                ajaxPostData('http://localhost:8000/api/transfer/store', payload, csrfToken, (response) => {
+                    console.log("Response:", response);
+                    if (response.status == 200) {
                         Swal.fire({
                             title: "Store Stock Billing!",
                             icon: "success",
-                            text: response.data || "Customer Billing Added Successfully.",
+                            text: response.message || "Stock transfer Successfully.",
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 window.location.href = "/store/stock/transfer";
@@ -341,34 +343,34 @@
                 calculateTotalAmount(); 
             }
             function gatherFormData() {
-                const rows = document.querySelectorAll('#dynamicForm tbody tr');
-                const products = [];
+                let formData = {
+                    stock_from: $('#stock_from').val(),
+                    stock_to: $('#stock_to').val(),
+                    transfer_id: $('#transfer_id').val(),
+                    items: []
+                };
 
-                rows.forEach(row => {
-                    const productId = row.querySelector(`[name="productName[]"]`).value;
-                    const category = row.querySelector(`[name="category[]"]`).value;
-                    const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
-                    const pack = row.querySelector(`[name="pack[]"]`).value;
-                    const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
-                    const qty = row.querySelector(`[name="assignQty[]"]`).value;
-                    const discount = row.querySelector(`[name="discount[]"]`).value;
-                    const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
+                $('#formBody').find('tr').each(function() {
+                    const row = $(this);
+                    let itemData = {
+                        product_id: row.find('[name="productName[]"]').val() || '',  // Product ID
+                        category_id: row.find('[name="category[]"]').val() || '',    // Category ID
+                        sub_category_id: row.find('[name="subCategory[]"]').val() || '',  // Sub Category ID
+                        pack_id: row.find('[name="pack[]"]').val() || '',            // Pack ID
+                        qty: row.find('[name="assignQty[]"]').val() || '',                 // Quantity
+                        unit_value: row.find('[name="unit_value[]"]').val() || '',   // Unit Value
+                        assign_qty: row.find('[name="assignQty[]"]').val() || '',    // Assigned Quantity
+                        discount: row.find('[name="discount[]"]').val() || '',       // Discount
+                        total_amount: row.find('[name="totalAmount[]"]').val() || '' // Total Amount
+                    };
 
-                
-                    products.push({
-                        productId,
-                        category,
-                        subCategory,
-                        pack,
-                        qty,
-                        unitValue,
-                        discount,
-                        totalAmount
-                    });
+                    formData.items.push(itemData);
                 });
-                
 
+                return formData;
             }
+
+
         });
     </script>
 @endsection

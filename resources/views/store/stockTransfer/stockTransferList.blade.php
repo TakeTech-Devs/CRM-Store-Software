@@ -4,6 +4,7 @@
 
 @section('content')
     <style>
+        /* Styling as needed */
         .pagination {
             margin-top: 10px;
         }
@@ -18,10 +19,10 @@
             .table tbody+tbody {
                 border-top: none !important;
             }
-            #printButton{
+            #printButton {
                 display: none;
             }
-            @page{
+            @page {
                 size: A4 landscape;
             }
         }
@@ -38,10 +39,6 @@
             bottom: 25px;
             position: absolute;
         }
-        #printButton{
-            display: none;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -50,11 +47,12 @@
 
     <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between">
-            <h2 class="text-dark bold ">Store Stock Transfer</h1>
+            <h2 class="text-dark bold">Store Stock Transfer</h2>
             <div class="text-right">
                 <a href="{{ url('store/create/stockTransfer') }}" class="btn btn-secondary btn-sm">Create Stock Transfer</a>
             </div>
         </div>
+
         <div class="form-row d-flex align-items-center justify-content-between my-3">
             <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
                 <div class="form-group d-flex align-items-end justify-content-around">
@@ -63,59 +61,38 @@
                         <input type="date" class="form-control" id="start_date_input" name="start_date_input">
                     </div>
                     <div class="form-group mx-1">
-
                         <label for="end_date_input">End Date</label>
                         <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                     </div>
-                    <!-- <div class="form-group"> -->
-                        <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
                     <div class="form-group" style="margin-top: 1.85rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
+                        <button type="button" class="btn btn-success btn-md mx-1" id="filterBilling">Find</button>
                     </div>
                 </div>
                 <div class="d-flex align-items-center justify-content-around">
                     <form class="d-flex align-items-center justify-content-between">
                         <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                            <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
+                            <label for="searchBillingNumber" class="mt-2">Search: </label> &nbsp;&nbsp;
                             <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
-                        </div>  
-                    </form>   
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+
         <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
             <div class="d-flex align-items-center justify-content-center">
                 <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                    <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                    <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries" onchange="updatePagination()">
-                        <option selected >10</option>
+                    <label for="showbillingEntries" class="d-inline-block">Show Entries: &nbsp;</label>
+                    <select data-enable-search="true" class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries">
+                        <option selected>10</option>
                         <option>25</option>
                         <option>50</option>
                         <option>100</option>
                     </select>
                 </div>
-                {{-- <div class="download-buttons" style="margin-left:25px !important;">
-                    <div class="download-options d-flex align-items-baseline justify-content-between">
-                        
-                        
-                        <p>Export as : </p>&nbsp;&nbsp;&nbsp;
-                        <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
-                            <i class="fas fa-file-excel"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-primary">
-                            <i class="fas fa-file-word"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-danger">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>
-                    </div>
-                </div> --}}
             </div> 
             <div class="grandTotalAmount text-right mt-3">
-                <strong>Total Amount: 0.00/-</strong>
-            <div class="totalAmount">
-                <strong>Total Amount: <span id= "total">0/- </span></strong>
+                <strong>Total Amount: <span id="total">0.00/-</span></strong>
             </div>
         </div>
         
@@ -123,308 +100,145 @@
             <table id="purchase-entry-table" class="table p-2 text-center">
                 <thead>
                     <tr>
-                        <th class="text-dark">#</th>
-                        <th class="text-dark">Customer Bill No</th>
-                        <th class="text-dark">Customer Name</th>
-                        <th class="text-dark">Bill Date</th>
-                        <th class="text-dark">Payment Type</th>
-                        <th class="text-dark">Total Amount</th>
-                        <th class="text-dark">Actions</th>
+                        <th style="padding: 0 0.5rem;">Sno.</th>
+                        <th style="padding: 0 0.5rem;">Stock From</th>
+                        <th style="padding: 0 0.5rem;">Stock To</th>
+                        <th style="padding: 0 0.5rem;">Product</th>
+                        <th style="padding: 0 0.5rem;">Quantity</th>
+                        <th style="padding: 0 0.5rem;">Unit Value</th>
+                        <th style="padding: 0 0.5rem;">Total Amount</th>
                     </tr>
                 </thead>
-                   
-                <tbody id="billing">
-                 
-                    
-                </tbody>
+                <tbody id="billing"></tbody>
             </table>   
             <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
-                 
         </div>
+
         <div class="container mt-3">
             <div class="row justify-content-end">
                 <div class="col-auto">
-                    <nav aria-label="...">
-                        <ul class="pagination pagination-sm">
-                        </ul>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm"></ul>
                     </nav>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PRINT MODEL  -->
-    <div class="modal fade" id="viewBillModal" tabindex="-1" role="dialog" aria-labelledby="viewBillModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content" style="border: none;">
-                <div class="modal-body" style="padding: 25px; width:100%;">
-                    <div style="padding: 1rem; display: flex; align-items:center; justify-content:space-between; margin-bottom:0px;">
-                        <h2 style="color: black; display:inline-block;">Invoice - <span id="printPurchaseBillNo"></span></h2>
-
-                        <div style="float:right; text-align:right;">
-                            <img class="logo" src="{{asset('./assets/img/logo.png')}}" alt="">
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 10px; position:relative; color:dark;">
-                        <table style="width: 35%; border-collapse: collapse;">
-                            <tr>
-                                <th style="padding: 0 0.5rem;">SKU Date - </th>
-                                <td id="printSkuDate" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                            <tr>
-                                <th style="padding: 0 0.5rem;">SKU ID - </th>
-                                <td id="printSkuId" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                            <tr>
-                                <th style="padding: 0 0.5rem;">Supplier Name - </th>
-                                <td id="printSupplierName" style="padding: 0 0.5rem;"></td>
-                            </tr>
-                        </table>
-                        <table style="width: 100%; border-collapse: none; border:none; margin-top: 15px; text-align:center;">
-
-                            <tr class="border:none">
-                                <th style="padding: 0 0.5rem;">Brand Name</th>
-                                <th style="padding: 0 0.5rem;">Category</th>
-                                <th style="padding: 0 0.5rem;">Sub Category</th>
-                                <th style="padding: 0 0.5rem;">Product</th>
-                                <th style="padding: 0 0.5rem;">Pack</th>
-                                <th style="padding: 0 0.5rem;">MRP</th>
-                                <th style="padding: 0 0.5rem;">Quantity</th>
-                                <th style="padding: 0 0.5rem;">Expiry Date</th>
-                                <th style="padding: 0 0.5rem;">Total Amount</th>
-
-                            </tr>
-                            
-                            <tbody id="purchaseEntryPrintTable" class="border:none;">
-                                
-                                <tr class="border-collapse:none; border:none;">
-                                    <div class="loader"></div>
-                                    <td id="brandName" style="padding: 0 0.5rem;"></td>
-                                    <td id="categoryName" style="padding: 0 0.5rem;"></td>
-                                    <td id="subCategoryName" style="padding: 0 0.5rem;"></td>
-                                    <td id="productName" style="padding: 0 0.5rem;"></td>
-                                    <td id="packSize" style="padding: 0 0.5rem;"></td>
-                                    <td id="printMRP" style="padding: 0 0.5rem;"></td>
-                                    <td id="printQuantity" style="padding: 0 0.5rem;"></td>
-                                    <td id="exDate" style="padding: 0 0.5rem;"></td>
-                                    <td id="printTotal" style="padding: 0 0.5rem;"></td>
-                                </tr>
-                            </tbody>
-
-                        </table>
-                        <div class="col-md-12 mb-5">
-
-                            <span class="grandTotal" style="color:black; font-size:18px; float:right; margin-top: 15px; font-weight: 600;"></span>
-                        </div>
-                        <div style="text-align:center; margin-top: 50px; width: 100%;">
-                            <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <script>
-        $(document).ready(function() {
-            api_for_bill();
-            
-            // SEARCH FUNCATIONALITY 
-            $('#search').on('input', function() {
-                var searchText = $(this).val().toLowerCase();
-                var found = false;
-                $('.bill-row').each(function() {
-                    var brandName = $(this).find('td:eq(1)').text().toLowerCase();
-                    if (brandName.includes(searchText)) {
-                        $(this).show();
-                        found = true;
-                    } else {
-                        $(this).hide();
-                    }
-                });
-                if (found) {
-                    $('#noBrandFoundMessage').hide();
-                } else {
-                    $('#noBrandFoundMessage').show();
-                }
-            });
-            // DATE FILTER 
-            $(document).on('click', '.storeFilterBtn', function() {
-                let startDate = $('#start_date_input').val();
-                let endDate = $('#end_date_input').val();
-                $.ajax({
-                    url: '/api/customer/bill/filter/',
-                    method: 'GET',
-                    data: {
-                        start_date_input: startDate,
-                        end_date_input: endDate
-                    },
-                    success: function(response) {
-                        if (response.status === 200) {
-                            displayFilteredData(response.data);
-                        } else {
-                            console.error('Failed to fetch data:', response);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error fetching data:', error);
-                    }
-                });
-            });
-            
-        });
-
-
-        function api_for_bill() {
-            $('#loader').show();
-            ajaxGetData(`/api/customer/billing/list`, (response) => {
-                $('#loader').hide();
-                bill_list(response.data);
-            });
-        }
-
-
-        function bill_list(response) {
-            $('#purchase-entry-table tbody').empty();
-            let grandTotal = 0;
-            if (Array.isArray(response) > 0) {
-                response.reverse();
-                $.each(response, function(index, brand) {
-                    let totalAmount = parseFloat(brand?.total_amt) || 0;
-                    grandTotal += totalAmount;
-                    let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
-                    $('#purchase-entry-table tbody').append(`
-                        <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                            <td scope="row"> ${index+1} </td>
-                            <td> ${brand?.invoiceNo} </td>
-                            <td> ${brand?.customer_name} </td>
-                            <td> ${brand?.billing_date} </td>
-                            <td> ${brand?.paymentType} </td>
-                            <td> ${totalAmount.toFixed(2)} </td>
-                            <td>
-                                <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id=${brand.id}>&#x1F441;</button>
-                                
-                                <i class="fa fa-download bg-warning text-light px-2 py-2">
-
-                            </td>
-                        </tr>
-                    `);
-                });
-                $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-            } else {
-                $('##purchase-entry-table tbody').append(`
-                    <tr>
-                        <td class="text-center" colspan="4">No Brand Found</td>
-                    </tr>
-                `);
-                $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
-
-            }
-        }
-
-        // DISPLAY DATE FILTER 
-        function displayFilteredData(data) {
-            let tableBody = $('#purchase-entry-table tbody');
-            tableBody.empty();
-            if (data.length > 0) {
-                data.forEach((customerBill, index) => {
-                    tableBody.append(`
-                    <tr>
-                    <td scope="row">${index + 1}</td>   
-                        <td>${customerBill.invoiceNo}</td>   
-                        <td>${customerBill.customer_name}</td>
-                        <td>${customerBill.billing_date}</td>
-                        <td>${customerBill.paymentType}</td>
-                        <td>${customerBill.total_amt}</td>
-                        <td>
-                            <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="${customerBill.id}">&#x1F441;</button>
-                                
-                            <i class="fa fa-download bg-warning text-light px-2 py-2">
-                            
-                        </td>
-                    </tr>
-                    `);
-                });
-            } else {
-                tableBody.append('<tr><td colspan="6">No records found</td></tr>');
-            }
-        }
-    </script>
-
     
+    
+    <div class="loader" id="loader"></div>
 
 
     <script>
         $(document).ready(function () {
-            let page = 1;
-            let limit = $('#showbillingEntries').val() ?? ""
-            let search = $('#searchBillingNumber').val() ?? ""
-            let start_date = $('#start_date_input').val() ?? ""
-            let end_date = $('#end_date_input').val() ?? ""
-            apiBillingList(page, limit, search, start_date, end_date)
-            $(document).on('click', '.page-item', function() {
-                if (!$(this).hasClass('disabled')) {
-                    if ($(this).text().trim() === 'Previous') {
-                        page = Number($('.page-item.active .page-link').text()) - 1;
-                    } else if ($(this).text().trim() === 'Next') {
-                        page = Number($('.page-item.active .page-link').text()) + 1;
+    let products = {};
+    let stores = {};
+
+    function fetchProducts() {
+        return $.ajax({
+            url: 'http://localhost:8000/api/products',
+            type: 'GET',
+            success: function (response) {
+                products = response.data.reduce((acc, item) => {
+                    acc[item.id] = item.product_name;
+                    return acc;
+                }, {});
+            }
+        });
+    }
+
+    function fetchStores() {
+        return $.ajax({
+            url: 'http://localhost:8000/api/stores',
+            type: 'GET',
+            success: function (response) {
+                stores = response.data.reduce((acc, item) => {
+                    acc[item.id] = item.name;
+                    return acc;
+                }, {});
+            }
+        });
+    }
+
+    function fetchStockTransferData(page = 1, filters = {}) {
+        $('#loader').show();
+        $.when(fetchProducts(), fetchStores()).done(function () {
+            $.ajax({
+                url: 'http://localhost:8000/api/transfer/store/list',
+                type: 'GET',
+                data: { page: page, ...filters },
+                success: function (response) {
+                    $('#loader').hide();
+                    
+                    $('#billing').empty();
+                    
+                    if (response.data && response.data.length > 0) {
+                        let tableContent = '';
+                        let totalAmount = 0;
+
+                        response.data.forEach((item, index) => {
+                            // Calculate total price for the row
+                            const rowTotal = item.unit_value * item.qty;
+                            totalAmount += rowTotal;
+
+                            tableContent += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${stores[item.stock_from] || item.stock_from}</td>
+                                    <td>${stores[item.stock_to] || item.stock_to}</td>
+                                    <td>${products[item.product] || item.product}</td>
+                                    <td>${item.qty}</td>
+                                    <td>${item.unit_value}</td>
+                                    <td>${rowTotal.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        });
+
+                        $('#billing').html(tableContent);
+                        $('#total').text(totalAmount.toFixed(2) + '/-');
                     } else {
-                        page = $(this).find('.page-link').text();
+                        $('#billing').html('<tr><td colspan="7">No data found</td></tr>');
+                        $('#total').text('0.00/-');
                     }
-                    apiBillingList(page, limit)
+                },
+                error: function() {
+                    $('#loader').hide();
+                    $('#billing').html('<tr><td colspan="7">Error loading data</td></tr>');
+                    $('#total').text('0.00/-');
                 }
             });
-
-            $(document).on('keyup', '#searchBillingNumber', function () {
-                search = $('#searchBillingNumber').val()
-                apiBillingList(page, limit, search, start_date, end_date)
-            })
-
-            $(document).on('click', '#filterBilling', function(){
-                start_date = $('#start_date_input').val() ?? ""
-                end_date = $('#end_date_input').val() ?? ""
-
-                apiBillingList(page, limit, search, start_date, end_date);
-            })
-
         });
-        function apiBillingList(page, limit, search, start_date, end_date){
-            ajaxGetData(`/api/customer/billing/list?page=${page}&limit=${limit}&search=${search}&start_date=${start_date}&end_date=${end_date}`, (res)=>{
-                billingList(res)
-                pagination(page, res?.data)
-            })
-        }
-        function billingList(response){
-            
-            let sum = 0
-            console.log(response, "res");
-            $('#billing').html("")
-            for (let index = 0; index < response?.data?.data?.length; index++) {
-                const element = response?.data?.data[index];
-                console.log(element);               
-                sum = Number(sum) + Number(element?.total_amt)
-                $('#billing').append(
-                    `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${element?.invoiceNo}</td>
-                            <td>${element?.customer_name}</td>
-                            <td>${element?.biilling_date}</td>
-                            <td>${element?.paymentType}</td>
-                            <td>${element?.total_amt}</td>
-                            <td>
-                                <button type="button" class="btn btn-info btn-sm viewBill" data-toggle="modal" data-target="#viewBillModal" data-store-id="">&#x1F441;</button>
-                            </td>
-                       </tr> 
-                    `
-                )
-            }
-            $('#total').html(`${sum}/-`)
-        }
+    }
 
-        
+    fetchStockTransferData();
+
+    $('#filterBilling').on('click', function () {
+        const startDate = $('#start_date_input').val();
+        const endDate = $('#end_date_input').val();
+        fetchStockTransferData(1, { start_date: startDate, end_date: endDate });
+    });
+
+    $('#searchBillingNumber').on('keyup', function () {
+        const searchQuery = $(this).val();
+        fetchStockTransferData(1, { search: searchQuery });
+    });
+
+    $('#showbillingEntries').on('change', function () {
+        fetchStockTransferData(1, { per_page: $(this).val() });
+    });
+
+    $(document).on('click', '.pagination a', function (e) {
+        e.preventDefault();
+        const page = $(this).attr('href').split('page=')[1];
+        fetchStockTransferData(page);
+    });
+
+    $('#printButton').on('click', function () {
+        window.print();
+    });
+});
+
+
     </script>
 @endsection
-                    

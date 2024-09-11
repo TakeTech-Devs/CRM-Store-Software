@@ -19,18 +19,39 @@ class StaffBilling extends Controller
             $billing_date = $request->billing_date;
             $staff_name = $request->staff_name;
             $total_amt = $request->total_amt;
-
-            $insert_cb =  DB::table('staff_billing')->insertGetId([
-                'staff_phone'=>$staff_phone,
-                'staff_name'=>$staff_name,
-                'doctor_name'=>$doctor_name,
-                'invoiceNo'=>$invoiceNo,
-                'paymentType'=>$paymentType,
-                'billing_date'=>$billing_date,
-                'total_amt'=>$total_amt,
-                'created_at'=>now(),
-                'updated_at'=>now(),
+    
+            DB::beginTransaction();
+    
+            foreach ($product_billing as $key => $value) {
+                $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
+                $remainingQty = $product->qty - $value['qty'];
+    
+                if ($remainingQty < 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Insufficient stock for the product.'
+                    ], 400);
+                }
+    
+                DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
+                    'qty' => $remainingQty,
+                    'updated_at' => now(),
+                ]);
+            }
+    
+            $insert_cb = DB::table('staff_billing')->insertGetId([
+                'staff_phone' => $staff_phone,
+                'staff_name' => $staff_name,
+                'doctor_name' => $doctor_name,
+                'invoiceNo' => $invoiceNo,
+                'paymentType' => $paymentType,
+                'billing_date' => $billing_date,
+                'total_amt' => $total_amt,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
+    
             foreach ($product_billing as $key => $value) {
                 DB::table('staff_product_billing')->insert([
                     'category' => $value['category'],
@@ -41,21 +62,25 @@ class StaffBilling extends Controller
                     'subCategory' => $value['subCategory'],
                     'totalAmount' => $value['totalAmount'],
                     'unitValue' => $value['unitValue'],
-                    'cb_id' =>  $insert_cb,
-                    'created_at'=>now(),
-                    'updated_at'=>now(),
-       
+                    'cb_id' => $insert_cb,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
-                
             }
+    
+            DB::commit();
+    
             return response()->json([
-                'status'=>200,
-                'data'=>"Success"
-            ],200);
+                'status' => 200,
+                'data' => 'Success'
+            ], 200);
         } catch (\Throwable $th) {
+            DB::rollBack();
             throw $th;
         }
     }
+    
+    
     public function listBilling(Request $request){
         try {
             $startDate = $request->query('start_date');

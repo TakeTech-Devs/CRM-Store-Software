@@ -47,9 +47,9 @@
 
     <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between">
-            <h2 class="text-dark bold ">Customer Billing Page</h1>
+            <h2 class="text-dark bold ">Staff Billing Page</h1>
             <div class="text-right">
-                <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
+                <a href="{{ url('store/staff/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
             </div>
         </div>
         <div class="form-row d-flex align-items-center justify-content-between my-3">
@@ -376,110 +376,110 @@
         });
     });
 
-    function api_for_bill() {
-        $('#loader').show();
-        ajaxGetData(`/api/staff/billing/list`, (response) => {
-            $('#loader').hide();
-            bill_list(response.data);
-        });
-    }
+        function api_for_bill() {
+            $('#loader').show();
+            ajaxGetData(`/api/staff/billing/list`, (response) => {
+                $('#loader').hide();
+                bill_list(response.data);
+            });
+        }
 
-    function bill_list(response) {
-        $('#purchase-entry-table tbody').empty();
-        let grandTotal = 0;
-        if (Array.isArray(response) > 0) {
-            response.reverse();
-            $.each(response, function(index, brand) {
-                let totalAmount = parseFloat(brand?.total_amt) || 0;
-                grandTotal += totalAmount;
-                let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
+        function bill_list(response) {
+            $('#purchase-entry-table tbody').empty();
+            let grandTotal = 0;
+            if (Array.isArray(response) > 0) {
+                response.reverse();
+                $.each(response, function(index, brand) {
+                    let totalAmount = parseFloat(brand?.total_amt) || 0;
+                    grandTotal += totalAmount;
+                    let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
+                    $('#purchase-entry-table tbody').append(`
+                        <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                            <td scope="row"> ${index+1} </td>
+                            <td> ${brand?.invoiceNo} </td>
+                            <td> ${brand?.staff_name} </td>
+                            <td> ${brand?.billing_date} </td>
+                            <td> ${brand?.paymentType} </td>
+                            <td> ${totalAmount.toFixed(2)} </td>
+                            <td>
+                                <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+                $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+            } else {
                 $('#purchase-entry-table tbody').append(`
-                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                        <td scope="row"> ${index+1} </td>
-                        <td> ${brand?.invoiceNo} </td>
-                        <td> ${brand?.staff_name} </td>
-                        <td> ${brand?.billing_date} </td>
-                        <td> ${brand?.paymentType} </td>
-                        <td> ${totalAmount.toFixed(2)} </td>
-                        <td>
-                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
-                        </td>
+                    <tr>
+                        <td class="text-center" colspan="4">No Brand Found</td>
                     </tr>
                 `);
-            });
-            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-        } else {
-            $('#purchase-entry-table tbody').append(`
-                <tr>
-                    <td class="text-center" colspan="4">No Brand Found</td>
-                </tr>
+                $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
+            }
+        }
+
+        // DISPLAY DATE FILTER 
+        function displayFilteredData(data) {
+            let tableBody = $('#purchase-entry-table tbody');
+            tableBody.empty();
+            if (data.length > 0) {
+                data.forEach((customerBill, index) => {
+                    tableBody.append(`
+                    <tr>
+                    <td scope="row">${index + 1}</td>   
+                        <td>${customerBill.invoiceNo}</td>   
+                        <td>${customerBill.staff_name}</td>
+                        <td>${customerBill.billing_date}</td>
+                        <td>${customerBill.paymentType}</td>
+                        <td>${customerBill.total_amt}</td>
+                        <td>
+                            <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
+                            <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
+                        </td>
+                    </tr>
+                    `);
+                });
+            } else {
+                tableBody.append('<tr><td colspan="6">No records found</td></tr>');
+            }
+        }
+
+        function populateModal(bill) {
+            console.log(bill);
+            $('#printModal .modal-body').html(`
+                <p><strong>Invoice No:</strong> ${bill.invoiceNo}</p>
+                <p><strong>Staff Name:</strong> ${bill.staff_name}</p>
+                <p><strong>Billing Date:</strong> ${bill.billing_date}</p>
+                <p><strong>Payment Type:</strong> ${bill.paymentType}</p>
+                <p><strong>Total Amount:</strong> ${bill.total_amt}</p>
             `);
-            $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
         }
-    }
+        function printModalContent() {
+            var printContent = document.getElementById("printArea").innerHTML;
+            var originalContent = document.body.innerHTML;
 
-    // DISPLAY DATE FILTER 
-    function displayFilteredData(data) {
-        let tableBody = $('#purchase-entry-table tbody');
-        tableBody.empty();
-        if (data.length > 0) {
-            data.forEach((customerBill, index) => {
-                tableBody.append(`
-                <tr>
-                <td scope="row">${index + 1}</td>   
-                    <td>${customerBill.invoiceNo}</td>   
-                    <td>${customerBill.staff_name}</td>
-                    <td>${customerBill.billing_date}</td>
-                    <td>${customerBill.paymentType}</td>
-                    <td>${customerBill.total_amt}</td>
-                    <td>
-                        <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
-                        <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
-                    </td>
-                </tr>
-                `);
-            });
-        } else {
-            tableBody.append('<tr><td colspan="6">No records found</td></tr>');
-        }
-    }
+            printContent = printContent.replace('<button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>', '');
 
-    function populateModal(bill) {
-        console.log(bill);
-        $('#printModal .modal-body').html(`
-            <p><strong>Invoice No:</strong> ${bill.invoiceNo}</p>
-            <p><strong>Staff Name:</strong> ${bill.staff_name}</p>
-            <p><strong>Billing Date:</strong> ${bill.billing_date}</p>
-            <p><strong>Payment Type:</strong> ${bill.paymentType}</p>
-            <p><strong>Total Amount:</strong> ${bill.total_amt}</p>
-        `);
-    }
-    function printModalContent() {
-        var printContent = document.getElementById("printArea").innerHTML;
-        var originalContent = document.body.innerHTML;
+            var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
 
-        printContent = printContent.replace('<button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>', '');
+            document.body.innerHTML = printContent;
 
-        var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
-        if (modalBackdrop) {
-            modalBackdrop.remove();
+            window.print();
+
+            document.body.innerHTML = originalContent;
+
+            $('#printModal').modal('show');
         }
 
-        document.body.innerHTML = printContent;
+        document.getElementById("printButton").addEventListener("click", function() {
+            printModalContent();
+        });
 
-        window.print();
 
-        document.body.innerHTML = originalContent;
-
-        $('#printModal').modal('show');
-    }
-
-    document.getElementById("printButton").addEventListener("click", function() {
-        printModalContent();
     });
-
-
-});
 
 
         

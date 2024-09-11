@@ -273,12 +273,12 @@
 
             // CREATING BILL
             $(document).on('click', '#submitBilling', function () {
-                const payload = gatherFormData();
+                const payload = gatherFormData(); 
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
-                ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
-                    window.location.href = '/store/customer/billing';
+
+                ajaxPostData('/customer/billing/create', payload, csrfToken, (response) => {
                     Swal.fire({
-                        title: "Customer Billing !",
+                        title: "Customer Billing!",
                         icon: "success",
                         text: "Customer Billing Added Successfully.",
                     }).then((response)=>{
@@ -286,9 +286,16 @@
                             window.location.href = "/store/customer/billing";
                         }
                     });
+                }, (error) => {
+                    Swal.fire({
+                        title: "Error!",
+                        icon: "error",
+                        text: "Failed to create billing. Please try again.",
+                    });
+                });
+            });
 
-                })
-            })       
+
 
             // ADDING CUSTOMER 
             $('#addCustomer').on('submit', function(event) {
@@ -368,7 +375,22 @@
                 })
             }
           
+
         }
+
+        function updateProductQuantity(product_id, assigned_qty) {
+            ajaxPostData('/api/update_product_qty', { 
+                product_id: product_id, 
+                assigned_qty: assigned_qty 
+            }, $('meta[name="csrf-token"]').attr('content'), (response) => {
+                if (response.success) {
+                    console.log(`Product ID ${product_id} quantity updated successfully`);
+                } else {
+                    console.error(`Failed to update quantity for Product ID ${product_id}`);
+                }
+            });
+        }
+
         
         function doctorData() { 
             ajaxGetData('/doctors', (res)=>{
@@ -397,6 +419,9 @@
                 });
             });
         }
+
+
+
 
         function categoryData(id, count) {
             ajaxGetData(`/category?id=${id}`, (res)=>{

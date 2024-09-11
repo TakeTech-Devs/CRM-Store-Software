@@ -7,7 +7,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-dark">Create Staff Billing</h2>
             <div class="text-right">
-                <a href="{{ url('store/customer/billing') }}" class="btn btn-secondary btn-sm">View Staff Billing List</a>
+                <a href="{{ url('store/staff/billing') }}" class="btn btn-secondary btn-sm">View Staff Billing List</a>
             </div>
         </div>
 

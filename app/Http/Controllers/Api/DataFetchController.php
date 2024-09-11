@@ -645,5 +645,18 @@ class DataFetchController extends Controller
             return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
         }
     }
+
+    public function updateProductQty(Request $request) {
+        $product = Product::find($request->product_id);
+        if ($product) {
+            // Assuming you have a 'quantity' field in your products table
+            $product->quantity = $product->quantity - $request->assigned_qty;
+            $product->save();
+            return response()->json(['success' => true, 'message' => 'Product quantity updated successfully']);
+        } else {
+            return response()->json(['success' => false, 'message' => 'Product not found']);
+        }
+    }
+    
     
 }
