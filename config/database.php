@@ -38,6 +38,19 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
+        'admin_mysql' => [
+            'driver' => 'mysql',
+            'host' => env('ADMIN_DB_HOST', '127.0.0.1'),
+            'port' => env('ADMIN_DB_PORT', '3306'),
+            'database' => env('ADMIN_DB_DATABASE', 'rightaid'),
+            'username' => env('ADMIN_DB_USERNAME', 'root'),
+            'password' => env('ADMIN_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
 
         'mysql' => [
             'driver' => 'mysql',
@@ -121,6 +134,8 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
+
+        
 
     ],
 

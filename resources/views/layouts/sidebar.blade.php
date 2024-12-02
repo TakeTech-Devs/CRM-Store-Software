@@ -48,10 +48,10 @@
                 </a>
                 <div id="collapseUserPages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{url('admin/add-employee')}}">Datewise Sales Report</a>
-                        <a class="collapse-item" href="{{url('admin/add-customer')}}">Sold Producr Report</a>
-                        <a class="collapse-item" href="{{url('admin/add-doctor')}}">Stock Report</a>
-                        <a class="collapse-item" href="{{url('admin/add-doctor')}}">Expiry Date Report</a>
+                        <a class="collapse-item" href="{{url('store/doctor/report')}}">Doctor Report</a>
+                        <a class="collapse-item" href="{{url('store/commulative/report')}}">Commulative Sales Report</a>
+                        <a class="collapse-item" href="{{url('store/expiry/report')}}">Expired Medicine Report</a>
+                        <a class="collapse-item" href="{{url('store/gst/report')}}">GST Report</a>
                     </div>
                 </div>
             </li>

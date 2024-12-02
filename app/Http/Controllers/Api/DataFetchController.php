@@ -432,6 +432,76 @@ class DataFetchController extends Controller
             throw $th;
         }
     }
+
+    public function syncAllTables()
+    {
+        $tables = $this->getAllTables();
+
+        foreach ($tables as $table) {
+            // Sync logic for each table
+        }
+
+        return response()->json(['message' => 'Database synced successfully']);
+    }
+
+    private function getAllTables()
+    {
+        $tables = DB::select('SHOW TABLES');
+        $tableKey = 'Tables_in_' . env('DB_DATABASE');
+
+        return collect($tables)->pluck($tableKey)->toArray();
+    }
+
+    public function sendDataToAdminDatabase(Request $request, $storeId)
+{
+    DB::beginTransaction(); // Start a transaction
+    try {
+        // Admin Database Connection
+        $adminDB = DB::connection('admin_mysql');
+
+        // Get all table names dynamically
+        $tables = DB::select('SHOW TABLES');
+        $tableKey = 'Tables_in_' . env('DB_DATABASE');
+        $tableNames = collect($tables)->pluck($tableKey)->toArray();
+
+        // Define tables to skip (like 'backup' table or others)
+        $skipTables = ['backup'];
+
+        foreach ($tableNames as $table) {
+            // Skip irrelevant or non-existent tables
+            if (in_array($table, $skipTables)) {
+                continue;
+            }
+
+            // Check if the table exists in both databases
+            if (Schema::hasTable($table)) {
+                // Fetch the last updated timestamp from the admin database
+                $lastUpdatedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
+
+                // Fetch only new or updated records from the local database
+                $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
+
+                if ($newData->isNotEmpty()) {
+                    // Insert or update records in the admin database
+                    $adminDB->table($table)->upsert($newData->toArray(), ['id']); // Ensure 'id' exists as unique key
+                }
+            } else {
+                \Log::warning("Table {$table} does not exist in the admin database.");
+            }
+        }
+
+        DB::commit(); // Commit the transaction if everything goes fine
+        return response()->json(['success' => true, 'message' => 'Sync completed successfully.']);
+    } catch (\Exception $e) {
+        DB::rollBack(); // Rollback if any error occurs
+        \Log::error('Sync failed: ' . $e->getMessage());
+        return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
+    }
+}
+
+
+
+
     
     
 

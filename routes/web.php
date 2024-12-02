@@ -57,6 +57,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/backup', function () {
             return view('store/backup/backup');
         });
+        Route::get('/report', function () {
+            return view('store/reports/storeReport');
+        });
+        Route::get('/doctor/report', function () {
+            return view('store/reports/doctorReport');
+        });
+        Route::get('/commulative/report', function () {
+            return view('store/reports/commulativeReport');
+        });
+        Route::get('/expiry/report', function () {
+            return view('store/reports/expiryReport');
+        });
+        Route::get('/gst/report', function () {
+            return view('store/reports/gstReport');
+        });
     });
 });
 
@@ -65,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
 // APIS
 // Route::prefix('store')->group(function () {
 Route::get('/sync-data/{storeId}', [DataFetchController::class, 'dataFetch']);
+Route::get('/sync/out/data/{storeId}', [DataFetchController::class, 'sendDataToAdminDatabase']);
 Route::post('/store', [DataFetchController::class, 'insertStore']);
 Route::get('/verify/store', [DataFetchController::class, 'checkStore']);
 Route::get('/customers', [DataController:: class , 'customer_data']);

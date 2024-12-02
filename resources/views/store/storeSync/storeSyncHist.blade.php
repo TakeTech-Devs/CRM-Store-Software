@@ -16,7 +16,8 @@
 </style>
 
 <div class="col text-right">
-    <button type="button" class="btn btn-primary" id="sessionValue" value="{{ Session::get('storeId') }}">Sync</button>
+    <button type="button" class="btn btn-primary" id="sessionValue" value="{{ Session::get('storeId') }}">Sync In</button>
+    <button type="button" class="btn btn-warning" id="syncOutBtn">Sync Out</button> <!-- New Sync Out button -->
 </div>
 <div class="container">
     <h1>Store Sync History</h1>
@@ -72,7 +73,6 @@
         
         $(document).on('click', '#sessionValue', function () {
             let store_id = $(this).val();
-            // $('#loadingModal').modal('show');
             sync(store_id);
         });
 
@@ -81,13 +81,21 @@
             let endDate = $('#endDate').val();
             getSyncHist(startDate, endDate);
         });
+
+        // Sync Out Button
+        $('#syncOutBtn').on('click', function () {
+            syncOut();
+        });
     });
 
     function sync(store_id) {
+        // Show loading modal
+        $('#loadingModal').modal('show');
+        
         ajaxGetData(`/sync-data/${store_id}`, (response) => {
-            // $('#loadingModal').modal('hide');
+            $('#loadingModal').modal('hide'); // Hide loading modal
             if (response?.status == 200) {
-                getSyncHist();
+                getSyncHist(); // Refresh sync history
             } else {
                 alert('Sync failed!');
             }
@@ -95,8 +103,10 @@
     }
 
     function getSyncHist(startDate = '', endDate = '') {
-        // $('#loadingModal').modal('show');
         let url = `/api/get/sync/history?start_date=${startDate}&end_date=${endDate}`;
+        
+        // Show loading modal while fetching data
+        $('#loadingModal').modal('show');
         
         ajaxGetData(url, (response) => {
             $('#loadingModal').modal('hide');
@@ -117,5 +127,36 @@
             }
         });
     }
+
+    // Sync Out Function
+    function syncOut() {
+        const loadingModal = $('#loadingModal'); // Show modal
+        const storeId = $('#sessionValue').val();
+        
+        loadingModal.modal('show'); // Show loading modal
+        
+        // Send request for sync out
+        fetch(`/sync/out/data/${storeId}`, {
+            method: 'GET',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                loadingModal.modal('hide'); // Hide loading modal
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                loadingModal.modal('hide'); // Hide loading modal
+                console.error('Error:', error);
+                alert('An unexpected error occurred.');
+            });
+    }
+
 </script>
 @endsection

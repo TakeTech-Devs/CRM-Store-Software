@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\StaffBilling;
 use App\Http\Controllers\Api\DataFetchController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\StockerTransferController;
+use App\Http\Controllers\Api\ReportController;
 
 
 
@@ -38,3 +39,7 @@ Route::get('/purchase_request', [DataFetchController::class, 'purchase_request_a
 Route::get('store-transfer', function () {
     return response()->json(['message' => 'API is working']);
 });
+
+Route::get('/doctor-report', [ReportController::class, 'doctorWiseReport'])->name('doctor.report');
+Route::get('/commulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('commulative.report');
+Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');
