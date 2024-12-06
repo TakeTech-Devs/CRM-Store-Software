@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
+
 
 class DataFetchController extends Controller
 {
@@ -464,8 +466,8 @@ class DataFetchController extends Controller
         $tableKey = 'Tables_in_' . env('DB_DATABASE');
         $tableNames = collect($tables)->pluck($tableKey)->toArray();
 
-        // Define tables to skip (like 'backup' table or others)
-        $skipTables = ['backup'];
+        // Define tables to skip (e.g., backup tables, cache tables)
+        $skipTables = ['backup', 'cache', 'migrations'];
 
         foreach ($tableNames as $table) {
             // Skip irrelevant or non-existent tables
@@ -473,21 +475,39 @@ class DataFetchController extends Controller
                 continue;
             }
 
-            // Check if the table exists in both databases
-            if (Schema::hasTable($table)) {
-                // Fetch the last updated timestamp from the admin database
-                $lastUpdatedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
-
-                // Fetch only new or updated records from the local database
-                $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
-
-                if ($newData->isNotEmpty()) {
-                    // Insert or update records in the admin database
-                    $adminDB->table($table)->upsert($newData->toArray(), ['id']); // Ensure 'id' exists as unique key
-                }
-            } else {
-                \Log::warning("Table {$table} does not exist in the admin database.");
+            // Check if the table exists in both local and admin databases
+            if (!Schema::hasTable($table) || !$adminDB->getSchemaBuilder()->hasTable($table)) {
+                \Log::warning("Table {$table} does not exist in one of the databases.");
+                continue;
             }
+
+            // Fetch the last updated timestamp from the admin database
+            $lastUpdatedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
+
+            // Fetch only new or updated records from the local database
+            $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
+
+            if (!$newData->isEmpty()) {
+                $dataArray = $newData->map(function ($item) {
+                    return (array) $item; // Ensure each record is an associative array
+                })->toArray();
+            
+                // Dynamically determine column names
+                $columns = array_keys($dataArray[0]);
+            
+                // Define unique column(s) dynamically (e.g., 'id')
+                $uniqueColumns = ['id'];
+            
+                // Perform the upsert
+                $adminDB->table($table)->upsert(
+                    $dataArray,
+                    $uniqueColumns, // Unique column(s)
+                    $columns        // Columns to update
+                );
+            }
+            
+
+            \Log::info("Synced table {$table} successfully.");
         }
 
         DB::commit(); // Commit the transaction if everything goes fine
@@ -498,6 +518,9 @@ class DataFetchController extends Controller
         return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
     }
 }
+
+
+
 
 
 
