@@ -446,90 +446,69 @@ class DataFetchController extends Controller
         return response()->json(['message' => 'Database synced successfully']);
     }
 
-    private function getAllTables()
-    {
+    private function getAllTables(){
         $tables = DB::select('SHOW TABLES');
         $tableKey = 'Tables_in_' . env('DB_DATABASE');
 
         return collect($tables)->pluck($tableKey)->toArray();
     }
 
-    public function sendDataToAdminDatabase(Request $request, $storeId)
-{
-    DB::beginTransaction(); // Start a transaction
-    try {
-        // Admin Database Connection
-        $adminDB = DB::connection('admin_mysql');
+    public function sendDataToAdminDatabase(Request $request, $storeId){
+        DB::beginTransaction(); 
+        try {
+            $adminDB = DB::connection('admin_mysql');
 
-        // Get all table names dynamically
-        $tables = DB::select('SHOW TABLES');
-        $tableKey = 'Tables_in_' . env('DB_DATABASE');
-        $tableNames = collect($tables)->pluck($tableKey)->toArray();
+            $tables = DB::select('SHOW TABLES');
+            $tableKey = 'Tables_in_' . env('DB_DATABASE');
+            $tableNames = collect($tables)->pluck($tableKey)->toArray();
 
-        // Define tables to skip (e.g., backup tables, cache tables)
-        $skipTables = ['backup', 'cache', 'migrations'];
+            $skipTables = ['backup', 'cache', 'migrations', 'personal_access_tokens', 'sessions', 'sync_history', 'tax_tables'];
 
-        foreach ($tableNames as $table) {
-            // Skip irrelevant or non-existent tables
-            if (in_array($table, $skipTables)) {
-                continue;
+            foreach ($tableNames as $table) {
+                if (in_array($table, $skipTables)) {
+                    continue;
+                }
+
+                if (!Schema::hasTable($table) || !$adminDB->getSchemaBuilder()->hasTable($table)) {
+                    \Log::warning("Table {$table} does not exist in one of the databases.");
+                    continue;
+                }
+
+                $lastUpdatedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
+
+                $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
+
+                if (!$newData->isEmpty()) {
+                    $dataArray = $newData->map(function ($item) {
+                        return (array) $item; 
+                    })->toArray();
+                
+                    $columns = array_keys($dataArray[0]);
+                
+                    $uniqueColumns = ['id'];
+                
+                    $adminDB->table($table)->upsert(
+                        $dataArray,
+                        $uniqueColumns, 
+                        $columns        
+                    );
+                }
+
+                \Log::info("Synced table {$table} successfully with {$newData->count()} records.");
             }
 
-            // Check if the table exists in both local and admin databases
-            if (!Schema::hasTable($table) || !$adminDB->getSchemaBuilder()->hasTable($table)) {
-                \Log::warning("Table {$table} does not exist in one of the databases.");
-                continue;
-            }
-
-            // Fetch the last updated timestamp from the admin database
-            $lastUpdatedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
-
-            // Fetch only new or updated records from the local database
-            $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
-
-            if (!$newData->isEmpty()) {
-                $dataArray = $newData->map(function ($item) {
-                    return (array) $item; // Ensure each record is an associative array
-                })->toArray();
-            
-                // Dynamically determine column names
-                $columns = array_keys($dataArray[0]);
-            
-                // Define unique column(s) dynamically (e.g., 'id')
-                $uniqueColumns = ['id'];
-            
-                // Perform the upsert
-                $adminDB->table($table)->upsert(
-                    $dataArray,
-                    $uniqueColumns, // Unique column(s)
-                    $columns        // Columns to update
-                );
-            }
-            
-
-            \Log::info("Synced table {$table} successfully.");
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Sync completed successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack(); 
+            \Log::error('Sync failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
         }
-
-        DB::commit(); // Commit the transaction if everything goes fine
-        return response()->json(['success' => true, 'message' => 'Sync completed successfully.']);
-    } catch (\Exception $e) {
-        DB::rollBack(); // Rollback if any error occurs
-        \Log::error('Sync failed: ' . $e->getMessage());
-        return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
     }
-}
-
-
-
-
-
-
-
-    
+ 
     
 
-    public function insertStore(Request $request)
-    {
+    public function insertStore(Request $request){
         try {
             $payload = [
                 "name" => $request->name,
@@ -548,7 +527,6 @@ class DataFetchController extends Controller
                     'status' => 200,
                     'message' => "Store insert.",
                     'resStatus' => true,
-                    // 'data'=> $checkStore
                 ], 200);
             }
         } catch (\Throwable $th) {
@@ -590,7 +568,6 @@ class DataFetchController extends Controller
             $page = $request->query('page') ;
             $limit = $request->query('limit');
             $query = DB::table('sync_history');
-            // $history = DB::table('sync_history')->get();
             if ($startDate) {
                 $query->where('sync_date', '>=', $startDate);
             }
@@ -621,8 +598,7 @@ class DataFetchController extends Controller
         }
     }
         
-    public function backupSQL()
-    {
+    public function backupSQL(){
         $database = env('DB_DATABASE');
         $username = env('DB_USERNAME');
         $password = env('DB_PASSWORD');
@@ -683,10 +659,8 @@ class DataFetchController extends Controller
     
         return response()->json(['status' => 'success', 'file' => $fileName, 'file_url' => $fileUrl]);
     }
-    
 
-    public function deleteBackup($id)
-    {
+    public function deleteBackup($id){
         $backup = DB::table('backup')->where('id', $id)->first();
 
         if (!$backup) {
@@ -709,26 +683,13 @@ class DataFetchController extends Controller
 
     }
 
-    // public function purchase_request_all(){
-    //     try {
-    //         $purchase_request = DB::table('purchase_stock_entry')->get();
-
-    //     return response()->json(['status' => 'success', 'purchase_request' => $purchase_request]);
-
-    //     } catch (\Throwable $th) {
-    //         throw $th;
-    //     }
-    // }
-
     public function purchase_request_all(Request $request){
         try {
-            $id = $request->query('id'); // Get the ID from the query parameters
+            $id = $request->query('id'); 
     
             if ($id) {
-                // Fetch specific purchase request if ID is provided
                 $purchase_request = DB::table('purchase_stock_entry')->where('product_id', $id)->get();
             } else {
-                // Fetch all purchase requests if no ID is provided
                 $purchase_request = DB::table('purchase_stock_entry')->get();
             }
     
@@ -742,7 +703,6 @@ class DataFetchController extends Controller
     public function updateProductQty(Request $request) {
         $product = Product::find($request->product_id);
         if ($product) {
-            // Assuming you have a 'quantity' field in your products table
             $product->quantity = $product->quantity - $request->assigned_qty;
             $product->save();
             return response()->json(['success' => true, 'message' => 'Product quantity updated successfully']);

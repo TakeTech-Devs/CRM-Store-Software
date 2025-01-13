@@ -333,7 +333,7 @@
                 event.preventDefault();
 
                 $.ajax({
-                    url: '/api/doctor', 
+                    url: 'api/doctor', 
                     type: 'POST',
                     data: {
                         name: $('#name').val(),

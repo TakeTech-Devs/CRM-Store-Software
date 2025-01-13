@@ -217,6 +217,26 @@ class ReportController extends Controller
         ]);
     }
 
+    public function expiryReport(){
+        try {
+            $PurchaseStockEntryList = DB::table('purchase_stock_entry')
+                ->join('product', 'purchase_stock_entry.product_id', '=', 'product.id')
+                ->select('purchase_stock_entry.*', 'product.product_name as product_name')
+                ->get();
+    
+            return response()->json([
+                'status' => 200,
+                'data' => $PurchaseStockEntryList
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching the data.',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
     
     public function gstReport(Request $request) {
         // Fetch the billing data from customer_product_billing

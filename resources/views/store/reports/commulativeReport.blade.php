@@ -104,17 +104,10 @@
                     let data = response.data;
 
                     // Populate summary data
-                    $('#totalSalesAmount').text(data.total_sales_amount || 0);
                     $('#totalSalesAmount').text((data.total_sales_amount || 0).toFixed(2));
-                    $('#cashPayments').text((data.cash_payments || 0).toFixed(2));  // Ensure this includes offline payments
+                    $('#cashPayments').text((data.cash_payments || 0).toFixed(2)); // Ensure this includes offline payments
                     $('#cardPayments').text((data.card_payments || 0).toFixed(2));
                     $('#onlinePayments').text((data.online_payments || 0).toFixed(2));
-                    // Populate cash sources data
-                    let cashSources = data.cash_sources || {};
-                    $('#cashSourceGod').text(cashSources.God.length || 0);
-                    $('#cashSourceDoctor').text(cashSources.Doctor.length || 0);
-                    $('#cashSourceStaff').text(cashSources.Staff.length || 0);
-                    $('#cashSourceDiary').text(cashSources.Diary.length || 0);
                 } else {
                     alert('No data found for the cumulative report.');
                 }
@@ -126,16 +119,29 @@
     });
 
     function printModalContent() {
-        var printContent = document.getElementById("printArea").innerHTML;
+        // Generate print content
+        var printContent = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2>Cumulative Sales Report</h2>
+            </div>
+            ${document.getElementById("printArea").innerHTML}
+        `;
+
+        // Save the original content
         var originalContent = document.body.innerHTML;
 
+        // Replace content and print
         document.body.innerHTML = printContent;
         window.print();
+
+        // Restore original content
         document.body.innerHTML = originalContent;
     }
 
+    // Add print button event listener
     document.getElementById("printButton").addEventListener("click", function() {
         printModalContent();
     });
 </script>
+
 @endsection

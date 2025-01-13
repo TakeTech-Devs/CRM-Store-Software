@@ -10,82 +10,121 @@ use App\Models\Customer;
 
 class CustomerBilling extends Controller
 {
-    public function createBilling(Request $request){
-        try {
-            $customer_phone = $request->customer_phone;
-            $doctor_name = $request->doctor_name;
-            $invoiceNo = $request->invoiceNo;
-            $paymentType = $request->paymentType;
-            $product_billing = $request->product_billings;
-            $billing_date = $request->billing_date;
-            $customer_name = $request->customer_name;
-            $billingType = $request->billingType;
-            $total_amt = $request->total_amt;
-
-            DB::beginTransaction();
-    
-            foreach ($product_billing as $key => $value) {
-                $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
-                $remainingQty = $product->qty - $value['qty'];
-    
-                if ($remainingQty < 0) {
-                    DB::rollBack();
-                    return response()->json([
-                        'status' => 400,
-                        'message' => 'Insufficient stock for the product.'
-                    ], 400);
-                }
-    
-                DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
-                    'qty' => $remainingQty,
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $insert_cb =  DB::table('customer_billing')->insertGetId([
-                'customer_phone'=>$customer_phone,
-                'customer_name'=>$customer_name,
-                'doctor_name'=>$doctor_name,
-                'invoiceNo'=>$invoiceNo,
-                'paymentType'=>$paymentType,
-                'billing_date'=>$billing_date,
-                'billingType'=>$billingType,
-                'total_amt'=>$total_amt,
-                'created_at'=>now(),
-                'updated_at'=>now(),
-            ]);
-            foreach ($product_billing as $key => $value) {
-                DB::table('customer_product_billing')->insert([
-                    'category' => $value['category'],
-                    'discount' => $value['discount'],
-                    'pack' => $value['pack'],
-                    'productId' => $value['productId'],
-                    'qty' => $value['qty'],
-                    'subCategory' => $value['subCategory'],
-                    'totalAmount' => $value['totalAmount'],
-                    'unitValue' => $value['unitValue'],
-                    'cb_id' =>  $insert_cb,
-                    'created_at'=>now(),
-                    'updated_at'=>now(),
-       
-                ]);
-                
-            }
-            DB::commit();
-    
+    public function createBilling(Request $request)
+{
+    try {
+        // Ensure the user is authenticated
+        if (!auth()->check()) {
             return response()->json([
-                'status' => 200,
-                'data' => 'Success'
-            ], 200);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw $th;
+                'status' => 401,
+                'message' => 'Authentication required.'
+            ], 401);
         }
+
+        // Retrieve storeId from the session (set during login)
+        $storeId = $request->session()->get('storeId');
+
+        // Ensure storeId exists in the session
+        if (!$storeId) {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Store not logged in.'
+            ], 403);
+        }
+
+        // Billing and product details from the request
+        $customer_phone = $request->customer_phone;
+        $doctor_name = $request->doctor_name;
+        $invoiceNo = $request->invoiceNo;
+        $paymentType = $request->paymentType;
+        $product_billing = $request->product_billings;
+        $billing_date = $request->billing_date;
+        $customer_name = $request->customer_name;
+        $billingType = $request->billingType;
+        $total_amt = $request->total_amt;
+
+        DB::beginTransaction();
+
+        // Loop through product billing and check stock
+        foreach ($product_billing as $key => $value) {
+            $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
+            $remainingQty = $product->qty - $value['qty'];
+
+            if ($remainingQty < 0) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Insufficient stock for the product.'
+                ], 400);
+            }
+
+            DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
+                'qty' => $remainingQty,
+                'updated_at' => now(),
+            ]);
+        }
+
+        // Insert into customer_billing table including the store_id
+        $insert_cb = DB::table('customer_billing')->insertGetId([
+            'store_id' => $storeId, // Use storeId from session
+            'customer_phone' => $customer_phone,
+            'customer_name' => $customer_name,
+            'doctor_name' => $doctor_name,
+            'invoiceNo' => $invoiceNo,
+            'paymentType' => $paymentType,
+            'billing_date' => $billing_date,
+            'billingType' => $billingType,
+            'total_amt' => $total_amt,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Insert into customer_product_billing table
+        foreach ($product_billing as $key => $value) {
+            DB::table('customer_product_billing')->insert([
+                'category' => $value['category'],
+                'discount' => $value['discount'],
+                'pack' => $value['pack'],
+                'productId' => $value['productId'],
+                'qty' => $value['qty'],
+                'subCategory' => $value['subCategory'],
+                'totalAmount' => $value['totalAmount'],
+                'unitValue' => $value['unitValue'],
+                'cb_id' => $insert_cb,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'status' => 200,
+            'data' => 'Success'
+        ], 200);
+    } catch (\Throwable $th) {
+        DB::rollBack();
+        throw $th;
     }
+}
+
+
 
 
     public function listBilling(Request $request){
+        
         try {
+            
+
+            $getStore = DB::table('store')->get();
+
+            var_dump($getStore);
+            
+            
+
+
+            
+
             $startDate = $request->query('start_date');
             $endDate = $request->query('end_date');
             $search = $request->query('search');

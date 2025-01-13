@@ -52,9 +52,9 @@
                 <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
             </div>
         </div>
-        <div class="form-row d-flex align-items-center justify-content-between my-3">
-            <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-                <div class="form-group d-flex align-items-end justify-content-around">
+        <div class="form-row d-flex align-items-center justify-content-between">
+            <div class="col-md-12 form-group d-flex align-items-start justify-content-between mb-0">
+                <div class="form-group d-flex align-items-start justify-content-around">
                     <div class="form-group mx-1">
                         <label for="start_date_input">Start Date</label>
                         <input type="date" class="form-control" id="start_date_input" name="start_date_input">
@@ -64,34 +64,29 @@
                         <label for="end_date_input">End Date</label>
                         <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                     </div>
-                    <!-- <div class="form-group"> -->
-                        <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
-                    <div class="form-group" style="margin-top: 1.85rem !important;">
+                    <div class="form-group" style="margin-top: 2rem !important;">
                         <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
                     </div>
                 </div>
-                <div class="d-flex align-items-center justify-content-around">
-                    <form class="d-flex align-items-center justify-content-between">
-                        <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                            <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
+                <div class="d-flex align-items-start justify-content-around">
+                        <div class="form-group mx-3">
+                            <label for="search">Search: </label> &nbsp;&nbsp;
                             <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
                         </div>  
-                    </form>   
                 </div>
             </div>
         </div>
         <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
             <div class="d-flex align-items-center justify-content-center">
-                <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                    <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
+                <!-- <div class="show-entries">
+                    <label for="showEntries" class="d-inline-block">Show: &nbsp;</label>
                     <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries" onchange="updatePagination()">
                         <option selected >10</option>
                         <option>25</option>
                         <option>50</option>
                         <option>100</option>
                     </select>
-                </div>
+                </div> -->
                 {{-- <div class="download-buttons" style="margin-left:25px !important;">
                     <div class="download-options d-flex align-items-baseline justify-content-between">
                         
@@ -109,7 +104,7 @@
                     </div>
                 </div> --}}
             </div> 
-            <div class="grandTotalAmount text-right mt-3">
+            <div class="grandTotalAmount text-right">
                 <strong>Total Amount: 0.00/-</strong>
             <div class="totalAmount">
                 <strong>Total Amount: <span id= "total">0/- </span></strong>
@@ -156,7 +151,7 @@
             <div class="modal-content" style="border: none;">
                 <div class="modal-body" style="padding: 10px; width:100%;">
                     <div id="printArea">              
-                        <table class="border p-2 my-2">
+                        <table class="border p-2">
                             <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>        
                             <div class="col-md-12">
                                 <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
@@ -273,7 +268,6 @@
         let productList = {};
         let doctorList = {};
 
-        // Fetch products list
         function fetchProducts() {
             return $.ajax({
                 url: '/products', // Adjust the endpoint as necessary

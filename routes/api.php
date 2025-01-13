@@ -43,3 +43,4 @@ Route::get('store-transfer', function () {
 Route::get('/doctor-report', [ReportController::class, 'doctorWiseReport'])->name('doctor.report');
 Route::get('/commulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('commulative.report');
 Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');
+Route::get('/expiry-report', [ReportController::class, 'expiryReport'])->name('expiry.report');
