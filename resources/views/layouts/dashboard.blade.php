@@ -39,10 +39,10 @@
             <div id="content">
                 @include('layouts.header')
 
-                <!-- <div class="container-fluid"> -->
+                <div class="container-fluid">
 
                     @yield('content')
-                <!-- </div> -->
+                </div>
             </div>
         </div>
     </div>

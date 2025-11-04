@@ -354,8 +354,91 @@ class ReportController extends Controller
         }
     }
     
-    
 
+    public function yesterdaySale()
+    {
+        $yesterday = now()->subDay()->toDateString();
 
+        $customerSales = DB::table('customer_billing')
+            ->whereDate('billing_date', $yesterday)
+            ->sum('total_amt');
 
+        $staffSales = DB::table('staff_billing')
+            ->whereDate('billing_date', $yesterday)
+            ->sum('total_amt');
+
+        $totalSales = $customerSales + $staffSales;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $totalSales
+        ]);
+    }
+
+    public function todaySale()
+    {
+        $today = now()->toDateString();
+
+        $customerSales = DB::table('customer_billing')
+            ->whereDate('billing_date', $today)
+            ->sum('total_amt');
+
+        $staffSales = DB::table('staff_billing')
+            ->whereDate('billing_date', $today)
+            ->sum('total_amt');
+
+        $totalSales = $customerSales + $staffSales;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $totalSales
+        ]);
+    }
+
+    public function zeroStockMedicine()
+    {
+        $zeroStockProducts = DB::table('purchase_stock_entry')
+            ->select('product_id')
+            ->groupBy('product_id')
+            ->havingRaw('SUM(qty) = 0')
+            ->get();
+
+        $productNames = [];
+        foreach ($zeroStockProducts as $product) {
+            $productName = DB::table('product')->where('id', $product->product_id)->value('product_name');
+            if ($productName) {
+                $productNames[] = $productName;
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'count' => count($productNames),
+                'products' => $productNames
+            ]
+        ]);
+    }
+
+    public function monthlyEarnings()
+    {
+        $currentMonth = now()->format('Y-m');
+
+        $customerSales = DB::table('customer_billing')
+            ->whereYear('billing_date', now()->year)
+            ->whereMonth('billing_date', now()->month)
+            ->sum('total_amt');
+
+        $staffSales = DB::table('staff_billing')
+            ->whereYear('billing_date', now()->year)
+            ->whereMonth('billing_date', now()->month)
+            ->sum('total_amt');
+
+        $totalEarnings = $customerSales + $staffSales;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $totalEarnings
+        ]);
+    }
 }

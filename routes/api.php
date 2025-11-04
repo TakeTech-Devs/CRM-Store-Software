@@ -47,3 +47,7 @@ Route::get('/commulative-report', [ReportController::class, 'getCumulativeSalesR
 Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');
 Route::get('/expiry-report', [ReportController::class, 'expiryReport'])->name('expiry.report');
 Route::get('/stock-report', [ReportController::class, 'stockReport'])->name('stock.report');
+Route::get('/yesterday-sale', [ReportController::class, 'yesterdaySale']);
+Route::get('/today-sale', [ReportController::class, 'todaySale']);
+Route::get('/zero-stock-medicine', [ReportController::class, 'zeroStockMedicine']);
+Route::get('/monthly-earnings', [ReportController::class, 'monthlyEarnings']);
