@@ -97,7 +97,7 @@
     $(document).ready(function() {
         // Fetch and display cumulative report on page load
         $.ajax({
-            url: "{{ url('http://localhost:8001/api/commulative-report') }}",
+            url: "{{ url('https://rightaid.taketechdevs.com/api/commulative-report') }}",
             method: 'GET',
             success: function(response) {
                 if (response.status === 'success') {

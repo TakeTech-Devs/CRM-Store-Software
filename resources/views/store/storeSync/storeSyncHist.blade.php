@@ -7,16 +7,19 @@
     .container {
         margin-top: 50px;
     }
+
     .sync-now {
         float: right;
     }
+
     .find-btn {
         margin-top: 32px;
     }
 </style>
 
 <div class="col text-right">
-    <button type="button" class="btn btn-primary" id="sessionValue" value="{{ Session::get('storeId') }}">Sync In</button>
+    <button type="button" class="btn btn-primary" id="sessionValue" value="{{ Session::get('storeId') }}">Sync
+        In</button>
     <button type="button" class="btn btn-warning" id="syncOutBtn">Sync Out</button> <!-- New Sync Out button -->
 </div>
 <div class="container">
@@ -36,7 +39,7 @@
     </div>
 
     <div class="row mt-3">
-        <div class="col-md-12">
+        <div class="col-md-12" style="overflow-y: auto; height: 400px;">
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -46,7 +49,7 @@
                     </tr>
                 </thead>
                 <tbody id="syncData">
-
+                    <!-- Sync history data will be populated here -->
                 </tbody>
             </table>
         </div>
@@ -59,7 +62,7 @@
         <div class="modal-content">
             <div class="modal-body text-center">
                 <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden"></span>
                 </div>
                 <p>Syncing Data, please wait...</p>
             </div>
@@ -73,32 +76,42 @@
         
         $(document).on('click', '#sessionValue', function () {
             let store_id = $(this).val();
+            
             sync(store_id);
         });
-
+        
         $('#findBtn').on('click', function () {
             let startDate = $('#startDate').val();
             let endDate = $('#endDate').val();
             getSyncHist(startDate, endDate);
         });
-
+        
         // Sync Out Button
         $('#syncOutBtn').on('click', function () {
             syncOut();
         });
     });
-
+    
     function sync(store_id) {
         // Show loading modal
         $('#loadingModal').modal('show');
+        $('#loadingModal').css('display', 'block'); // Ensure modal is displayed
+
+        console.log(store_id);
         
         ajaxGetData(`/sync-data/${store_id}`, (response) => {
+            console.log(response);
+            
             $('#loadingModal').modal('hide'); // Hide loading modal
             if (response?.status == 200) {
                 getSyncHist(); // Refresh sync history
             } else {
                 alert('Sync failed!');
             }
+        }).fail((error) => {
+            console.error('Error during sync:', error);
+            $('#loadingModal').modal('hide'); // Hide loading modal
+            alert('An error occurred while syncing data.');
         });
     }
 
@@ -108,8 +121,10 @@
         // Show loading modal while fetching data
         $('#loadingModal').modal('show');
         
-        ajaxGetData(url, (response) => {
-            $('#loadingModal').modal('hide');
+        ajaxGetData(url, (response) => {            
+            $('#loadingModal').css('display', 'none'); // Hide loading modal
+            $('.modal-backdrop').remove(); // Remove backdrop
+
             if (response?.status == 404) {
                 $('#syncData').html(response?.data);
             } else {

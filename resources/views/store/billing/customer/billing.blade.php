@@ -3,82 +3,95 @@
 @section('title', 'Customer Billing')
 
 @section('content')
-    <style>
-        .pagination {
-            margin-top: 10px;
+<style>
+    .pagination {
+        margin-top: 10px;
+    }
+
+    .table tbody+tbody {
+        border-top: none !important;
+    }
+
+    @media print {
+        body * {
+            border: none !important;
+            box-shadow: none !important;
         }
+
         .table tbody+tbody {
             border-top: none !important;
         }
-        @media print {
-            body * {
-                border: none !important;
-                box-shadow: none !important;
-            }
-            .table tbody+tbody {
-                border-top: none !important;
-            }
-            #printButton{
-                display: none;
-            }
-            @page{
-                size: A4 landscape;
-            }
-        }
-        .loader {
-            border: 10px solid #f3f3f3; 
-            border-top: 10px solid #A54217; 
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-            margin-top: 10%;
-            margin-left: 50%;
+
+        #printButton {
             display: none;
-            bottom: 25px;
-            position: absolute;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @page {
+            size: A4 landscape;
         }
-    </style>
+    }
 
-    <div class="container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-            <h2 class="text-dark bold ">Customer Billing Page</h1>
+    .loader {
+        border: 10px solid #f3f3f3;
+        border-top: 10px solid #A54217;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 2s linear infinite;
+        margin-top: 10%;
+        margin-left: 50%;
+        display: none;
+        bottom: 25px;
+        position: absolute;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="text-dark bold ">Customer Billing Page</h1>
             <div class="text-right">
-                <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
+                <a href="{{ url('store/customer/create/billing') }}" class="btn btn-secondary btn-sm">Create New
+                    Billing</a>
             </div>
-        </div>
-        <div class="form-row d-flex align-items-center justify-content-between">
-            <div class="col-md-12 form-group d-flex align-items-start justify-content-between mb-0">
-                <div class="form-group d-flex align-items-start justify-content-around">
-                    <div class="form-group mx-1">
-                        <label for="start_date_input">Start Date</label>
-                        <input type="date" class="form-control" id="start_date_input" name="start_date_input">
-                    </div>
-                    <div class="form-group mx-1">
+    </div>
+    <div class="form-row d-flex align-items-center justify-content-between">
+        <div class="col-md-12 form-group d-flex align-items-start justify-content-between mb-0">
+            <div class="form-group d-flex align-items-start justify-content-around">
+                <div class="form-group mx-1">
+                    <label for="start_date_input">Start Date</label>
+                    <input type="date" class="form-control" id="start_date_input" name="start_date_input">
+                </div>
+                <div class="form-group mx-1">
 
-                        <label for="end_date_input">End Date</label>
-                        <input type="date" class="form-control" id="end_date_input" name="end_date_input">
-                    </div>
-                    <div class="form-group" style="margin-top: 2rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
-                    </div>
+                    <label for="end_date_input">End Date</label>
+                    <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                 </div>
-                <div class="d-flex align-items-start justify-content-around">
-                        <div class="form-group mx-3">
-                            <label for="search">Search: </label> &nbsp;&nbsp;
-                            <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
-                        </div>  
+                <div class="form-group" style="margin-top: 2rem !important;">
+                    <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
+                </div>
+            </div>
+            <div class="d-flex align-items-start justify-content-around">
+                <div class="form-group mx-3">
+                    <label for="search">Search: </label> &nbsp;&nbsp;
+                    <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
                 </div>
             </div>
         </div>
-        <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
-            <div class="d-flex align-items-center justify-content-center">
-                <!-- <div class="show-entries">
+    </div>
+    <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group"
+        aria-label="Show Entries and Export">
+        <div class="d-flex align-items-center justify-content-center">
+            <!-- <div class="show-entries">
                     <label for="showEntries" class="d-inline-block">Show: &nbsp;</label>
                     <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries" onchange="updatePagination()">
                         <option selected >10</option>
@@ -87,30 +100,30 @@
                         <option>100</option>
                     </select>
                 </div> -->
-                {{-- <div class="download-buttons" style="margin-left:25px !important;">
-                    <div class="download-options d-flex align-items-baseline justify-content-between">
-                        
-                        
-                        <p>Export as : </p>&nbsp;&nbsp;&nbsp;
-                        <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
-                            <i class="fas fa-file-excel"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-primary">
-                            <i class="fas fa-file-word"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-danger">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>
-                    </div>
-                </div> --}}
-            </div> 
-            <div class="grandTotalAmount text-right">
-                <strong>Total Amount: 0.00/-</strong>
+            {{-- <div class="download-buttons" style="margin-left:25px !important;">
+                <div class="download-options d-flex align-items-baseline justify-content-between">
+
+
+                    <p>Export as : </p>&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    <button type="button" class="btn mx-1 btn-md btn-primary">
+                        <i class="fas fa-file-word"></i>
+                    </button>
+                    <button type="button" class="btn mx-1 btn-md btn-danger">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </div>
+            </div> --}}
+        </div>
+        <div class="grandTotalAmount text-right">
+            <strong>Total Amount: 0.00/-</strong>
             <div class="totalAmount">
-                <strong>Total Amount: <span id= "total">0/- </span></strong>
+                <strong>Total Amount: <span id="total">0/- </span></strong>
             </div>
         </div>
-        
+
         <div class="table-responsive border mt-3 mb-5">
             <table id="purchase-entry-table" class="table p-2 text-center">
                 <thead>
@@ -124,14 +137,14 @@
                         <th class="text-dark">Actions</th>
                     </tr>
                 </thead>
-                   
+
                 <tbody id="billing">
-                 
-                    
+
+
                 </tbody>
-            </table>   
+            </table>
             <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
-                 
+
         </div>
         <div class="container mt-3">
             <div class="row justify-content-end">
@@ -146,25 +159,50 @@
     </div>
 
     <!-- PRINT MODEL  -->
-    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-md" role="document">
             <div class="modal-content" style="border: none;">
                 <div class="modal-body" style="padding: 10px; width:100%;">
-                    <div id="printArea">              
+                    <div id="printArea">
                         <table class="border p-2">
-                            <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>        
+                            <h1 class="text-center fw-bold"
+                                style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT
+                                AID</h1>
                             <div class="col-md-12">
-                                <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                <div class="details d-flex align-items-start justify-content-between"
+                                    style="margin-bottom: 15px !important; margin-top: 15px !important;">
                                     <div class="left">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Invoice No: <span class="invoiceNo" style="font-size: 14px !important; font-weight:400;"></span> </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date: <span class="billingDate" style="font-size: 14px !important; font-weight:400;"></span></p>
-                                        <p style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">GSTIN: <span class="gstin" style="font-size: 14px !important; font-weight:400;">GST123456</span></p>
-                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Customer: <span class="customerName" style="font-size: 14px !important; font-weight:400;"></span></p>
-                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Dr Name: <span class="drName" style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Invoice No: <span class="invoiceNo"
+                                                style="font-size: 14px !important; font-weight:400;"></span> </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
+                                            <span class="billingDate"
+                                                style="font-size: 14px !important; font-weight:400;"></span>
+                                        </p>
+                                        <p
+                                            style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            GSTIN: <span class="gstin"
+                                                style="font-size: 14px !important; font-weight:400;">GST123456</span>
+                                        </p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Customer: <span class="customerName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Dr Name: <span class="drName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
                                     </div>
                                     <div class="right">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL. No. : HL-1046-S</p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Helpline : 8100968101</p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL.
+                                            No. : <span class="dlNumber"
+                                                style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
+                                        </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Helpline : <span class="helplineNumber"
+                                                style="font-size: 14px !important; font-weight:400;">8100968101</span>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -172,7 +210,8 @@
                             <div class="product-details text-center m-0 col-md-12">
 
                                 <table class="w-100" id="invoice_table">
-                                    <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                    <thead
+                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
                                         <tr>
                                             <th>SNo.</th>
                                             <th>Desc</th>
@@ -183,17 +222,22 @@
                                         </tr>
                                     </thead>
 
-                                    <tbody style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
-                                            
+                                    <tbody
+                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+
                                     </tbody>
                                 </table>
                                 <div class="col-md-12 my-3" style="text-align:right !important">
-                                    <th>Grand Total: <span class="grandTotal"></span>/-</th>
+                                    <div><strong>Grand Total:</strong> <span class="grandTotal">0</span>/-</div>
+                                    <div><strong>GST:</strong> <span class="totalGST">0</span>/-</div>
+                                    <div><strong>CGST:</strong> <span class="totalCGST">0</span>/-</div>
+                                    <div><strong>SGST:</strong> <span class="totalSGST">0</span>/-</div>
                                 </div>
-                                
+
                                 <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
-                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata 700020</span><br>
-                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor, "Merlin Grove Behala
+                                    <span>Address : <Span class="storeAddress"></Span></span><br>
+                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor,
+                                        "Merlin Grove Behala
                                         Kolkata-700008</span>
                                 </div>
                                 <div class="note text-center" style="font-size: 12px !important;">
@@ -203,21 +247,83 @@
                             </div>
 
                         </table>
-                    </div> 
+                    </div>
                     <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
                         <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    
+
 </div>
 
 
+<script>
+    $(document).on('click', '#filterBilling', function () {
+    let startDate = $('#start_date_input').val();
+    let endDate = $('#end_date_input').val();
 
-    <script>
+    if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+    }
+
+    // Disable button and show loading text
+    let filterButton = $('#filterBilling');
+    filterButton.prop('disabled', true).text('Filtering...');
+
+    $.ajax({
+        url: "/api/customer/bill/filter",
+        type: "GET",
+        data: { start_date: startDate, end_date: endDate },
+        success: function(response) {
+            console.log("Filter response:", response);
+            
+            if (response.status === 200 && response.data.length > 0) {
+                console.log(response.data); // Debugging output
+                displayFilteredData(response.data);
+            } else {
+                $("#billing").html('<tr><td colspan="7" class="text-center">No records match the selected date range.</td></tr>');
+            }
+        },
+        error: function(xhr) {
+            console.error("Error:", xhr.responseText);
+            alert("Failed to fetch data. Please try again.");
+        },
+        complete: function() {
+            // Enable button after request is complete
+            filterButton.prop('disabled', false).text('Filter');
+        }
+    });
+});
+
+function displayFilteredData(data) {
+    console.log("Filtered data:", data);
+    
+    let tbody = $("#billing");
+    tbody.empty(); // Clear previous data
+
+    data.forEach((bill, index) => {
+        tbody.append(`
+            <tr>
+                <td>${index + 1}</td>
+                <td>${bill.invoiceNo}</td>
+                <td>${bill.customer_name}</td>
+                <td>${bill.billing_date}</td>
+                <td>${bill.paymentType}</td>
+                <td>${bill.total_amt}</td>
+                <td>
+                    <a href="/customer/billing/${bill.id}/view" class="btn btn-sm btn-primary">View</a>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+
+
     $(document).ready(function() {
         api_for_bill();
 
@@ -246,7 +352,7 @@
             let startDate = $('#start_date_input').val();
             let endDate = $('#end_date_input').val();
             $.ajax({
-                url: '/api/customer/bill/filter/',
+                url: '/customer/bill/filter/',
                 method: 'GET',
                 data: {
                     start_date_input: startDate,
@@ -304,8 +410,26 @@
             });
         }
 
+        function fetchStoreInfo() {
+            return $.ajax({
+                url: '/api/store/info',
+                method: 'GET'
+            }).done(function(response) {
+                if (response.status === 200) {
+                    // Update store information in the print modal
+                    $('.dlNumber').text(response.data.dl_number);
+                    $('.helplineNumber').text(response.data.helpline_number);
+                    $('.storeAddress').text(response.data.store_address);
+                } else {
+                    console.error('Failed to fetch store info:', response);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error fetching store info:', error);
+            });
+        }
+
         $(document).ready(function() {
-            $.when(fetchProducts(), fetchDoctors()).done(function() {
+            $.when(fetchProducts(), fetchDoctors(), fetchStoreInfo()).done(function() {
                 console.log('Data loaded successfully');
             });
         });
@@ -319,15 +443,42 @@
             method: 'GET',
             success: function(response) {
                 if (response.status === 200) {
+                    console.log(response.data);
+                    
                     let data = response.data;
                     let bill = data.bill;
                     let items = data.items;
+                    let store = data.store;
 
                     var grandTotalElement = document.querySelector('.grandTotal');
                     var invoiceElement = document.querySelector('.invoiceNo');
                     var billingDateElement = document.querySelector('.billingDate');
                     var customernameElement = document.querySelector('.customerName');
                     var drNameElement = document.querySelector('.drName');
+                    var totalGSTElement = document.querySelector('.totalGST');
+                    var totalCGSTElement = document.querySelector('.totalCGST');
+                    var totalSGSTElement = document.querySelector('.totalSGST');
+                    var storeAddress = document.querySelector('.storeAddress');
+                    var dlNumber = document.querySelector('.dlNumber');
+                    var helplineNumber = document.querySelector('.helplineNumber');
+
+                    if (storeAddress && store.store_address) {
+                        storeAddress.textContent = store.store_address;
+                    } else {
+                        storeAddress.textContent = 'Not Provided';
+                    }
+
+                    if (dlNumber && store.dl_number) {
+                        dlNumber.textContent = store.dl_number;
+                    } else {
+                        dlNumber.textContent = 'Not Provided';
+                    }
+
+                    if (helplineNumber && store.helpline_number) {
+                        helplineNumber.textContent = store.helpline_number;
+                    } else {
+                        helplineNumber.textContent = 'Not Provided';
+                    }
 
                     if (grandTotalElement) {
                         grandTotalElement.textContent = bill.total_amt;
@@ -344,6 +495,17 @@
                     if (drNameElement) {
                         drNameElement.textContent = doctorList[bill.doctor_name] || 'N/A';
                     }
+
+                    if (totalGSTElement) {
+                    totalGSTElement.textContent = bill.gst || 0;
+                    }
+                    if (totalCGSTElement) {
+                    totalCGSTElement.textContent = bill.cgst || 0;
+                    }
+                    if (totalSGSTElement) {
+                    totalSGSTElement.textContent = bill.sgst || 0;
+                    }
+
 
                     $('#invoice_table tbody').empty();
                     items.forEach((item, index) => {
@@ -373,6 +535,8 @@
     function api_for_bill() {
         $('#loader').show();
         ajaxGetData(`/api/customer/billing/list`, (response) => {
+            console.log(response);
+            
             $('#loader').hide();
             bill_list(response.data);
         });
@@ -448,6 +612,7 @@
             <p><strong>Total Amount:</strong> ${bill.total_amt}</p>
         `);
     }
+
     function printModalContent() {
         var printContent = document.getElementById("printArea").innerHTML;
         var originalContent = document.body.innerHTML;
@@ -477,7 +642,6 @@
 </script>
 
 
-        
-    </script>
+
+</script>
 @endsection
-                    

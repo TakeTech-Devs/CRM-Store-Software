@@ -47,6 +47,9 @@
                                 </tr>
                             </thead>
                             <tbody id="exp_list">
+                                <tr>
+                                    <td colspan="3" class="text-center">No Data Available</td>
+                                </tr>
                             </tbody>
                         </table>
                         <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No brands found</div>
@@ -81,82 +84,86 @@
         function loadPage(page) {
             $('#loader').show();
             $.ajax({
-                url: '/api/expiry-report',
-                method: 'GET',
-                success: function(res) {
-                    $('#loader').hide();
-                    $('#exp_list').empty();
-                    $('#pagination-links').empty(); // Clear previous pagination links
+            url: '/api/expiry-report',
+            method: 'GET',
+            success: function(res) {
+                $('#loader').hide();
+                $('#exp_list').empty();
+                $('#pagination-links').empty();
 
-                    // Save all data to the allData array
-                    allData = res.data.data;
+                // Save all data to the allData array
+                allData = res.data;
 
-                    // Get records for the current page
-                    let recordsPerPage = 15;
-                    let startIndex = (page - 1) * recordsPerPage;
-                    let endIndex = startIndex + recordsPerPage;
-                    let currentPageData = allData.slice(startIndex, endIndex);
+                // Get records for the current page
+                let recordsPerPage = 15;
+                let startIndex = (page - 1) * recordsPerPage;
+                let endIndex = startIndex + recordsPerPage;
+                let currentPageData = allData.slice(startIndex, endIndex);
 
-                    // Loop through the records and display them in the table
-                    currentPageData.forEach((element) => {
-                        let currentDate = new Date();
-                        let expiryDate = new Date(element?.exp_date);
-                        let timeDifference = expiryDate.getTime() - currentDate.getTime();
-                        let daysUntilExpiry = Math.ceil(timeDifference / (1000 * 3600 * 24));
-                        let monthsUntilExpiry = expiryDate.getMonth() - currentDate.getMonth() + (12 * (expiryDate
-                            .getFullYear() - currentDate.getFullYear()));
+                if (currentPageData.length === 0) {
+                $('#exp_list').append(
+                    `<tr><td colspan="3" class="text-center">No Data Available</td></tr>`
+                );
+                } else {
+                currentPageData.forEach((element) => {
+                    let currentDate = new Date();
+                    let expiryDate = new Date(element?.exp_date);
+                    let timeDifference = expiryDate.getTime() - currentDate.getTime();
+                    let daysUntilExpiry = Math.ceil(timeDifference / (1000 * 3600 * 24));
+                    let monthsUntilExpiry = expiryDate.getMonth() - currentDate.getMonth() + (12 * (expiryDate.getFullYear() - currentDate.getFullYear()));
 
-                        if (monthsUntilExpiry < 0 || (monthsUntilExpiry === 0 && daysUntilExpiry <= 0)) {
-                            $('#exp_list').append(
-                                `<tr class="text-danger">
-                                    <td>${element?.product_name}</td>
-                                    <td>${element?.qty}</td>
-                                    <td>Expired</td>
-                                </tr>`
-                            );
-                        } else if (monthsUntilExpiry === 0 && daysUntilExpiry > 0) {
-                            $('#exp_list').append(
-                                `<tr class="text-danger">
-                                    <td>${element?.product_name}</td>
-                                    <td>${element?.qty}</td>
-                                    <td>${daysUntilExpiry} Days</td>
-                                </tr>`
-                            );
-                        } else if (monthsUntilExpiry <= 3) {
-                            $('#exp_list').append(
-                                `<tr class="text-danger">
-                                    <td>${element?.product_name}</td>
-                                    <td>${element?.qty}</td>
-                                    <td>${monthsUntilExpiry} Months</td>
-                                </tr>`
-                            );
-                        } else if (monthsUntilExpiry <= 6) {
-                            $('#exp_list').append(
-                                `<tr class="text-warning">
-                                    <td>${element?.product_name}</td>
-                                    <td>${element?.qty}</td>
-                                    <td>${monthsUntilExpiry} Months</td>
-                                </tr>`
-                            );
-                        } else {
-                            $('#exp_list').append(
-                                `<tr class="text-success">
-                                    <td>${element?.product_name}</td>
-                                    <td>${element?.qty}</td>
-                                    <td>${monthsUntilExpiry} Months</td>
-                                </tr>`
-                            );
-                        }
-                    });
-
-                    // Generate pagination links
-                    let totalPages = Math.ceil(allData.length / 15);
-                    for (let i = 1; i <= totalPages; i++) {
-                        $('#pagination-links').append(
-                            `<li class="page-item"><a class="page-link" href="#" onclick="loadPage(${i})">${i}</a></li>`
-                        );
+                    if (monthsUntilExpiry < 0 || (monthsUntilExpiry === 0 && daysUntilExpiry <= 0)) {
+                    $('#exp_list').append(
+                        `<tr class="text-danger">
+                        <td>${element?.product_name}</td>
+                        <td>${element?.qty}</td>
+                        <td>Expired</td>
+                        </tr>`
+                    );
+                    } else if (monthsUntilExpiry === 0 && daysUntilExpiry > 0) {
+                    $('#exp_list').append(
+                        `<tr class="text-danger">
+                        <td>${element?.product_name}</td>
+                        <td>${element?.qty}</td>
+                        <td>${daysUntilExpiry} Days</td>
+                        </tr>`
+                    );
+                    } else if (monthsUntilExpiry <= 3) {
+                    $('#exp_list').append(
+                        `<tr class="text-danger">
+                        <td>${element?.product_name}</td>
+                        <td>${element?.qty}</td>
+                        <td>${monthsUntilExpiry} Months</td>
+                        </tr>`
+                    );
+                    } else if (monthsUntilExpiry <= 6) {
+                    $('#exp_list').append(
+                        `<tr class="text-warning">
+                        <td>${element?.product_name}</td>
+                        <td>${element?.qty}</td>
+                        <td>${monthsUntilExpiry} Months</td>
+                        </tr>`
+                    );
+                    } else {
+                    $('#exp_list').append(
+                        `<tr class="text-success">
+                        <td>${element?.product_name}</td>
+                        <td>${element?.qty}</td>
+                        <td>${monthsUntilExpiry} Months</td>
+                        </tr>`
+                    );
                     }
+                });
                 }
+
+                // Generate pagination links
+                let totalPages = Math.ceil(allData.length / recordsPerPage);
+                for (let i = 1; i <= totalPages; i++) {
+                $('#pagination-links').append(
+                    `<li class="page-item${i === page ? ' active' : ''}"><a class="page-link" href="#" onclick="loadPage(${i})">${i}</a></li>`
+                );
+                }
+            }
             })
         }
 

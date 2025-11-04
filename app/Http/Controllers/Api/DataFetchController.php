@@ -166,7 +166,7 @@ class DataFetchController extends Controller
             $remoteDataStore = DB::connection('remote_mysql')->table('store')->where('store_meta_id', $store_meta_id)->first();
     
             $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')->where('store_id', $remoteDataStore->id)->get();
-            // dd($remoteDatastore_assign);
+            // return $remoteDatastore_assign;
             foreach ($remoteDatastore_assign as $value) {
                 $getStoreAssign = DB::table('store_assign')->where(['assign_bill_number' => $value->assign_bill_number])->first();
                 // dd($value)
@@ -181,7 +181,7 @@ class DataFetchController extends Controller
                            'id'=>$purchase_stock_value->id
                         ])
                         ->first();
-                        // dd($get_purchase_stock_value);
+                        // return $get_purchase_stock_value;
                         if ($get_purchase_stock_value) {
                             DB::table('purchase_stock')->where('id', $purchase_stock_value->id)->update([
                                 'sku_date'=>$purchase_stock_value->sku_date,
@@ -264,7 +264,7 @@ class DataFetchController extends Controller
                             'brand_id' => $value->brand_id,
                             'product_id' => $value->product_id
                         ])->first();
-                // dd($getStoreAssign);
+                        // dd($getStoreAssign);
 
                         if ($getStoreAssign) {
                             DB::table('purchase_request')->where('id', $getStoreAssign->store_assign_id)->update([
@@ -364,6 +364,8 @@ class DataFetchController extends Controller
                             // 'id' => ++$currentDoctorId,
                             'name' =>  $value->name,
                             'store_address' =>$value->store_address,
+                            'dl_number' => $value->dl_number,
+                            'helpline_number' => $value->helpline_number,
                             'store_mail' =>$value->store_mail,
                             'store_start_date' =>$value->store_start_date,
                             'store_meta_id' =>$value->store_meta_id,
@@ -376,6 +378,8 @@ class DataFetchController extends Controller
                         DB::table('store')->where('id', $getStore->id)->update([
                             'name' =>  $value->name,
                             'store_address' =>'',
+                            'dl_number' => '',
+                            'helpline_number' => '',
                             'store_mail' =>'',
                             'store_start_date' =>'',
                             'store_meta_id' =>'',
@@ -390,6 +394,8 @@ class DataFetchController extends Controller
                             // 'id' => ++$currentStoreId,
                             'name' =>  $value->name,
                             'store_address' =>$value->store_address,
+                            'dl_number' => $value->dl_number,
+                            'helpline_number' => $value->helpline_number,
                             'store_mail' =>$value->store_mail,
                             'store_start_date' =>$value->store_start_date,
                             'store_meta_id' =>$value->store_meta_id,
@@ -402,7 +408,9 @@ class DataFetchController extends Controller
                         DB::table('store')->insert([
                             'id' => ++$currentStoreId,
                             'name' =>  $value->name,
-                            'store_address' =>'',
+                            'store_address' => '',
+                            'dl_number' => '',
+                            'helpline_number' => '',
                             'store_mail' =>'',
                             'store_start_date' =>'',
                             'store_meta_id' =>'',
@@ -513,6 +521,8 @@ class DataFetchController extends Controller
             $payload = [
                 "name" => $request->name,
                 "store_address" => $request->store_address,
+                "dl_number" => $request->dl_number,
+                "helpline_number" => $request->helpline_number,
                 "store_mail" => $request->store_mail,
                 "store_start_date" => $request->store_start_date,
                 "store_meta_id" => $request->store_meta_id,

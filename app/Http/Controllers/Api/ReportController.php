@@ -39,6 +39,23 @@ class ReportController extends Controller
         ]);
     }
 
+    public function getDoctors(){
+        $doctors = DB::table('doctor')->select('id', 'name')->get();
+
+        if ($doctors->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No doctors found.',
+                'data' => []
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $doctors
+        ], 200);
+    }
+
     public function doctorWiseReport(Request $request){
         $doctorId = $request->input('doctor_name');
     
@@ -56,7 +73,7 @@ class ReportController extends Controller
         foreach ($staffBilling as $billing) {
             $product = DB::table('staff_product_billing')
                 ->join('product', 'staff_product_billing.productId', '=', 'product.id')
-                ->where('staff_product_billing.cb_id', $billing->id) 
+                ->where('staff_product_billing.cb_id', $billing->id)
                 ->select('product.product_name', 'product.hsn_code')
                 ->first();
     
@@ -286,6 +303,55 @@ class ReportController extends Controller
             'status' => 'success',
             'data' => $gstReport,
         ]);
+    }
+
+    public function stockReport(){
+        try {
+            $stockData = DB::table('purchase_stock_entry as pse')
+                ->join('product as p', 'pse.product_id', '=', 'p.id')
+                ->join('brand as b', 'pse.brand_id', '=', 'b.id')
+                ->join('category as c', 'pse.category_id', '=', 'c.id')
+                ->join('sub_category as sc', 'pse.sub_category_id', '=', 'sc.id')
+                ->join('pack as pk', 'pse.pack_id', '=', 'pk.id')
+                ->join('price as pr', 'pse.price_id', '=', 'pr.id')
+                ->select(
+                    'p.product_name',
+                    'b.brand_name',
+                    'c.category_name',
+                    'sc.sub_category_name',
+                    'pk.pack_name',
+                    'pr.price_name',
+                    DB::raw('SUM(pse.qty) as qty'),
+                    'pse.exp_date',
+                    'p.hsn_code',
+                    'p.gst',
+                    DB::raw('MIN(pse.created_at) as created_at')
+                )
+                ->groupBy(
+                    'p.product_name',
+                    'b.brand_name',
+                    'c.category_name',
+                    'sc.sub_category_name',
+                    'pk.pack_name',
+                    'pr.price_name',
+                    'pse.exp_date',
+                    'p.hsn_code',
+                    'p.gst'
+                )
+                ->orderBy('p.product_name', 'asc')
+                ->get();
+
+            return response()->json([
+                'status' => 200,
+                'data' => $stockData
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching the stock data.',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
     
     

@@ -324,4 +324,45 @@ class StaffBilling extends Controller
             ], 500);
         }
     }
+
+    public function getStoreInfo(Request $request) {
+        try {
+            $storeId = $request->session()->get('storeId');
+            
+            if (!$storeId) {
+                return response()->json([
+                    'status' => 403,
+                    'message' => 'Store not logged in.'
+                ], 403);
+            }
+
+            $store = DB::table('store')
+                ->where('store_meta_id', $storeId)
+                ->first();
+
+            if (!$store) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Store not found.'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'store_name' => $store->name,
+                    'store_address' => $store->store_address,
+                    'dl_number' => $store->dl_number ?? 'HL-1046-S', // Default fallback
+                    'helpline_number' => $store->helpline_number ?? '8100968101', // Default fallback
+                    'store_email' => $store->store_mail
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'An error occurred while fetching store information.',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 }

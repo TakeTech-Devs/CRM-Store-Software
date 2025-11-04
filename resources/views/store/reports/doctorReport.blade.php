@@ -67,7 +67,11 @@
                                     <th>Amount</th>
                                 </tr>
                             </thead>
-                            <tbody id="reportData"></tbody>
+                            <tbody id="reportData">
+                                <tr>
+                                    <td colspan="10" class="text-center">No data available. Please select a doctor and generate the report.</td>
+                                </tr>
+                            </tbody>
                         </table>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <div id="paginationInfo"></div>
@@ -89,10 +93,12 @@
         const recordsPerPage = 15;
 
         $.ajax({
-            url: "{{ url('http://localhost:8000/api/doctor') }}",
+            url: "{{ url('http://127.0.0.1:8000/api/doctor') }}",
             method: 'GET',
             success: function (response) {
-                if (response.status === 200) {
+                console.log(response);
+                
+                if (response.status === 'success') {
                     let doctors = response.data;
                     let options = '<option value="">Select Doctor</option>';
                     doctors.forEach(doctor => {

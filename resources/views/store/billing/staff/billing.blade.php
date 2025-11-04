@@ -3,119 +3,134 @@
 @section('title', 'Customer Billing')
 
 @section('content')
-    <style>
-        .pagination {
-            margin-top: 10px;
+<style>
+    .pagination {
+        margin-top: 10px;
+    }
+
+    .table tbody+tbody {
+        border-top: none !important;
+    }
+
+    @media print {
+        body * {
+            border: none !important;
+            box-shadow: none !important;
         }
+
         .table tbody+tbody {
             border-top: none !important;
         }
-        @media print {
-            body * {
-                border: none !important;
-                box-shadow: none !important;
-            }
-            .table tbody+tbody {
-                border-top: none !important;
-            }
-            #printButton{
-                display: none;
-            }
-            @page{
-                size: A4 landscape;
-            }
-        }
-        .loader {
-            border: 10px solid #f3f3f3; 
-            border-top: 10px solid #A54217; 
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-            margin-top: 10%;
-            margin-left: 50%;
+
+        #printButton {
             display: none;
-            bottom: 25px;
-            position: absolute;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @page {
+            size: A4 landscape;
         }
-    </style>
+    }
 
-    <div class="container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-            <h2 class="text-dark bold ">Staff Billing Page</h1>
+    .loader {
+        border: 10px solid #f3f3f3;
+        border-top: 10px solid #A54217;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 2s linear infinite;
+        margin-top: 10%;
+        margin-left: 50%;
+        display: none;
+        bottom: 25px;
+        position: absolute;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="text-dark bold ">Staff Billing Page</h1>
             <div class="text-right">
-                <a href="{{ url('store/staff/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
+                <a href="{{ url('store/staff/create/billing') }}" class="btn btn-secondary btn-sm">Create New
+                    Billing</a>
             </div>
-        </div>
-        <div class="form-row d-flex align-items-center justify-content-between my-3">
-            <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-                <div class="form-group d-flex align-items-end justify-content-around">
-                    <div class="form-group mx-1">
-                        <label for="start_date_input">Start Date</label>
-                        <input type="date" class="form-control" id="start_date_input" name="start_date_input">
-                    </div>
-                    <div class="form-group mx-1">
+    </div>
+    <div class="form-row d-flex align-items-center justify-content-between my-3">
+        <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
+            <div class="form-group d-flex align-items-end justify-content-around">
+                <div class="form-group mx-1">
+                    <label for="start_date_input">Start Date</label>
+                    <input type="date" class="form-control" id="start_date_input" name="start_date_input">
+                </div>
+                <div class="form-group mx-1">
 
-                        <label for="end_date_input">End Date</label>
-                        <input type="date" class="form-control" id="end_date_input" name="end_date_input">
-                    </div>
-                    <!-- <div class="form-group"> -->
-                        <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
-                    <div class="form-group" style="margin-top: 1.85rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
-                    </div>
+                    <label for="end_date_input">End Date</label>
+                    <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                 </div>
-                <div class="d-flex align-items-center justify-content-around">
-                    <form class="d-flex align-items-center justify-content-between">
-                        <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                            <label for="search"class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
-                            <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
-                        </div>  
-                    </form>   
+                <!-- <div class="form-group"> -->
+                <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
+                <div class="form-group" style="margin-top: 1.85rem !important;">
+                    <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
                 </div>
             </div>
-        </div>
-        <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                    <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                    <select data-enable-search="true"class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries" onchange="updatePagination()">
-                        <option selected >10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
-                    </select>
-                </div>
-                {{-- <div class="download-buttons" style="margin-left:25px !important;">
-                    <div class="download-options d-flex align-items-baseline justify-content-between">
-                        
-                        
-                        <p>Export as : </p>&nbsp;&nbsp;&nbsp;
-                        <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport" >
-                            <i class="fas fa-file-excel"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-primary">
-                            <i class="fas fa-file-word"></i>
-                        </button>
-                        <button type="button" class="btn mx-1 btn-md btn-danger">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>
+            <div class="d-flex align-items-center justify-content-around">
+                <form class="d-flex align-items-center justify-content-between">
+                    <div class="form-group d-flex align-items-center justify-content-center mx-3">
+                        <label for="search" class="mt-2">Search: </label> &nbsp;&nbsp;
+                        <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
+                        <input type="text" class="form-control" id="searchBillingNumber"
+                            placeholder="Search Billing No.">
                     </div>
-                </div> --}}
-            </div> 
-            <div class="grandTotalAmount text-right mt-3">
-                <strong>Total Amount: 0.00/-</strong>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group"
+        aria-label="Show Entries and Export">
+        <div class="d-flex align-items-center justify-content-center">
+            <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
+                <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
+                <select data-enable-search="true" class="form-control form-control-md mt-1" style="width: auto;"
+                    id="showbillingEntries" onchange="updatePagination()">
+                    <option selected>10</option>
+                    <option>25</option>
+                    <option>50</option>
+                    <option>100</option>
+                </select>
+            </div>
+            {{-- <div class="download-buttons" style="margin-left:25px !important;">
+                <div class="download-options d-flex align-items-baseline justify-content-between">
+
+
+                    <p>Export as : </p>&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    <button type="button" class="btn mx-1 btn-md btn-primary">
+                        <i class="fas fa-file-word"></i>
+                    </button>
+                    <button type="button" class="btn mx-1 btn-md btn-danger">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </div>
+            </div> --}}
+        </div>
+        <div class="grandTotalAmount text-right mt-3">
+            <strong>Total Amount: 0.00/-</strong>
             <div class="totalAmount">
-                <strong>Total Amount: <span id= "total">0/- </span></strong>
+                <strong>Total Amount: <span id="total">0/- </span></strong>
             </div>
         </div>
-        
+
         <div class="table-responsive border mt-3 mb-5">
             <table id="purchase-entry-table" class="table p-2 text-center">
                 <thead>
@@ -129,14 +144,14 @@
                         <th class="text-dark">Actions</th>
                     </tr>
                 </thead>
-                   
+
                 <tbody id="billing">
-                 
-                    
+
+
                 </tbody>
-            </table>   
+            </table>
             <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
-                 
+
         </div>
         <div class="container mt-3">
             <div class="row justify-content-end">
@@ -151,25 +166,54 @@
     </div>
 
     <!-- PRINT MODEL  -->
-    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-md" role="document">
             <div class="modal-content" style="border: none;">
                 <div class="modal-body" style="padding: 10px; width:100%;">
-                    <div id="printArea">              
+                    <div id="printArea">
                         <table class="border p-2 my-2">
-                            <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>        
+                            <h1 class="text-center fw-bold"
+                                style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT
+                                AID</h1>
                             <div class="col-md-12">
-                                <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                <div class="details d-flex align-items-start justify-content-between"
+                                    style="margin-bottom: 15px !important; margin-top: 15px !important;">
                                     <div class="left">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Invoice No: <span class="invoiceNo" style="font-size: 14px !important; font-weight:400;"></span> </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date: <span class="billingDate" style="font-size: 14px !important; font-weight:400;"></span></p>
-                                        <p style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">GSTIN: <span class="gstin" style="font-size: 14px !important; font-weight:400;">GST123456</span></p>
-                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Staff: <span class="customerName" style="font-size: 14px !important; font-weight:400;"></span></p>
-                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">Dr Name: <span class="drName" style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Invoice No: <span class="invoiceNo"
+                                                style="font-size: 14px !important; font-weight:400;"></span> </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
+                                            <span class="billingDate"
+                                                style="font-size: 14px !important; font-weight:400;"></span>
+                                        </p>
+                                        <p
+                                            style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            GSTIN: <span class="gstin"
+                                                style="font-size: 14px !important; font-weight:400;">GST123456</span>
+                                        </p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Staff: <span class="customerName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Dr Name: <span class="drName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
                                     </div>
                                     <div class="right">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL. No. : HL-1046-S</p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Helpline : 8100968101</p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL.
+                                            No. : <span class="dlNumber"
+                                                style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
+                                        </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Helpline : <span class="helplineNumber"
+                                                style="font-size: 14px !important; font-weight:400;">8100968101</span>
+                                        </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Address : <span class="storeAddress"
+                                                style="font-size: 12px !important; font-weight:400;">Loading...</span>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -177,7 +221,8 @@
                             <div class="product-details text-center m-0 col-md-12">
 
                                 <table class="w-100" id="invoice_table">
-                                    <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                    <thead
+                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
                                         <tr>
                                             <th>SNo.</th>
                                             <th>Desc</th>
@@ -188,17 +233,20 @@
                                         </tr>
                                     </thead>
 
-                                    <tbody style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
-                                            
+                                    <tbody
+                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+
                                     </tbody>
                                 </table>
                                 <div class="col-md-12 my-3" style="text-align:right !important">
                                     <th>Grand Total: <span class="grandTotal"></span>/-</th>
                                 </div>
-                                
+
                                 <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
-                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata 700020</span><br>
-                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor, "Merlin Grove Behala
+                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata
+                                        700020</span><br>
+                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor,
+                                        "Merlin Grove Behala
                                         Kolkata-700008</span>
                                 </div>
                                 <div class="note text-center" style="font-size: 12px !important;">
@@ -208,21 +256,21 @@
                             </div>
 
                         </table>
-                    </div> 
+                    </div>
                     <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
                         <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    
+
 </div>
 
 
 
-    <script>
+<script>
     $(document).ready(function() {
         api_for_bill();
 
@@ -310,8 +358,26 @@
             });
         }
 
+        function fetchStoreInfo() {
+            return $.ajax({
+                url: '/api/store/info',
+                method: 'GET'
+            }).done(function(response) {
+                if (response.status === 200) {
+                    // Update store information in the print modal
+                    $('.dlNumber').text(response.data.dl_number);
+                    $('.helplineNumber').text(response.data.helpline_number);
+                    $('.storeAddress').text(response.data.store_address);
+                } else {
+                    console.error('Failed to fetch store info:', response);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error fetching store info:', error);
+            });
+        }
+
         $(document).ready(function() {
-            $.when(fetchProducts(), fetchDoctors()).done(function() {
+            $.when(fetchProducts(), fetchDoctors(), fetchStoreInfo()).done(function() {
                 console.log('Data loaded successfully');
             });
         });
@@ -483,6 +549,5 @@
 
 
         
-    </script>
+</script>
 @endsection
-                    

@@ -72,6 +72,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/gst/report', function () {
             return view('store/reports/gstReport');
         });
+        Route::get('/stock/report', function () {
+            return view('store/reports/stockReport');
+        });
     });
 });
 

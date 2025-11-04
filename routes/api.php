@@ -20,7 +20,8 @@ Route::get('/customer/billing/list', [CustomerBilling:: class , 'listBilling']);
 route::get('/customer/bill/{billId}', [CustomerBilling::class, 'getBillDetails']);
 Route::post('/customer', [CustomerBilling:: class , 'create_customer']);
 Route::get('/customer', [CustomerBilling:: class , 'list_customer']);
-Route::get('customer/bill/filter/', [CustomerBilling::class , 'datefilter']);
+Route::get('/customer/bill/filter', [CustomerBilling::class , 'datefilter']);
+Route::get('/store/info', [CustomerBilling::class , 'getStoreInfo']);
 
 
 Route::post('/staff/billing/create', [StaffBilling:: class , 'createBilling']);
@@ -40,7 +41,9 @@ Route::get('store-transfer', function () {
     return response()->json(['message' => 'API is working']);
 });
 
+Route::get('/doctor', [ReportController::class, 'getDoctors']);
 Route::get('/doctor-report', [ReportController::class, 'doctorWiseReport'])->name('doctor.report');
 Route::get('/commulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('commulative.report');
 Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');
 Route::get('/expiry-report', [ReportController::class, 'expiryReport'])->name('expiry.report');
+Route::get('/stock-report', [ReportController::class, 'stockReport'])->name('stock.report');
