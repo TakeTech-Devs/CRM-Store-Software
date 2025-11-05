@@ -85,7 +85,8 @@
                                 class="form-control">
                                 <option value="">Choose Payment Type...</option>
                                 <option value="online">Online</option>
-                                <option value="offline">Offline</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
                             </select>
                         </div>
                     </div>
