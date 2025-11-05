@@ -26,6 +26,12 @@
                 <span>Dashboard</span></a>
         </li>
 
+        <li class="nav-item">
+            <a class="nav-link" href="{{url('store/customer/create/billing')}}">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Create Customer Billing</span></a>
+        </li>
+
 
         <li class="nav-item">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
@@ -35,7 +41,6 @@
             </a>
             <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/customer/create/billing')}}">Create Customer Billing</a>
                     <a class="collapse-item" href="{{url('store/customer/billing')}}">Customer Billing</a>
                     <a class="collapse-item" href="{{url('store/staff/billing')}}">Staff Billing</a>
                 </div>
