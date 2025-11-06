@@ -601,11 +601,7 @@
             }); 
         }
 
-        $(document).on('input', 'input[name="qty"], input[name="unit_value[]"], input[name="discount[]"]', function() {
-            const row = $(this).closest('tr');
-            updateTotalForRow(row);
-            updateOverallTotal();
-        });
+
 
         function updateOverallTotal() {
             let overallTotal = 0;
@@ -663,7 +659,7 @@
             $('#totalSGST').text(totalSGST.toFixed(2));
         }
 
-        $(document).on('input', '[name="qty[]"], [name="unitValue[]"], [name="discount[]"]', function () {
+        $(document).on('input keyup', '[name="assignQty[]"], [name="unit_value[]"], [name="discount[]"]', function () {
             calculateTotalAmount();
         });
 
