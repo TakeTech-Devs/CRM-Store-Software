@@ -119,7 +119,7 @@
                             <th>GST Amount</th>
                             <th>CGST</th>
                             <th>SGST</th>
-                            <th>Action</th>
+
                         </tr>
                     </thead>
                     <tbody id="formBody">
@@ -260,7 +260,8 @@
 
 <script>
     $(document).ready(function () {
-            count = 0
+            count = 1
+            addNewRow(count)
             customerData(null)
             doctorData()
             $(document).on('change', '#customer_phone', function () {
@@ -553,7 +554,7 @@
                     </td>
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
-                            <input type="number" class="form-control" name="discount[]" id="discount${id}" />
+                            <input type="number" class="form-control" name="discount[]" id="discount${id}" value="0" />
                         </div>
                     </td>
                     <td class="table-row">
@@ -565,9 +566,7 @@
                     <td><input type="text" class="form-control gstAmount" name="gstAmount[]" id="gstAmount${id}" readonly /></td>
                     <td><input type="text" class="form-control cgst" name="cgst[]" id="cgst${id}" readonly /></td>
                     <td><input type="text" class="form-control sgst" name="sgst[]" id="sgst${id}" readonly /></td>
-                    <td class="table-row">
-                        <button type="button" class="btn btn-sm btn-danger remove-row" data-count="${id}"><i class="fa fa-trash"></i></button>
-                    </td>
+
                 </tr>
             `;
             $('#formBody').append(newRow);
@@ -669,17 +668,7 @@
         });
 
 
-        function deleteRow(element) {
-            const row = element.closest("tr");
-            row.remove();
-            calculateTotalAmount(); 
-        }
 
-        // Delegated event for delete row button
-        $(document).on("click", ".remove-row", function () {
-            $(this).closest("tr").remove();
-            calculateTotalAmount();
-        });
 
         function gatherFormData() {
             const rows = document.querySelectorAll('#dynamicForm tbody tr');
