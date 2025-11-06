@@ -515,7 +515,7 @@
             productData(); 
 
             const newRow = `
-                <tr id="row_${id}">
+                <tr id="row_${id}" class="new-row">
                     <td class="table-row-id row_id d-none product">${id}</td>
                     <td class="table-row">
                         <select data-enable-search="true" class="form-control product" data-count="${id}" name="productName[]" id="product_name${id}">
@@ -663,6 +663,12 @@
             calculateTotalAmount();
         });
 
+        $(document).on('keyup', '.new-row [name="assignQty[]"]', function () {
+            $(this).closest('tr').removeClass('new-row');
+            count++;
+            addNewRow(count);
+        });
+
 
 
 
@@ -672,29 +678,31 @@
 
             rows.forEach(row => {
                 const productId = row.querySelector(`[name="productName[]"]`).value;
-                const category = row.querySelector(`[name="category[]"]`).value;
-                const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
-                const pack = row.querySelector(`[name="pack[]"]`).value;
-                const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
-                const qty = row.querySelector(`[name="assignQty[]"]`).value;
-                const discount = row.querySelector(`[name="discount[]"]`).value;
-                const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
-                const gstRate = row.querySelector(`[name="gstRate[]"]`).value;
-                const gstAmount = row.querySelector(`[name="gstAmount[]"]`).value;
-                const cgst = row.querySelector(`[name="cgst[]"]`).value;
-                const sgst = row.querySelector(`[name="sgst[]"]`).value;
 
-               
-                products.push({
-                    productId,
-                    category,
-                    subCategory,
-                    pack,
-                    qty,
-                    unitValue,
-                    discount,
-                    totalAmount
-                });
+                if (productId) {
+                    const category = row.querySelector(`[name="category[]"]`).value;
+                    const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
+                    const pack = row.querySelector(`[name="pack[]"]`).value;
+                    const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
+                    const qty = row.querySelector(`[name="assignQty[]"]`).value;
+                    const discount = row.querySelector(`[name="discount[]"]`).value;
+                    const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
+                    const gstRate = row.querySelector(`[name="gstRate[]"]`).value;
+                    const gstAmount = row.querySelector(`[name="gstAmount[]"]`).value;
+                    const cgst = row.querySelector(`[name="cgst[]"]`).value;
+                    const sgst = row.querySelector(`[name="sgst[]"]`).value;
+
+                    products.push({
+                        productId,
+                        category,
+                        subCategory,
+                        pack,
+                        qty,
+                        unitValue,
+                        discount,
+                        totalAmount
+                    });
+                }
             });
             let today = new Date();
 
