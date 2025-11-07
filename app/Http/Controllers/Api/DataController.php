@@ -88,9 +88,17 @@ class DataController extends Controller
         try {
             $id = request()->id ?? null;
             $dataQuery =  DB::table('product');
+
             if ($id) {
-                $dataQuery->where('id', $id);
+                $dataQuery->where('product.id', $id);
+            } else {
+                // Only fetch products with available stock if no specific ID is requested
+                $dataQuery->join('purchase_stock_entry', 'product.id', '=', 'purchase_stock_entry.product_id')
+                          ->where('purchase_stock_entry.qty', '>', 0)
+                          ->select('product.id', 'product.product_name')
+                          ->distinct();
             }
+
             $data = $dataQuery->get();
             return response()->json([
                 'status' => 200,
