@@ -61,15 +61,23 @@ class DataController extends Controller
     }
     public function purchase_bill(){
         try {
-            $id = request()->id ?? null;
+            $productId = request()->product_id ?? null;
+            $packId = request()->pack_id ?? null;
+
             $dataQuery =  DB::table('purchase_request');
-            if ($id) {
-                $dataQuery->where('product_id', $id);
+
+            if ($productId) {
+                $dataQuery->where('product_id', $productId);
             }
+            if ($packId) {
+                $dataQuery->where('pack_id', $packId);
+            }
+
             $data = $dataQuery->get();
+
             return response()->json([
                 'status' => 200,
-                'data' => $data
+                'purchase_request' => $data
             ], 200);
         } catch (\Throwable $th) {
             throw $th;
@@ -161,22 +169,39 @@ class DataController extends Controller
         }
         
     }
-    public function price_data(){
-        try {
-            $id = request()->id ?? null;
-            $dataQuery =  DB::table('price');
-            if ($id) {
-                $dataQuery->where('id', $id);
+        public function price_data(){
+            try {
+                $id = request()->id ?? null;
+                $dataQuery =  DB::table('price');
+                if ($id) {
+                    $dataQuery->where('id', $id);
+                }
+                $data = $dataQuery->get();
+                return response()->json([
+                    'status' => 200,
+                    'data' => $data
+                ], 200);
+            } catch (\Throwable $th) {
+                throw $th;
             }
-            $data = $dataQuery->get();
-            return response()->json([
-                'status' => 200,
-                'data' => $data
-            ], 200);
-        } catch (\Throwable $th) {
-            throw $th;
+            
         }
-        
-    }
     
-}
+            public function packs_by_product($productId){
+                try {
+                    $packs = DB::table('purchase_stock_entry')
+                        ->join('pack', 'purchase_stock_entry.pack_id', '=', 'pack.id')
+                        ->where('purchase_stock_entry.product_id', $productId)
+                        ->select('pack.id', 'pack.pack_name')
+                        ->distinct()
+                        ->get();
+        
+                    return response()->json([
+                        'status' => 200,
+                        'data' => $packs
+                    ], 200);
+                } catch (\Throwable $th) {
+                    throw $th;
+                }
+            }        
+    }

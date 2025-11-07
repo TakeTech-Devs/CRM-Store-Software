@@ -110,6 +110,8 @@
                             <th>Category</th>
                             <th>Sub Category</th>
                             <th>Pack</th>
+                            <th>Pack Size</th>
+
                             <th>Remaining Qty</th>
                             <th>Unit Value</th>
                             <th>Qty</th>
@@ -269,57 +271,70 @@
             });
 
             $(document).on('change', '.product', function () {
-                const count = $(this).data('count'); 
+                console.log('Product changed');
+                const count = $(this).data('count');
+                const productId = this.value;
 
-                ajaxGetData(`/products?id=${this.value}`, (res) => {
+                if (productId) {
+                    // Fetch product details
+                    ajaxGetData(`/products?id=${productId}`, (res) => {
+                        if (res?.data && res.data.length > 0) {
+                            const productData = res.data[0];
+                            categoryData(productData.category_id, count);
+                            subCategoryData(productData.sub_category_id, count);
+                            document.getElementById(`gstRate${count}`).value = productData.gst;
+                        } else {
+                            console.error('Product data not found');
+                        }
+                    });
 
-                    if (res?.data && res.data.length > 0) {
-                        const productData = res.data[0];
-                        categoryData(productData.category_id, count);
-                        subCategoryData(productData.sub_category_id, count);
-                        document.getElementById(`gstRate${count}`).value = productData.gst;
+                    // Fetch available pack sizes
+                    packData_fetch(productId, count);
+                } else {
+                    // Clear fields if no product is selected
+                    $(`#category${count}`).val('');
+                    $(`#subCategory${count}`).val('');
+                    $(`#gstRate${count}`).val('');
+                    $(`#pack_selector${count}`).empty().append('<option value="">Choose Pack</option>');
+                    $(`#qty${count}`).val('');
+                    $(`#unit_value${count}`).val('');
+                    $(`#pack${count}`).val('');
+                }
+            });
 
+            $(document).on('change', '.pack-selector', function () {
+                const count = $(this).data('count');
+                const productId = $(`#product_name${count}`).val();
+                const packId = this.value;
 
-                        console.log("Product data: ",productData);
-                    } else {
-                        console.error('Product data not found');
-                    }
-                });
-
-                ajaxGetData(`/api/purchase_request?id=${this.value}`, (res) => {
-                    if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
-                        const requestData = res.purchase_request.find(item => item.id);
-                        console.log("Request data Find Statement:", requestData.id);
-                        console.log("request data: ",requestData);
-                        
-                        
-
-                        if (requestData) {
-                            $(`#qty${count}`).val(requestData.qty);
-                            
-                            if (typeof priceData === 'function') {
+                if (packId) {
+                    ajaxGetData(`/api/purchase_request?product_id=${productId}&pack_id=${packId}`, (res) => {
+                        if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
+                            const requestData = res.purchase_request[0];
+                            if (requestData) {
+                                $(`#qty${count}`).val(requestData.qty);
                                 priceData(requestData.price_id, count);
+                                // Also update the readonly pack size field
+                                $(`#pack${count}`).val($(`#pack_selector${count} option:selected`).text());
                             } else {
-                                console.error('priceData function is not defined');
-                            }
-                            
-                            if (typeof packData === 'function') {
-                                packData(requestData.pack_id, count);
-                            } else {
-                                console.error('packData function is not defined');
+                                $(`#qty${count}`).val('');
+                                $(`#unit_value${count}`).val('');
+                                $(`#pack${count}`).val('');
                             }
                         } else {
                             $(`#qty${count}`).val('');
                             $(`#unit_value${count}`).val('');
                             $(`#pack${count}`).val('');
                         }
-                    } else {
-                        $(`#qty${count}`).val('');
-                        $(`#unit_value${count}`).val('');
-                        $(`#pack${count}`).val('');
-                    }
-                });
+                    });
+                } else {
+                    $(`#qty${count}`).val('');
+                    $(`#unit_value${count}`).val('');
+                    $(`#pack${count}`).val('');
+                }
             });
+
+
 
 
             
@@ -462,25 +477,33 @@
             })
         }
 
-        function productData() { 
-            ajaxGetData(`/api/purchase_request`, (res) => {
-                
-                for (let index = 0; index < res?.purchase_request?.length; index++) {
-                    const element = res?.purchase_request[index];
-                    productData_fetch(element?.product_id, element?.pack_id, count);
-                }
-            });
-        }
-
-        function productData_fetch(id, pack_id, count) {
-            ajaxGetData(`/pack?id=${pack_id}`, (res) => {
-                const pack_name = res?.data[0].pack_name;
-
-                ajaxGetData(`/products?id=${id}`, (res) => {
-                    $(`.product[data-count="${count}"]`).append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
+        function productData(count) {
+            ajaxGetData(`/products`, (res) => {
+                const productSelector = $(`.product[data-count="${count}"]`);
+                productSelector.empty().append('<option value="">Choose Product</option>');
+                res?.data?.forEach(element => {
+                    productSelector.append(`<option value="${element.id}">${element.product_name}</option>`);
                 });
             });
         }
+
+        function packData_fetch(productId, count) {
+            console.log('Fetching packs for product:', productId);
+            ajaxGetData(`/api/packs/${productId}`, (res) => {
+                console.log('Response from /api/packs:', res);
+                const packSelector = $(`#pack_selector${count}`);
+                packSelector.empty().append('<option value="">Choose Pack</option>');
+                res?.data?.forEach(element => {
+                    packSelector.append(`<option value="${element.id}">${element.pack_name}</option>`);
+                });
+            });
+        }
+
+
+
+
+
+
 
 
 
@@ -512,8 +535,6 @@
         }
 
         function addNewRow(id) {
-            productData(); 
-
             const newRow = `
                 <tr id="row_${id}" class="new-row">
                     <td class="table-row-id row_id d-none product">${id}</td>
@@ -533,10 +554,16 @@
                         </div>
                     </td>
                     <td class="table-row">
+                        <select data-enable-search="true" class="form-control pack-selector" data-count="${id}" name="pack_selector[]" id="pack_selector${id}">
+                            <option value="">Choose Pack</option>
+                        </select>
+                    </td>
+                    <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="text" class="form-control" name="pack[]" id="pack${id}" readonly />
                         </div>
                     </td>
+
                     <td class="table-row">
                         <div class="form-group d-flex align-items-center">
                             <input type="number" class="form-control" name="total_qty[]" id="qty${id}" readonly/>
@@ -570,6 +597,7 @@
                 </tr>
             `;
             $('#formBody').append(newRow);
+            productData(id);
         }
 
         function updateTotalForRow(row) {
@@ -788,7 +816,7 @@
                 $('#invoice_table tbody').append(`
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${item.category || 'N/A'}</td>
+                        <td>${item.product_name || 'N/A'}</td>
                         <td>${item.qty || '0'}</td>
                         <td>${item.pack || 'N/A'}</td>
                         <td>${item.unitValue || '0.00'}/-</td>

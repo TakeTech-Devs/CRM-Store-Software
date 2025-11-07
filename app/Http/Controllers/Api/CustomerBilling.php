@@ -340,7 +340,9 @@ class CustomerBilling extends Controller
 
             // Fetch bill items from customer_product_billing
             $billItems = DB::table('customer_product_billing')
-                ->where('cb_id', '=', $billId)
+                ->join('product', 'customer_product_billing.productId', '=', 'product.id')
+                ->where('customer_product_billing.cb_id', '=', $billId)
+                ->select('customer_product_billing.*', 'product.product_name')
                 ->get();
 
             // Fetch customer details
