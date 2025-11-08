@@ -11,9 +11,13 @@ class DataController extends Controller
     public function customer_data(){
         try {
             $id = request()->id ?? null;
+            $phone = request()->phone ?? null;
             $dataQuery =  DB::table('customer');
             if ($id) {
                 $dataQuery->where('id', $id);
+            }
+            if ($phone) {
+                $dataQuery->where('phone', $phone);
             }
             $data = $dataQuery->get();
             return response()->json([

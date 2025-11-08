@@ -40,10 +40,9 @@
                     <div class="form-group">
                         <label for="customer_phone">Customer Phone Number</label>
                         <div class="form-group d-flex align-items-center">
-                            <select data-enable-search="true" name="customer_phone[]" id="customer_phone"
-                                class="form-control">
-                                <option value="">Choose Customer Phone Number...</option>
-                            </select>
+                            <input type="text" list="customer_phones" name="customer_phone" id="customer_phone" class="form-control" placeholder="Enter or choose customer phone number...">
+                            <datalist id="customer_phones">
+                            </datalist>
                             <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal"
                                 data-target="#addCustomer">
                                 <i class="fas fa-plus"></i>
@@ -266,8 +265,8 @@
             addNewRow(count)
             customerData(null)
             doctorData()
-            $(document).on('change', '#customer_phone', function () {
-                customerData(this.value)
+            $(document).on('blur', '#customer_phone', function () {
+                customerData(this.value);
             });
 
             $(document).on('change', '.product', function () {
@@ -437,21 +436,27 @@
             });
         });  
 
-        function customerData(id) { 
-            if (id) {
-                ajaxGetData(`/customers?id=${id}`, (res)=>{
-                    $('#customer_name').val(res?.data[0]?.name || '');
-                })
-            }else{
-                ajaxGetData('/customers', (res)=>{
-                    for (let index = 0; index < res?.data?.length; index++) {
-                        const element = res?.data[index];
-                        $('#customer_phone').append('<option value="' + element.id + '">' + element.phone + '</option>');
+        function customerData(phone) {
+            if (phone) {
+                ajaxGetData(`/customers?phone=${phone}`, (res)=>{
+                    if (res?.data && res.data.length > 0) {
+                        $('#customer_name').val(res?.data[0]?.name || '');
+                    } else {
+                        // Phone number doesn't exist, open modal
+                        $('#addCustomer').modal('show');
+                        $('#addCustomer #phone').val(phone);
+                        $('#addCustomer #name').focus();
                     }
-                })
+                });
+            } else {
+                ajaxGetData('/customers', (res)=>{
+                    const datalist = $('#customer_phones');
+                    datalist.empty();
+                    res?.data?.forEach(element => {
+                        datalist.append(`<option value="${element.phone}">`);
+                    });
+                });
             }
-          
-
         }
 
         function updateProductQuantity(product_id, assigned_qty) {
