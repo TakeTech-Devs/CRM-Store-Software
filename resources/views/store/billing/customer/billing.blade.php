@@ -218,6 +218,8 @@
                                             <th>Qty</th>
                                             <th>Pack</th>
                                             <th>MRP</th>
+                                            <th>GST Rate</th>
+                                            <th>GST Amount</th>
                                             <th>Amount</th>
                                         </tr>
                                     </thead>
@@ -228,10 +230,26 @@
                                     </tbody>
                                 </table>
                                 <div class="col-md-12 my-3" style="text-align:right !important">
-                                    <div><strong>Grand Total:</strong> <span class="grandTotal">0</span>/-</div>
-                                    <div><strong>GST:</strong> <span class="totalGST">0</span>/-</div>
-                                    <div><strong>CGST:</strong> <span class="totalCGST">0</span>/-</div>
-                                    <div><strong>SGST:</strong> <span class="totalSGST">0</span>/-</div>
+                                    <table class="w-100 table table-bordered mt-3">
+                                        <thead>
+                                            <tr style="text-align: right;">
+                                                <th>Taxable Value</th>
+                                                <th>CGST</th>
+                                                <th>SGST</th>
+                                                <th>Total Tax Amount</th>
+                                                <th>Grand Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody style="text-align: right;">
+                                            <tr>
+                                                <td><span class="taxableValue">0.00</span>/-</td>
+                                                <td><span class="totalCGST">0.00</span>/-</td>
+                                                <td><span class="totalSGST">0.00</span>/-</td>
+                                                <td><span class="totalGST">0.00</span>/-</td>
+                                                <td><span class="grandTotal">0.00</span>/-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
 
                                 <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
@@ -480,6 +498,8 @@ function displayFilteredData(data) {
                         helplineNumber.textContent = 'Not Provided';
                     }
 
+                    var taxableValue = (bill.total_amt - bill.gst).toFixed(2);
+                    $('.taxableValue').text(taxableValue);
                     if (grandTotalElement) {
                         grandTotalElement.textContent = bill.total_amt;
                     }
@@ -516,6 +536,8 @@ function displayFilteredData(data) {
                                 <td>${item.qty || '0'}</td>
                                 <td>${item.pack || 'N/A'}</td>
                                 <td>${item.unitValue || '0.00'}/-</td>
+                                <td>${item.gstRate || '0'}%</td>
+                                <td>${item.gstAmount || '0.00'}/-</td>
                                 <td>${item.totalAmount || '0.00'}/-</td>
                             </tr>
                         `);

@@ -90,6 +90,8 @@ class CustomerBilling extends Controller
                     'totalAmount' => $value['totalAmount'],
                     'unitValue' => $value['unitValue'],
                     'cb_id' => $insert_cb,
+                    'gstRate' => $value['gstRate'],
+                    'gstAmount' => $value['gstAmount'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

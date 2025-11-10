@@ -722,8 +722,6 @@
                     const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
                     const gstRate = row.querySelector(`[name="gstRate[]"]`).value;
                     const gstAmount = row.querySelector(`[name="gstAmount[]"]`).value;
-                    const cgst = row.querySelector(`[name="cgst[]"]`).value;
-                    const sgst = row.querySelector(`[name="sgst[]"]`).value;
 
                     products.push({
                         productId,
@@ -733,7 +731,9 @@
                         qty,
                         unitValue,
                         discount,
-                        totalAmount
+                        totalAmount,
+                        gstRate,
+                        gstAmount
                     });
                 }
             });
@@ -807,6 +807,7 @@
             $('.totalGST').text(bill.gst || 0);
             $('.totalCGST').text(bill.cgst || 0);
             $('.totalSGST').text(bill.sgst || 0);
+            $('.taxableValue').text((bill.total_amt - bill.gst).toFixed(2)); // Add taxable value
 
             // Update store information
             if (store) {
@@ -825,6 +826,8 @@
                         <td>${item.qty || '0'}</td>
                         <td>${item.pack || 'N/A'}</td>
                         <td>${item.unitValue || '0.00'}/-</td>
+                        <td>${item.gstRate || '0'}%</td>
+                        <td>${item.gstAmount || '0.00'}/-</td>
                         <td>${item.totalAmount || '0.00'}/-</td>
                     </tr>
                 `);
@@ -900,6 +903,8 @@
                                                             <th>Qty</th>
                                                             <th>Pack</th>
                                                             <th>MRP</th>
+                                                            <th>GST Rate</th>
+                                                            <th>GST Amount</th>
                                                             <th>Amount</th>
                                                         </tr>
                                                     </thead>
@@ -907,10 +912,26 @@
                                                     </tbody>
                                                 </table>
                                                 <div class="col-md-12 my-3" style="text-align:right !important">
-                                                    <div><strong>Grand Total:</strong> <span class="grandTotal">0</span>/-</div>
-                                                    <div><strong>GST:</strong> <span class="totalGST">0</span>/-</div>
-                                                    <div><strong>CGST:</strong> <span class="totalCGST">0</span>/-</div>
-                                                    <div><strong>SGST:</strong> <span class="totalSGST">0</span>/-</div>
+                                                    <table class="w-100 table table-bordered mt-3">
+                                                        <thead>
+                                                            <tr style="text-align: right;">
+                                                                <th>Taxable Value</th>
+                                                                <th>CGST</th>
+                                                                <th>SGST</th>
+                                                                <th>Total Tax Amount</th>
+                                                                <th>Grand Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody style="text-align: right;">
+                                                            <tr>
+                                                                <td><span class="taxableValue">0.00</span>/-</td>
+                                                                <td><span class="totalCGST">0.00</span>/-</td>
+                                                                <td><span class="totalSGST">0.00</span>/-</td>
+                                                                <td><span class="totalGST">0.00</span>/-</td>
+                                                                <td><span class="grandTotal">0.00</span>/-</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                                 <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
                                                     <span>Address : <Span class="storeAddress"></Span></span><br>
