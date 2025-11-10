@@ -334,6 +334,7 @@ function displayFilteredData(data) {
                 <td>${bill.total_amt}</td>
                 <td>
                     <a href="/customer/billing/${bill.id}/view" class="btn btn-sm btn-primary">View</a>
+                    <a href="/store/customer/billing/${bill.id}/edit" class="btn btn-sm btn-warning ml-2">Edit</a>
                 </td>
             </tr>
         `);
@@ -583,6 +584,7 @@ function displayFilteredData(data) {
                         <td> ${totalAmount.toFixed(2)} </td>
                         <td>
                             <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                            <a href="/store/customer/billing/${brand.id}/edit" class="bg-warning px-2 py-1 text-white ml-2">Edit</a>
                         </td>
                     </tr>
                 `);
@@ -614,6 +616,7 @@ function displayFilteredData(data) {
                     <td>${customerBill.total_amt}</td>
                     <td>
                         <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
+                        <a href="/store/customer/billing/${customerBill.id}/edit" class="bg-warning px-2 py-1 text-white ml-2">Edit</a>
                         <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
                     </td>
                 </tr>

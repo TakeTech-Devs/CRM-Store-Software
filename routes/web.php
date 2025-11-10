@@ -36,6 +36,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/customer/create/billing', function () {
             return view('store/billing/customer/create');
         });
+        Route::get('/customer/billing/{id}/edit', function ($id) {
+            return view('store/billing/customer/edit', ['billId' => $id]);
+        });
         Route::get('/staff/billing', function () {
             return view('store/billing/staff/billing');
         });
@@ -96,6 +99,7 @@ Route::get('/sub-category', [DataController:: class , 'sub_category_data']);
 Route::get('/pack', [DataController:: class , 'pack_data']);
 Route::get('/price', [DataController:: class , 'price_data']);
 Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
+Route::post('/customer/billing/update/{billId}', [CustomerBilling::class, 'updateBilling']);
 Route::post('/staff/billing/create', [StaffBilling::class , 'createBilling']);
 
 

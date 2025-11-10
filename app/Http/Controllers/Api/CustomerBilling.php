@@ -370,6 +370,102 @@ class CustomerBilling extends Controller
         }
     }
 
+    public function updateBilling(Request $request, $billId)
+    {
+        try {
+            $storeId = $request->session()->get('storeId');
+            if (!$storeId) {
+                return response()->json(['status' => 403, 'message' => 'Store not logged in.'], 403);
+            }
+
+            $product_billing = $request->product_billings ?? [];
+            $customer_phone = $request->customer_phone;
+            $doctor_name = $request->doctor_name;
+            $invoiceNo = $request->invoiceNo;
+            $paymentType = $request->paymentType;
+            $billing_date = $request->billing_date;
+            $customer_name = $request->customer_name;
+            $billingType = $request->billingType ?? 'Customer Billing';
+            $total_amt = $request->total_amt;
+            $gstAmount = $request->gstAmount;
+            $cgst = $request->cgst;
+            $sgst = $request->sgst;
+
+            DB::beginTransaction();
+
+            // Restore stock from existing bill items
+            $existingItems = DB::table('customer_product_billing')->where('cb_id', $billId)->get();
+            foreach ($existingItems as $item) {
+                // increase stock back
+                DB::table('purchase_stock_entry')->where('product_id', $item->productId)->increment('qty', $item->qty);
+            }
+
+            // Now check and deduct stock for new items
+            foreach ($product_billing as $value) {
+                $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
+                if (!$product) {
+                    DB::rollBack();
+                    return response()->json(['status' => 404, 'message' => 'Product not found in stock.'], 404);
+                }
+
+                $remainingQty = $product->qty - $value['qty'];
+                if ($remainingQty < 0) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'Insufficient stock for the product.'], 400);
+                }
+
+                DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
+                    'qty' => $remainingQty,
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Update main billing record
+            DB::table('customer_billing')->where('id', $billId)->update([
+                'store_id' => $storeId,
+                'customer_phone' => $customer_phone,
+                'customer_name' => $customer_name,
+                'doctor_name' => $doctor_name,
+                'invoiceNo' => $invoiceNo,
+                'paymentType' => $paymentType,
+                'billing_date' => $billing_date,
+                'billingType' => $billingType,
+                'total_amt' => $total_amt,
+                'updated_at' => now(),
+                'gst' => $gstAmount,
+                'cgst' => $cgst,
+                'sgst' => $sgst,
+            ]);
+
+            // Remove old item rows and insert new ones
+            DB::table('customer_product_billing')->where('cb_id', $billId)->delete();
+            foreach ($product_billing as $value) {
+                DB::table('customer_product_billing')->insert([
+                    'category' => $value['category'] ?? null,
+                    'discount' => $value['discount'] ?? 0,
+                    'pack' => $value['pack'] ?? null,
+                    'productId' => $value['productId'],
+                    'qty' => $value['qty'],
+                    'subCategory' => $value['subCategory'] ?? null,
+                    'totalAmount' => $value['totalAmount'] ?? 0,
+                    'unitValue' => $value['unitValue'] ?? 0,
+                    'cb_id' => $billId,
+                    'gstRate' => $value['gstRate'] ?? 0,
+                    'gstAmount' => $value['gstAmount'] ?? 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['status' => 200, 'message' => 'Billing updated successfully'], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json(['status' => 500, 'message' => $th->getMessage()], 500);
+        }
+    }
+
     public function getStoreInfo(Request $request) {
         try {
             $storeId = $request->session()->get('storeId');
