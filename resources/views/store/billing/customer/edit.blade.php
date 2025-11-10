@@ -445,17 +445,42 @@
 
                                     // Set payment type (if exists)
                                                 if (bill.paymentType) {
-                                                    // try exact value then match by displayed text (case-insensitive)
                                                     const paymentSel = $('#paymentType');
-                                                    if (paymentSel.find(`option[value="${bill.paymentType}"]`).length) {
-                                                        paymentSel.val(bill.paymentType);
-                                                    } else {
+                                                    const wanted = String(bill.paymentType || '').trim().toLowerCase();
+                                                    let matched = false;
+
+                                                    // First pass: match normalized option values or exact text
+                                                    paymentSel.find('option').each(function() {
+                                                        const opt = $(this);
+                                                        const optVal = String(opt.val() || '').trim().toLowerCase();
+                                                        const optText = String(opt.text() || '').trim().toLowerCase();
+                                                        if (optVal && (optVal === wanted)) {
+                                                            paymentSel.val(opt.val());
+                                                            matched = true;
+                                                            return false; // break
+                                                        }
+                                                        if (optText === wanted) {
+                                                            paymentSel.val(opt.val());
+                                                            matched = true;
+                                                            return false;
+                                                        }
+                                                    });
+
+                                                    // Second pass: fuzzy contains match (helps when values/text include extra words)
+                                                    if (!matched) {
                                                         paymentSel.find('option').each(function() {
-                                                            if ($(this).text().toLowerCase() === String(bill.paymentType).toLowerCase()) {
-                                                                $(this).prop('selected', true);
+                                                            const opt = $(this);
+                                                            const optText = String(opt.text() || '').trim().toLowerCase();
+                                                            if (optText.includes(wanted) || wanted.includes(optText)) {
+                                                                paymentSel.val(opt.val());
+                                                                matched = true;
+                                                                return false;
                                                             }
                                                         });
                                                     }
+
+                                                    // Trigger change in case any plugins/watchers need it
+                                                    paymentSel.trigger('change');
                                                 }
 
                                     // Clear existing rows and populate
