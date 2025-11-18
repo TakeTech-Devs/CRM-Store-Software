@@ -259,6 +259,7 @@
                     </div>
                     <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
                         <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
+                        <button class="btn btn-sm shadow btn-info" id="printButtonTVS">Print TVS RP 45</button>
                     </div>
                 </div>
             </div>
@@ -549,5 +550,48 @@
 
 
         
+<script>
+    document.getElementById("printButtonTVS").addEventListener("click", function() {
+        printModalContentTVS();
+    });
+
+    function printModalContentTVS() {
+        var printContent = document.getElementById("printArea").innerHTML;
+        var originalContent = document.body.innerHTML;
+
+        var printWindow = window.open('', '', 'height=600,width=400');
+        printWindow.document.write('<html><head><title>Print</title>');
+        printWindow.document.write(`
+            <style>
+                body {
+                    font-family: 'Courier New', Courier, monospace;
+                    font-size: 8px;
+                    width: 4in;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    padding: 2px;
+                    text-align: left;
+                }
+                .text-center {
+                    text-align: center;
+                }
+                .fw-bold {
+                    font-weight: bold;
+                }
+                #printButton, #printButtonTVS {
+                    display: none;
+                }
+            </style>
+        `);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
 </script>
 @endsection

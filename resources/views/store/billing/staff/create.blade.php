@@ -204,6 +204,107 @@
         </div>
     </div>
 
+    <!-- PRINT MODAL -->
+    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content" style="border: none;">
+                <div class="modal-body" style="padding: 10px; width:100%;">
+                    <div id="printArea">
+                        <table class="border p-2 my-2">
+                            <h1 class="text-center fw-bold"
+                                style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT
+                                AID</h1>
+                            <div class="col-md-12">
+                                <div class="details d-flex align-items-start justify-content-between"
+                                    style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                    <div class="left">
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Invoice No: <span class="invoiceNo"
+                                                style="font-size: 14px !important; font-weight:400;"></span> </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
+                                            <span class="billingDate"
+                                                style="font-size: 14px !important; font-weight:400;"></span>
+                                        </p>
+                                        <p
+                                            style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            GSTIN: <span class="gstin"
+                                                style="font-size: 14px !important; font-weight:400;">GST123456</span>
+                                        </p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Staff: <span class="staffName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p
+                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Dr Name: <span class="drName"
+                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                    </div>
+                                    <div class="right">
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL.
+                                            No. : <span class="dlNumber"
+                                                style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
+                                        </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Helpline : <span class="helplineNumber"
+                                                style="font-size: 14px !important; font-weight:400;">8100968101</span>
+                                        </p>
+                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            Address : <span class="storeAddress"
+                                                style="font-size: 12px !important; font-weight:400;">Loading...</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="product-details text-center m-0 col-md-12">
+
+                                <table class="w-100" id="invoice_table">
+                                    <thead
+                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                        <tr>
+                                            <th>SNo.</th>
+                                            <th>Desc</th>
+                                            <th>Qty</th>
+                                            <th>Pack</th>
+                                            <th>MRP</th>
+                                            <th>Amount</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody
+                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+
+                                    </tbody>
+                                </table>
+                                <div class="col-md-12 my-3" style="text-align:right !important">
+                                    <th>Grand Total: <span class="grandTotal"></span>/-</th>
+                                </div>
+
+                                <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
+                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata
+                                        700020</span><br>
+                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor,
+                                        "Merlin Grove Behala
+                                        Kolkata-700008</span>
+                                </div>
+                                <div class="note text-center" style="font-size: 12px !important;">
+                                    <p>Medicine once sold would not be returned or exchanged</p>
+                                    <span>******** Thank You ********</span>
+                                </div>
+                            </div>
+
+                        </table>
+                    </div>
+                    <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
+                        <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
+                        <button class="btn btn-sm shadow btn-info" id="printButtonTVS">Print TVS RP 45</button>
+                        <button class="btn btn-sm shadow btn-success" id="createNewBill" style="margin-left: 10px;">Create New Bill</button>
+                        <button class="btn btn-sm shadow btn-secondary" id="backToList" style="margin-left: 10px;">Back to List</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script>
         $(document).ready(function () {
             count = 0
@@ -276,19 +377,160 @@
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
                 ajaxPostData('/staff/billing/create', payload, csrfToken, (response)=>{
-                    window.location.href = '/store/staff/billing';
+                    const billId = response.bill_id;
                     Swal.fire({
                         title: "Staff Billing !",
                         icon: "success",
                         text: "Staff Billing Added Successfully.",
                     }).then((response)=>{
                         if(response.isConfirmed){
-                            window.location.href = "/store/staff/billing";
+                            viewAndPrintBill(billId);
                         }
                     });
 
                 })
-            })       
+            })
+
+            // Function to view and print the bill
+            function viewAndPrintBill(billId) {
+                // Fetch bill details and show print modal
+                $.ajax({
+                    url: `/api/staff/bill/${billId}`,
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.status === 200) {
+                            populatePrintModal(response.data);
+                            $('#printModal').modal('show');
+                        } else {
+                            Swal.fire({
+                                title: "Error!",
+                                icon: "error",
+                                text: "Failed to fetch bill details.",
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            title: "Error!",
+                            icon: "error",
+                            text: "Failed to fetch bill details.",
+                        });
+                    }
+                });
+            }
+
+            // Function to populate print modal with bill data
+            function populatePrintModal(data) {
+                let bill = data.bill;
+                let items = data.items;
+                let store = data.store;
+
+                // Update bill information
+                $('.invoiceNo').text(bill.invoiceNo);
+                $('.billingDate').text(bill.billing_date);
+                $('.staffName').text(bill.staff_name);
+                $('.drName').text(bill.doctor_name || 'N/A');
+                $('.grandTotal').text(bill.total_amt);
+
+                // Update store information
+                if (store) {
+                    $('.storeAddress').text(store.store_address || 'Not Provided');
+                    $('.dlNumber').text(store.dl_number || 'Not Provided');
+                    $('.helplineNumber').text(store.helpline_number || 'Not Provided');
+                }
+
+                // Clear and populate items table
+                $('#invoice_table tbody').empty();
+                items.forEach((item, index) => {
+                    $('#invoice_table tbody').append(`
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.product_name || 'N/A'}</td>
+                            <td>${item.qty || '0'}</td>
+                            <td>${item.pack || 'N/A'}</td>
+                            <td>${item.unitValue || '0.00'}/-</td>
+                            <td>${item.totalAmount || '0.00'}/-</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            // Add print functionality
+            $(document).on('click', '#printButton', function() {
+                printModalContent();
+            });
+
+            $(document).on('click', '#printButtonTVS', function() {
+                printModalContentTVS();
+            });
+
+            // Add create new bill functionality
+            $(document).on('click', '#createNewBill', function() {
+                window.location.href = "/store/staff/create/billing";
+            });
+
+            // Add back to list functionality
+            $(document).on('click', '#backToList', function() {
+                window.location.href = "/store/staff/billing";
+            });
+
+            // Print function
+            function printModalContent() {
+                var printContent = document.getElementById("printArea").innerHTML;
+                var originalContent = document.body.innerHTML;
+
+                // Remove all buttons from print content
+                printContent = printContent.replace(/<button[^>]*>.*?<\/button>/g, '');
+
+                var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
+                if (modalBackdrop) {
+                    modalBackdrop.remove();
+                }
+
+                document.body.innerHTML = printContent;
+                window.print();
+                document.body.innerHTML = originalContent;
+                $('#printModal').modal('show');
+            }
+
+            function printModalContentTVS() {
+                var printContent = document.getElementById("printArea").innerHTML;
+                var originalContent = document.body.innerHTML;
+
+                var printWindow = window.open('', '', 'height=600,width=400');
+                printWindow.document.write('<html><head><title>Print</title>');
+                printWindow.document.write(`
+                    <style>
+                        body {
+                            font-family: 'Courier New', Courier, monospace;
+                            font-size: 8px;
+                            width: 4in;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        th, td {
+                            padding: 2px;
+                            text-align: left;
+                        }
+                        .text-center {
+                            text-align: center;
+                        }
+                        .fw-bold {
+                            font-weight: bold;
+                        }
+                        #printButton, #printButtonTVS, #createNewBill, #backToList {
+                            display: none;
+                        }
+                    </style>
+                `);
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(printContent);
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.print();
+            }       
 
             // ADDING Staff 
             $('#addStaff').on('submit', function(event) {
