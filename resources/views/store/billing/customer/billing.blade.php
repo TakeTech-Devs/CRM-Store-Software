@@ -173,35 +173,35 @@
                                 <div class="details d-flex align-items-start justify-content-between"
                                     style="margin-bottom: 15px !important; margin-top: 15px !important;">
                                     <div class="left">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">
                                             Invoice No: <span class="invoiceNo"
-                                                style="font-size: 14px !important; font-weight:400;"></span> </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
+                                                style="font-size: 16px !important; font-weight:600;"></span> </p>
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">Date:
                                             <span class="billingDate"
-                                                style="font-size: 14px !important; font-weight:400;"></span>
+                                                style="font-size: 16px !important; font-weight:600;"></span>
                                         </p>
                                         <p
-                                            style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            style="width: 150%; font-size: 16px !important; font-weight:800; line-height: 5px;">
                                             GSTIN: <span class="gstin"
-                                                style="font-size: 14px !important; font-weight:400;">GST123456</span>
+                                                style="font-size: 16px !important; font-weight:600;">GST123456</span>
                                         </p>
                                         <p
-                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            style="width: 200%; font-size: 16px !important; font-weight:800; line-height: 5px;">
                                             Customer: <span class="customerName"
-                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                                style="font-size: 16px !important; font-weight:600;"></span></p>
                                         <p
-                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                            style="width: 200%; font-size: 16px !important; font-weight:800; line-height: 5px;">
                                             Dr Name: <span class="drName"
-                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                                style="font-size: 16px !important; font-weight:600;"></span></p>
                                     </div>
                                     <div class="right">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL.
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">DL.
                                             No. : <span class="dlNumber"
-                                                style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
+                                                style="font-size: 16px !important; font-weight:600;">HL-1046-S</span>
                                         </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">
                                             Helpline : <span class="helplineNumber"
-                                                style="font-size: 14px !important; font-weight:400;">8100968101</span>
+                                                style="font-size: 16px !important; font-weight:600;">8100968101</span>
                                         </p>
                                     </div>
                                 </div>
@@ -211,26 +211,25 @@
 
                                 <table class="w-100" id="invoice_table">
                                     <thead
-                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important; font-size: 16px; font-weight: 800;">
                                         <tr>
                                             <th>SNo.</th>
                                             <th>Desc</th>
                                             <th>Qty</th>
                                             <th>Pack</th>
                                             <th>MRP</th>
-                                            <th>GST Rate</th>
                                             <th>GST Amount</th>
                                             <th>Amount</th>
                                         </tr>
                                     </thead>
 
                                     <tbody
-                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important; font-size: 16px; font-weight: 600;">
 
                                     </tbody>
                                 </table>
                                 <div class="col-md-12 my-3" style="text-align:right !important">
-                                    <table class="w-100 table table-bordered mt-3">
+                                    <table class="w-100 table table-bordered mt-3" style="font-size: 16px; font-weight: 600;">
                                         <thead>
                                             <tr style="text-align: right;">
                                                 <th>Taxable Value</th>
@@ -252,13 +251,13 @@
                                     </table>
                                 </div>
 
-                                <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
+                                <div class="address text-center" style="font-size: 14px !important; font-weight: 600; margin-top:15px; color: #000000 !important;">
                                     <span>Address : <Span class="storeAddress"></Span></span><br>
                                     <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor,
                                         "Merlin Grove Behala
                                         Kolkata-700008</span>
                                 </div>
-                                <div class="note text-center" style="font-size: 12px !important;">
+                                <div class="note text-center" style="font-size: 14px !important; font-weight: 600;">
                                     <p>Medicine once sold would not be returned or exchanged</p>
                                     <span>******** Thank You ********</span>
                                 </div>
@@ -538,7 +537,6 @@ function displayFilteredData(data) {
                                 <td>${item.qty || '0'}</td>
                                 <td>${item.pack || 'N/A'}</td>
                                 <td>${item.unitValue || '0.00'}/-</td>
-                                <td>${item.gstRate || '0'}%</td>
                                 <td>${item.gstAmount || '0.00'}/-</td>
                                 <td>${item.totalAmount || '0.00'}/-</td>
                             </tr>

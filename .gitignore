@@ -18,3 +18,7 @@ yarn-error.log
 /.idea
 /.vscode
 composer.lock
+/storage/framework/sessions/
+/storage/framework/cache/
+/storage/framework/views/
+/bootstrap/cache/
