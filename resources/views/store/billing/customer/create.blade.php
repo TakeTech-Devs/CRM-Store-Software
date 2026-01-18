@@ -109,9 +109,9 @@
                             <th>Category</th>
                             <th>Sub Category</th>
                             <th>Pack</th>
-                            <th>Pack Size</th>
+                            <th style="min-width: 70px; width: 70px;">Pack Size</th>
 
-                            <th>Remaining Qty</th>
+                            <th style="min-width: 80px; width: 80px;">Remaining Qty</th>
                             <th>Unit Value</th>
                             <th>Qty</th>
                             <th>Discount</th>
@@ -899,7 +899,7 @@
                                                     <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
                                                         <tr>
                                                             <th>SNo.</th>
-                                                            <th>Desc</th>
+                                                            <th>Medicine</th>
                                                             <th>Qty</th>
                                                             <th>Pack</th>
                                                             <th>MRP</th>
