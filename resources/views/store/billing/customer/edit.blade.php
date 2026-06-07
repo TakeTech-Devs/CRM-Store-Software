@@ -295,9 +295,11 @@
                     $(`#subCategory${count}`).val('');
                     $(`#gstRate${count}`).val('');
                     $(`#pack_selector${count}`).empty().append('<option value="">Choose Pack</option>');
-                    $(`#qty${count}`).val('');
+                    $(`#pack_selector${count}`).select2({ width: '100%' }); // Update select2
+                    $(`#qty${count}`).val('').removeAttr('data-original-qty');
                     $(`#unit_value${count}`).val('');
                     $(`#pack${count}`).val('');
+                    $(`#assignQty${count}`).val('').css('border-color', '');
                 }
             });
 
@@ -311,25 +313,39 @@
                         if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
                             const requestData = res.purchase_request[0];
                             if (requestData) {
-                                $(`#qty${count}`).val(requestData.qty);
+                                const dbQty = parseFloat(requestData.qty) || 0;
+                                $(`#qty${count}`).val(dbQty).attr('data-original-qty', dbQty);
                                 priceData(requestData.price_id, count);
                                 // Also update the readonly pack size field
                                 $(`#pack${count}`).val($(`#pack_selector${count} option:selected`).text());
+
+                                // Recalculate validation and available qty
+                                const inputQty = parseFloat($(`#assignQty${count}`).val()) || 0;
+                                const currentAvail = dbQty - inputQty;
+                                $(`#qty${count}`).val(currentAvail);
+                                if (inputQty > dbQty) {
+                                    $(`#assignQty${count}`).css('border-color', 'red');
+                                } else {
+                                    $(`#assignQty${count}`).css('border-color', '');
+                                }
                             } else {
-                                $(`#qty${count}`).val('');
+                                $(`#qty${count}`).val('').removeAttr('data-original-qty');
                                 $(`#unit_value${count}`).val('');
                                 $(`#pack${count}`).val('');
+                                $(`#assignQty${count}`).val('').css('border-color', '');
                             }
                         } else {
-                            $(`#qty${count}`).val('');
+                            $(`#qty${count}`).val('').removeAttr('data-original-qty');
                             $(`#unit_value${count}`).val('');
                             $(`#pack${count}`).val('');
+                            $(`#assignQty${count}`).val('').css('border-color', '');
                         }
                     });
                 } else {
-                    $(`#qty${count}`).val('');
+                    $(`#qty${count}`).val('').removeAttr('data-original-qty');
                     $(`#unit_value${count}`).val('');
                     $(`#pack${count}`).val('');
+                    $(`#assignQty${count}`).val('').css('border-color', '');
                 }
             });
 
@@ -352,6 +368,40 @@
             }
 
             $(document).on('click', '#submitBilling', function () {
+                // Validation check
+                let hasError = false;
+                $('#dynamicForm tbody tr').each(function () {
+                    const assignQtyInput = $(this).find('[name="assignQty[]"]');
+                    const discountInput = $(this).find('[name="discount[]"]');
+                    
+                    const count = $(this).find('.row_id').text().trim();
+                    const totalAvailVal = $(`#qty${count}`).attr('data-original-qty');
+                    const inputQty = parseFloat(assignQtyInput.val()) || 0;
+                    const discountVal = parseFloat(discountInput.val()) || 0;
+                    
+                    if (totalAvailVal !== "" && totalAvailVal !== undefined && totalAvailVal !== null) {
+                        const totalAvail = parseFloat(totalAvailVal) || 0;
+                        if (inputQty > totalAvail) {
+                            assignQtyInput.css('border-color', 'red');
+                            hasError = true;
+                        }
+                    }
+                    
+                    if (discountVal > 100) {
+                        discountInput.css('border-color', 'red');
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        icon: "error",
+                        text: "Please fix the highlighted errors before submitting.",
+                    });
+                    return;
+                }
+
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
 
@@ -537,14 +587,20 @@
                                 if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
                                     const requestData = res.purchase_request[0];
                                     if (requestData) {
-                                        $(`#qty${count}`).val(requestData.qty);
+                                        const dbQty = parseFloat(requestData.qty) || 0;
+                                        const itemQty = parseFloat(item.qty) || 0;
+                                        const originalQty = dbQty + itemQty;
+                                        $(`#qty${count}`).val(dbQty).attr('data-original-qty', originalQty);
                                         priceData(requestData.price_id, count);
                                     } else {
                                         $(`#qty${count}`).val('');
                                     }
                                 } else {
                                     // no purchase_request result, try to set unit and qty from item
-                                    $(`#qty${count}`).val(item.remaining_qty ?? '');
+                                    const dbQty = parseFloat(item.remaining_qty) || 0;
+                                    const itemQty = parseFloat(item.qty) || 0;
+                                    const originalQty = dbQty + itemQty;
+                                    $(`#qty${count}`).val(dbQty).attr('data-original-qty', originalQty);
                                     $(`#unit_value${count}`).val(item.unitValue ?? '');
                                 }
 
@@ -566,7 +622,10 @@
                                 if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
                                     const requestData = res.purchase_request.find(r => r.pack_name === item.pack) || res.purchase_request[0];
                                     if (requestData) {
-                                        $(`#qty${count}`).val(requestData.qty);
+                                        const dbQty = parseFloat(requestData.qty) || 0;
+                                        const itemQty = parseFloat(item.qty) || 0;
+                                        const originalQty = dbQty + itemQty;
+                                        $(`#qty${count}`).val(dbQty).attr('data-original-qty', originalQty);
                                         priceData(requestData.price_id, count);
                                     }
                                 }
@@ -725,6 +784,7 @@
                 if (selected) {
                     productSelector.val(selected);
                 }
+                productSelector.select2({ width: '100%' }); // Update select2
                 if (typeof cb === 'function') cb();
             });
         }
@@ -751,6 +811,7 @@
                         });
                     }
                 }
+                packSelector.select2({ width: '100%' }); // Update select2
                 if (typeof cb === 'function') cb();
             });
         }
@@ -854,6 +915,8 @@
             `;
             $('#formBody').append(newRow);
             productData(id);
+            $(`#product_name${id}`).select2({ width: '100%' });
+            $(`#pack_selector${id}`).select2({ width: '100%' });
         }
 
         function updateTotalForRow(row) {
@@ -942,6 +1005,37 @@
             $('#totalCGST').text(totalCGST.toFixed(2));
             $('#totalSGST').text(totalSGST.toFixed(2));
         }
+
+        $(document).on('input keyup', '[name="assignQty[]"]', function () {
+            const row = $(this).closest('tr');
+            const count = row.find('.row_id').text().trim();
+            const qtyInput = $(`#qty${count}`);
+            const totalAvailVal = qtyInput.attr('data-original-qty');
+            if (totalAvailVal === "" || totalAvailVal === undefined || totalAvailVal === null) {
+                $(this).css('border-color', '');
+                return;
+            }
+            const totalAvail = parseFloat(totalAvailVal) || 0;
+            const inputQty = parseFloat($(this).val()) || 0;
+            const currentAvail = totalAvail - inputQty;
+            
+            qtyInput.val(currentAvail);
+            
+            if (inputQty > totalAvail) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
+
+        $(document).on('input keyup', '[name="discount[]"]', function () {
+            const discountVal = parseFloat($(this).val()) || 0;
+            if (discountVal > 100) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
 
         $(document).on('input keyup', '[name="assignQty[]"], [name="unit_value[]"], [name="discount[]"]', function () {
             calculateTotalAmount();

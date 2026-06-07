@@ -102,30 +102,8 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-bordered table-striped" id="dynamicForm">
-                    <thead>
-                        <tr class="table">
-                            <th>Product</th>
-                            <th>Category</th>
-                            <th>Sub Category</th>
-                            <th>Pack</th>
-                            <th style="min-width: 70px; width: 70px;">Pack Size</th>
-
-                            <th style="min-width: 80px; width: 80px;">Remaining Qty</th>
-                            <th>Unit Value</th>
-                            <th>Qty</th>
-                            <th>Discount</th>
-                            <th>Total Amount</th>
-                            <th>GST Rate (%)</th>
-                            <th>GST Amount</th>
-                            <th>CGST</th>
-                            <th>SGST</th>
-
-                        </tr>
-                    </thead>
-                    <tbody id="formBody">
-
-                    </tbody>
+                <table class="table table-bordered" id="dynamicForm">
+                    <!-- Head removed to save space and use inline labels -->
                 </table>
             </div>
 
@@ -295,9 +273,12 @@
                     $(`#subCategory${count}`).val('');
                     $(`#gstRate${count}`).val('');
                     $(`#pack_selector${count}`).empty().append('<option value="">Choose Pack</option>');
+                    $(`#pack_selector${count}`).select2({ width: '100%' });
                     $(`#qty${count}`).val('');
                     $(`#unit_value${count}`).val('');
                     $(`#pack${count}`).val('');
+                    $(`#assignQty${count}`).val('').css('border-color', '');
+                    $(`#avail_qty_text_${count}`).text('Available: -');
                 }
             });
 
@@ -312,24 +293,42 @@
                             const requestData = res.purchase_request[0];
                             if (requestData) {
                                 $(`#qty${count}`).val(requestData.qty);
+                                // Show available qty
+                                $(`#avail_qty_text_${count}`).text('Available: ' + requestData.qty);
                                 priceData(requestData.price_id, count);
                                 // Also update the readonly pack size field
                                 $(`#pack${count}`).val($(`#pack_selector${count} option:selected`).text());
+
+                                // Recalculate validation and available qty
+                                const inputQty = parseFloat($(`#assignQty${count}`).val()) || 0;
+                                const currentAvail = requestData.qty - inputQty;
+                                $(`#avail_qty_text_${count}`).text('Available: ' + currentAvail);
+                                if (inputQty > requestData.qty) {
+                                    $(`#assignQty${count}`).css('border-color', 'red');
+                                } else {
+                                    $(`#assignQty${count}`).css('border-color', '');
+                                }
                             } else {
                                 $(`#qty${count}`).val('');
                                 $(`#unit_value${count}`).val('');
                                 $(`#pack${count}`).val('');
+                                $(`#assignQty${count}`).val('').css('border-color', '');
+                                $(`#avail_qty_text_${count}`).text('Available: -');
                             }
                         } else {
                             $(`#qty${count}`).val('');
                             $(`#unit_value${count}`).val('');
                             $(`#pack${count}`).val('');
+                            $(`#assignQty${count}`).val('').css('border-color', '');
+                            $(`#avail_qty_text_${count}`).text('Available: -');
                         }
                     });
                 } else {
                     $(`#qty${count}`).val('');
                     $(`#unit_value${count}`).val('');
                     $(`#pack${count}`).val('');
+                    $(`#assignQty${count}`).val('').css('border-color', '');
+                    $(`#avail_qty_text_${count}`).text('Available: -');
                 }
             });
 
@@ -345,6 +344,39 @@
 
             // CREATING BILL
             $(document).on('click', '#submitBilling', function () {
+                // Validation check
+                let hasError = false;
+                $('#dynamicForm .product-tbody').each(function () {
+                    const assignQtyInput = $(this).find('[name="assignQty[]"]');
+                    const discountInput = $(this).find('[name="discount[]"]');
+                    
+                    const totalAvailVal = $(this).find('[name="total_qty[]"]').val();
+                    const inputQty = parseFloat(assignQtyInput.val()) || 0;
+                    const discountVal = parseFloat(discountInput.val()) || 0;
+                    
+                    if (totalAvailVal !== "" && totalAvailVal !== undefined && totalAvailVal !== null) {
+                        const totalAvail = parseFloat(totalAvailVal) || 0;
+                        if (inputQty > totalAvail) {
+                            assignQtyInput.css('border-color', 'red');
+                            hasError = true;
+                        }
+                    }
+                    
+                    if (discountVal > 100) {
+                        discountInput.css('border-color', 'red');
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        icon: "error",
+                        text: "Please fix the highlighted errors before submitting.",
+                    });
+                    return;
+                }
+
                 const payload = gatherFormData(); 
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
 
@@ -489,6 +521,7 @@
                 res?.data?.forEach(element => {
                     productSelector.append(`<option value="${element.id}">${element.product_name}</option>`);
                 });
+                productSelector.select2({ width: '100%' });
             });
         }
 
@@ -501,6 +534,7 @@
                 res?.data?.forEach(element => {
                     packSelector.append(`<option value="${element.id}">${element.pack_name}</option>`);
                 });
+                packSelector.select2({ width: '100%' });
             });
         }
 
@@ -540,69 +574,65 @@
         }
 
         function addNewRow(id) {
-            const newRow = `
-                <tr id="row_${id}" class="new-row">
-                    <td class="table-row-id row_id d-none product">${id}</td>
-                    <td class="table-row">
-                        <select data-enable-search="true" class="form-control product" data-count="${id}" name="productName[]" id="product_name${id}">
-                            <option value="">Choose Product</option>
-                        </select>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="category[]" id="category${id}" readonly />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="subCategory[]" id="subCategory${id}" readonly />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <select data-enable-search="true" class="form-control pack-selector" data-count="${id}" name="pack_selector[]" id="pack_selector${id}">
-                            <option value="">Choose Pack</option>
-                        </select>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="pack[]" id="pack${id}" readonly />
-                        </div>
-                    </td>
-
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="number" class="form-control" name="total_qty[]" id="qty${id}" readonly/>
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="unit_value[]" id="unit_value${id}" readonly />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="assignQty[]" id="assignQty${id}"  />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="number" class="form-control" name="discount[]" id="discount${id}" value="0" />
-                        </div>
-                    </td>
-                    <td class="table-row">
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="totalAmount[]" id="totalAmount${id}" readonly />
-                        </div>
-                    </td>
-                    <td><input type="number" class="form-control gstRate" name="gstRate[]" id="gstRate${id}" readonly /></td>
-                    <td><input type="text" class="form-control gstAmount" name="gstAmount[]" id="gstAmount${id}" readonly /></td>
-                    <td><input type="text" class="form-control cgst" name="cgst[]" id="cgst${id}" readonly /></td>
-                    <td><input type="text" class="form-control sgst" name="sgst[]" id="sgst${id}" readonly /></td>
-
-                </tr>
+            const newTbody = `
+                <tbody class="product-tbody new-row" id="row_block_${id}">
+                    <!-- ROW 1 -->
+                    <tr>
+                        <td style="width: 30%">
+                            <small class="text-muted font-weight-bold">Product</small>
+                            <input type="hidden" class="table-row-id row_id product" value="${id}">
+                            <select data-enable-search="true" class="form-control product mt-1" data-count="${id}" name="productName[]" id="product_name${id}">
+                                <option value="">Choose Product</option>
+                            </select>
+                        </td>
+                        <td style="width: 25%">
+                            <small class="text-muted font-weight-bold">Category</small>
+                            <input type="text" class="form-control mt-1" name="category[]" id="category${id}" readonly />
+                        </td>
+                        <td style="width: 25%">
+                            <small class="text-muted font-weight-bold">Sub Category</small>
+                            <input type="text" class="form-control mt-1" name="subCategory[]" id="subCategory${id}" readonly />
+                        </td>
+                        <td style="width: 20%">
+                            <small class="text-muted font-weight-bold">Pack Size</small>
+                            <select data-enable-search="true" class="form-control pack-selector mt-1" data-count="${id}" name="pack_selector[]" id="pack_selector${id}">
+                                <option value="">Choose Pack</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <!-- ROW 2 -->
+                    <tr>
+                        <td>
+                            <small class="text-muted font-weight-bold">Unit Value</small>
+                            <input type="text" class="form-control mt-1" name="unit_value[]" id="unit_value${id}" readonly />
+                            
+                            <!-- Hidden Fields -->
+                            <input type="hidden" name="pack[]" id="pack${id}" />
+                            <input type="hidden" name="total_qty[]" id="qty${id}" />
+                            <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
+                            <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
+                            <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
+                            <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
+                        </td>
+                        <td>
+                            <small class="text-muted font-weight-bold">Qty (<span id="avail_qty_text_${id}" class="text-info">Available: -</span>)</small>
+                            <input type="text" class="form-control mt-1" name="assignQty[]" id="assignQty${id}" placeholder="Qty" />
+                        </td>
+                        <td>
+                            <small class="text-muted font-weight-bold">Discount (%)</small>
+                            <input type="number" class="form-control mt-1" name="discount[]" id="discount${id}" value="0" />
+                        </td>
+                        <td>
+                            <small class="text-muted font-weight-bold">Total Amount</small>
+                            <input type="text" class="form-control mt-1" name="totalAmount[]" id="totalAmount${id}" readonly />
+                        </td>
+                    </tr>
+                </tbody>
             `;
-            $('#formBody').append(newRow);
+            $('#dynamicForm').append(newTbody);
             productData(id);
+            $(`#product_name${id}`).select2({ width: '100%' });
+            $(`#pack_selector${id}`).select2({ width: '100%' });
         }
 
         function updateTotalForRow(row) {
@@ -645,10 +675,7 @@
         }
 
         $(document).ready(function() {
-            $('tr').each(function() {
-                updateTotalForRow($(this));
-            });
-            updateOverallTotal();
+             calculateTotalAmount();
         });
 
         function calculateTotalAmount() {
@@ -657,7 +684,7 @@
             let totalCGST = 0;
             let totalSGST = 0;
 
-            $('#formBody').find('tr').each(function () {
+            $('#dynamicForm .product-tbody').each(function () {
                 const qty = parseFloat($(this).find('[name="assignQty[]"]').val()) || 0;
                 const unitValue = parseFloat($(this).find('[name="unit_value[]"]').val()) || 0;
                 const discount = parseFloat($(this).find('[name="discount[]"]').val()) || 0;
@@ -692,12 +719,43 @@
             $('#totalSGST').text(totalSGST.toFixed(2));
         }
 
+        $(document).on('input keyup', '[name="assignQty[]"]', function () {
+            const row = $(this).closest('.product-tbody');
+            const count = row.find('.row_id').val();
+            const totalAvailVal = $(`#qty${count}`).val();
+            if (totalAvailVal === "" || totalAvailVal === undefined || totalAvailVal === null) {
+                $(`#avail_qty_text_${count}`).text('Available: -');
+                $(this).css('border-color', '');
+                return;
+            }
+            const totalAvail = parseFloat(totalAvailVal) || 0;
+            const inputQty = parseFloat($(this).val()) || 0;
+            const currentAvail = totalAvail - inputQty;
+            
+            $(`#avail_qty_text_${count}`).text('Available: ' + currentAvail);
+            
+            if (inputQty > totalAvail) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
+
+        $(document).on('input keyup', '[name="discount[]"]', function () {
+            const discountVal = parseFloat($(this).val()) || 0;
+            if (discountVal > 100) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
+
         $(document).on('input keyup', '[name="assignQty[]"], [name="unit_value[]"], [name="discount[]"]', function () {
             calculateTotalAmount();
         });
 
         $(document).on('keyup', '.new-row [name="assignQty[]"]', function () {
-            $(this).closest('tr').removeClass('new-row');
+            $(this).closest('.product-tbody').removeClass('new-row');
             count++;
             addNewRow(count);
         });
@@ -706,10 +764,11 @@
 
 
         function gatherFormData() {
-            const rows = document.querySelectorAll('#dynamicForm tbody tr');
+            const rows = document.querySelectorAll('#dynamicForm .product-tbody');
             const products = [];
 
             rows.forEach(row => {
+                // Since row is now tbody, we can query safely
                 const productId = row.querySelector(`[name="productName[]"]`).value;
 
                 if (productId) {
