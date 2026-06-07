@@ -160,14 +160,19 @@
             .then(response => response.json())
             .then(data => {
                 loadingModal.modal('hide'); // Hide loading modal
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
                 if (data.success) {
                     alert(data.message);
+                    getSyncHist(); // Refresh sync history
                 } else {
                     alert('Error: ' + data.message);
                 }
             })
             .catch(error => {
                 loadingModal.modal('hide'); // Hide loading modal
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
                 console.error('Error:', error);
                 alert('An unexpected error occurred.');
             });

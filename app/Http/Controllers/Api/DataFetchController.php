@@ -491,28 +491,42 @@ class DataFetchController extends Controller
                 $newData = DB::table($table)->where('updated_at', '>', $lastUpdatedAt)->get();
 
                 if (!$newData->isEmpty()) {
-                    $dataArray = $newData->map(function ($item) {
-                        return (array) $item;
+                    // Get columns that actually exist in the admin table to avoid SQL errors on mismatch
+                    $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing($table);
+                    
+                    $dataArray = $newData->map(function ($item) use ($adminColumns) {
+                        $arr = (array) $item;
+                        return array_intersect_key($arr, array_flip($adminColumns));
                     })->toArray();
 
-                    $columns = array_keys($dataArray[0]);
+                    if (!empty($dataArray)) {
+                        $columns = array_keys($dataArray[0]);
+                        $uniqueColumns = ['id'];
 
-                    $uniqueColumns = ['id'];
-
-                    $adminDB->table($table)->upsert(
-                        $dataArray,
-                        $uniqueColumns,
-                        $columns
-                    );
+                        $adminDB->table($table)->upsert(
+                            $dataArray,
+                            $uniqueColumns,
+                            $columns
+                        );
+                    }
                 }
 
                 \Log::info("Synced table {$table} successfully with {$newData->count()} records.");
             }
 
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => 'Succeed'
+            ]);
+
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Sync completed successfully.']);
         } catch (\Exception $e) {
             DB::rollBack();
+            DB::table('sync_history')->insert([
+                'sync_date' => date('Y-m-d'),
+                'sync_status' => 'Failed'
+            ]);
             \Log::error('Sync failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
         }
