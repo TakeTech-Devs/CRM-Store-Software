@@ -236,9 +236,9 @@ class ReportController extends Controller
 
     public function expiryReport(){
         try {
-            $PurchaseStockEntryList = DB::table('purchase_stock_entry')
-                ->join('product', 'purchase_stock_entry.product_id', '=', 'product.id')
-                ->select('purchase_stock_entry.*', 'product.product_name as product_name')
+            $PurchaseStockEntryList = DB::table('purchase_request')
+                ->join('product', 'purchase_request.product_id', '=', 'product.id')
+                ->select('purchase_request.*', 'product.product_name as product_name')
                 ->get();
     
             return response()->json([
@@ -307,11 +307,11 @@ class ReportController extends Controller
 
     public function stockReport(){
         try {
-            $stockData = DB::table('purchase_stock_entry as pse')
+            $stockData = DB::table('purchase_request as pse')
                 ->join('product as p', 'pse.product_id', '=', 'p.id')
                 ->join('brand as b', 'pse.brand_id', '=', 'b.id')
-                ->join('category as c', 'pse.category_id', '=', 'c.id')
-                ->join('sub_category as sc', 'pse.sub_category_id', '=', 'sc.id')
+                ->join('category as c', 'p.category_id', '=', 'c.id')
+                ->join('sub_category as sc', 'p.sub_category_id', '=', 'sc.id')
                 ->join('pack as pk', 'pse.pack_id', '=', 'pk.id')
                 ->join('price as pr', 'pse.price_id', '=', 'pr.id')
                 ->select(
@@ -397,7 +397,7 @@ class ReportController extends Controller
 
     public function zeroStockMedicine()
     {
-        $zeroStockProducts = DB::table('purchase_stock_entry')
+        $zeroStockProducts = DB::table('purchase_request')
             ->select('product_id')
             ->groupBy('product_id')
             ->havingRaw('SUM(qty) = 0')

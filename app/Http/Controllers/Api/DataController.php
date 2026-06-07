@@ -97,8 +97,8 @@ class DataController extends Controller
                 $dataQuery->where('product.id', $id);
             } else {
                 // Only fetch products with available stock if no specific ID is requested
-                $dataQuery->join('purchase_stock_entry', 'product.id', '=', 'purchase_stock_entry.product_id')
-                          ->where('purchase_stock_entry.qty', '>', 0)
+                $dataQuery->join('purchase_request', 'product.id', '=', 'purchase_request.product_id')
+                          ->where('purchase_request.qty', '>', 0)
                           ->select('product.id', 'product.product_name')
                           ->distinct();
             }
@@ -201,9 +201,9 @@ class DataController extends Controller
     
             public function packs_by_product($productId){
                 try {
-                    $packs = DB::table('purchase_stock_entry')
-                        ->join('pack', 'purchase_stock_entry.pack_id', '=', 'pack.id')
-                        ->where('purchase_stock_entry.product_id', $productId)
+                    $packs = DB::table('purchase_request')
+                        ->join('pack', 'purchase_request.pack_id', '=', 'pack.id')
+                        ->where('purchase_request.product_id', $productId)
                         ->select('pack.id', 'pack.pack_name')
                         ->distinct()
                         ->get();

@@ -30,7 +30,7 @@ class DataFetchController extends Controller
             $currentDoctorId = DB::table('doctor')->max('id');
             $currentStoreId = DB::table('store')->max('id');
 
-    
+
             // Fetch remote data and update or insert into the local database
             $remoteDatabrand = DB::connection('remote_mysql')->table('brand')->get();
             foreach ($remoteDatabrand as $value) {
@@ -48,7 +48,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDatacategory = DB::connection('remote_mysql')->table('category')->get();
             foreach ($remoteDatacategory as $value) {
                 $getCategory = DB::table('category')->where(['category_name' => $value->category_name])->first();
@@ -65,7 +65,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDatasub_category = DB::connection('remote_mysql')->table('sub_category')->get();
             foreach ($remoteDatasub_category as $value) {
                 $getSubCategory = DB::table('sub_category')->where(['sub_category_name' => $value->sub_category_name])->first();
@@ -84,7 +84,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDataproduct = DB::connection('remote_mysql')->table('product')->get();
             foreach ($remoteDataproduct as $value) {
                 $getSubCategory = DB::table('product')->where(['product_name' => $value->product_name])->first();
@@ -111,7 +111,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDatasupplier = DB::connection('remote_mysql')->table('supplier')->get();
             foreach ($remoteDatasupplier as $value) {
                 $getSupplier = DB::table('supplier')->where(['supplier_name' => $value->supplier_name])->first();
@@ -128,7 +128,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDatapack = DB::connection('remote_mysql')->table('pack')->get();
             foreach ($remoteDatapack as $value) {
                 $getPack = DB::table('pack')->where(['pack_name' => $value->pack_name])->first();
@@ -145,7 +145,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDataprice = DB::connection('remote_mysql')->table('price')->get();
             foreach ($remoteDataprice as $value) {
                 $getPrice = DB::table('price')->where(['price_name' => $value->price_name])->first();
@@ -160,83 +160,85 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             // Fetch store data
             $store_meta_id = $request->session()->get('storeId');
             $remoteDataStore = DB::connection('remote_mysql')->table('store')->where('store_meta_id', $store_meta_id)->first();
-    
+
             $remoteDatastore_assign = DB::connection('remote_mysql')->table('store_assign')->where('store_id', $remoteDataStore->id)->get();
             // return $remoteDatastore_assign;
             foreach ($remoteDatastore_assign as $value) {
                 $getStoreAssign = DB::table('store_assign')->where(['assign_bill_number' => $value->assign_bill_number])->first();
                 // dd($value)
-                if($value->purchase_stock_id){
-                    $remoteData_purchase_stock = DB::connection('remote_mysql')->table('purchase_stock')->where('id', $value->purchase_stock_id   )->get();
+                if ($value->purchase_stock_id) {
+                    $remoteData_purchase_stock = DB::connection('remote_mysql')->table('purchase_stock')->where('id', $value->purchase_stock_id)->get();
                     // dd($remoteData_purchase_stock);
 
 
-                    foreach ($remoteData_purchase_stock as $purchase_stock_value){
+                    foreach ($remoteData_purchase_stock as $purchase_stock_value) {
                         $get_purchase_stock_value = DB::table('purchase_stock')
-                        ->where([
-                           'id'=>$purchase_stock_value->id
-                        ])
-                        ->first();
-                        // return $get_purchase_stock_value;
+                            ->where('id', $purchase_stock_value->id)
+                            ->first();
+
+                        // Determine the local purchase_stock id to use for purchase_stock_entry
                         if ($get_purchase_stock_value) {
-                            DB::table('purchase_stock')->where('id', $purchase_stock_value->id)->update([
-                                'sku_date'=>$purchase_stock_value->sku_date,
-                                'sku_id'=>$purchase_stock_value->sku_id,
-                                'supplier_id'=>$purchase_stock_value->supplier_id,
-                                'purchase_bill_number'=>$purchase_stock_value->purchase_bill_number,
-                                'total'=>$purchase_stock_value->total,
+                            // Record already exists locally — capture its local id
+                            $localPurchaseStockId = $get_purchase_stock_value->id;
+                            DB::table('purchase_stock')->where('id', $localPurchaseStockId)->update([
+                                'sku_date'             => $purchase_stock_value->sku_date,
+                                'sku_id'               => $purchase_stock_value->sku_id,
+                                'supplier_id'          => $purchase_stock_value->supplier_id,
+                                'purchase_bill_number' => $purchase_stock_value->purchase_bill_number,
+                                'total'                => $purchase_stock_value->total,
                             ]);
-                        }else{
-                    // dd($purchase_stock_value);
-                            $fff = DB::connection('mysql')->table('purchase_stock')->insertGetId([
-                                'sku_date'=>$purchase_stock_value->sku_date,
-                                'sku_id'=>$purchase_stock_value->sku_id,
-                                'supplier_id'=>$purchase_stock_value->supplier_id,
-                                'purchase_bill_number'=>$purchase_stock_value->purchase_bill_number,
-                                'total'=>$purchase_stock_value->total,
+                        } else {
+                            // New record — insert and capture the new local id
+                            $localPurchaseStockId = DB::connection('mysql')->table('purchase_stock')->insertGetId([
+                                'sku_date'             => $purchase_stock_value->sku_date,
+                                'sku_id'               => $purchase_stock_value->sku_id,
+                                'supplier_id'          => $purchase_stock_value->supplier_id,
+                                'purchase_bill_number' => $purchase_stock_value->purchase_bill_number,
+                                'total'                => $purchase_stock_value->total,
                             ]);
-                            // dd($fff);
                         }
 
-                        if ($purchase_stock_value) {
-                            $remoteData_purchase_stock_entry = DB::connection('remote_mysql')->table('purchase_stock_entry')->where('purchase_stock_id', $value->purchase_stock_id)->get();
+                        // Sync purchase_stock_entry for this purchase_stock
+                        $remoteData_purchase_stock_entry = DB::connection('remote_mysql')
+                            ->table('purchase_stock_entry')
+                            ->where('purchase_stock_id', $value->purchase_stock_id)
+                            ->get();
 
-                          
+                        foreach ($remoteData_purchase_stock_entry as $purchase_stock_entry_value) {
+                            $get_purchase_stock_entry = DB::table('purchase_stock_entry')
+                                ->where('id', $purchase_stock_entry_value->id)
+                                ->first();
 
-                            foreach ($remoteData_purchase_stock_entry as $purchase_stock_entry_value) {
-                                $get_purchase_stock_entry = DB::table('purchase_stock_entry')->where('id', $purchase_stock_entry_value->id)->first();
-                                
-                                if ($get_purchase_stock_entry) {
-                                    DB::table('purchase_stock_entry')->where('id', $get_purchase_stock_entry->id)->update([
-                                        'purchase_stock_id'=>$purchase_stock_entry_value->purchase_stock_id,
-                                        'brand_id'=>$purchase_stock_entry_value->brand_id,
-                                        'category_id'=>$purchase_stock_entry_value->category_id,
-                                        'sub_category_id'=>$purchase_stock_entry_value->sub_category_id,
-                                        'product_id'=>$purchase_stock_entry_value->product_id,
-                                        'pack_id'=>$purchase_stock_entry_value->pack_id,
-                                        'price_id'=>$purchase_stock_entry_value->price_id,
-                                        'qty'=>$purchase_stock_entry_value->qty,
-                                        'exp_date'=>$purchase_stock_entry_value->exp_date,
-                                    ]);
-                                }else{
-                                    DB::table('purchase_stock_entry')->insert([
-                                        'purchase_stock_id'=>$fff,
-                                        'brand_id'=>$purchase_stock_entry_value->brand_id,
-                                        'category_id'=>$purchase_stock_entry_value->category_id,
-                                        'sub_category_id'=>$purchase_stock_entry_value->sub_category_id,
-                                        'product_id'=>$purchase_stock_entry_value->product_id,
-                                        'pack_id'=>$purchase_stock_entry_value->pack_id,
-                                        'price_id'=>$purchase_stock_entry_value->price_id,
-                                        'qty'=>$purchase_stock_entry_value->qty,
-                                        'exp_date'=>$purchase_stock_entry_value->exp_date,
-                                    ]);
-                                }
+                            if ($get_purchase_stock_entry) {
+                                DB::table('purchase_stock_entry')->where('id', $get_purchase_stock_entry->id)->update([
+                                    'purchase_stock_id' => $purchase_stock_entry_value->purchase_stock_id,
+                                    'brand_id'          => $purchase_stock_entry_value->brand_id,
+                                    'category_id'       => $purchase_stock_entry_value->category_id,
+                                    'sub_category_id'   => $purchase_stock_entry_value->sub_category_id,
+                                    'product_id'        => $purchase_stock_entry_value->product_id,
+                                    'pack_id'           => $purchase_stock_entry_value->pack_id,
+                                    'price_id'          => $purchase_stock_entry_value->price_id,
+                                    'qty'               => $purchase_stock_entry_value->qty,
+                                    'exp_date'          => $purchase_stock_entry_value->exp_date,
+                                ]);
+                            } else {
+                                // Use the local purchase_stock id (not undefined $fff)
+                                DB::table('purchase_stock_entry')->insert([
+                                    'purchase_stock_id' => $localPurchaseStockId,
+                                    'brand_id'          => $purchase_stock_entry_value->brand_id,
+                                    'category_id'       => $purchase_stock_entry_value->category_id,
+                                    'sub_category_id'   => $purchase_stock_entry_value->sub_category_id,
+                                    'product_id'        => $purchase_stock_entry_value->product_id,
+                                    'pack_id'           => $purchase_stock_entry_value->pack_id,
+                                    'price_id'          => $purchase_stock_entry_value->price_id,
+                                    'qty'               => $purchase_stock_entry_value->qty,
+                                    'exp_date'          => $purchase_stock_entry_value->exp_date,
+                                ]);
                             }
-                            
                         }
 
                     }
@@ -248,7 +250,7 @@ class DataFetchController extends Controller
                         'total' => $value->total
                     ]);
                 } else {
-                    $sa_id = DB::table('store_assign')->insert([
+                    DB::table('store_assign')->insert([
                         'id' => ++$currentStoreAssignId,
                         'store_id' => $value->store_id,
                         'assign_bill_number' => $value->assign_bill_number,
@@ -256,48 +258,48 @@ class DataFetchController extends Controller
                     ]);
                 }
 
-                if ($getStoreAssign) {
-                    $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $getStoreAssign->id)->get();
-                    foreach ($remoteDatapurchase_request as $value) {
-                        $getStoreAssign = DB::table('purchase_request')->where([
-                            'store_assign_id' => $value->store_assign_id,
-                            'brand_id' => $value->brand_id,
-                            'product_id' => $value->product_id
-                        ])->first();
-                        // dd($getStoreAssign);
+                $localStoreAssignId = $getStoreAssign ? $getStoreAssign->id : $currentStoreAssignId;
 
-                        if ($getStoreAssign) {
-                            DB::table('purchase_request')->where('id', $getStoreAssign->store_assign_id)->update([
-                                'brand_id' => $value->brand_id,
-                                'product_id' => $value->product_id,
-                                'pack_id' => $value->pack_id,
-                                'price_id' => $value->price_id,
-                                'qty' => $value->qty,
-                                'qty_left' => $value->qty_left,
-                                'exp_date' => $value->exp_date,
-                            ]);
-                        } else {
-                            DB::table('purchase_request')->insert([
-                                'id' => ++$currentPurchaseRequestId,
-                                'store_assign_id' => $value->store_assign_id,
-                                'brand_id' => $value->brand_id,
-                                'product_id' => $value->product_id,
-                                'pack_id' => $value->pack_id,
-                                'price_id' => $value->price_id,
-                                'qty' => $value->qty,
-                                'qty_left' => $value->qty_left,
-                                'exp_date' => $value->exp_date,
-                            ]);
-                        }
+                $remoteDatapurchase_request = DB::connection('remote_mysql')->table('purchase_request')->where('store_assign_id', $value->id)->get();
+                foreach ($remoteDatapurchase_request as $reqValue) {
+                    $getPurchaseRequest = DB::table('purchase_request')->where([
+                        'store_assign_id' => $localStoreAssignId,
+                        'brand_id' => $reqValue->brand_id,
+                        'product_id' => $reqValue->product_id,
+                        'pack_id' => $reqValue->pack_id,
+                    ])->first();
+
+                    if ($getPurchaseRequest) {
+                        DB::table('purchase_request')->where('id', $getPurchaseRequest->id)->update([
+                            'brand_id' => $reqValue->brand_id,
+                            'product_id' => $reqValue->product_id,
+                            'pack_id' => $reqValue->pack_id,
+                            'price_id' => $reqValue->price_id,
+                            'qty' => $reqValue->qty,
+                            'qty_left' => $reqValue->qty_left,
+                            'exp_date' => $reqValue->exp_date,
+                        ]);
+                    } else {
+                        DB::table('purchase_request')->insert([
+                            'id' => ++$currentPurchaseRequestId,
+                            'store_assign_id' => $localStoreAssignId,
+                            'brand_id' => $reqValue->brand_id,
+                            'product_id' => $reqValue->product_id,
+                            'pack_id' => $reqValue->pack_id,
+                            'price_id' => $reqValue->price_id,
+                            'qty' => $reqValue->qty,
+                            'qty_left' => $reqValue->qty_left,
+                            'exp_date' => $reqValue->exp_date,
+                        ]);
                     }
                 }
-                
+
 
             }
-    
-            
-           
-    
+
+
+
+
             $remoteDataCustomer = DB::connection('remote_mysql')->table('customer')->get();
             foreach ($remoteDataCustomer as $value) {
                 $getCustomer = DB::table('customer')->where([
@@ -323,7 +325,7 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDataDoctor = DB::connection('remote_mysql')->table('doctor')->get();
             foreach ($remoteDataDoctor as $value) {
                 $getDoctor = DB::table('doctor')->where([
@@ -352,71 +354,71 @@ class DataFetchController extends Controller
                     ]);
                 }
             }
-    
+
             $remoteDataStore = DB::connection('remote_mysql')->table('store')->get();
             foreach ($remoteDataStore as $value) {
                 $getStore = DB::table('store')->where([
-                    'name' =>  $value->name,
+                    'name' => $value->name,
                 ])->first();
                 if ($getStore) {
                     if ($value->store_meta_id == $storeId) {
                         DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
                             // 'id' => ++$currentDoctorId,
-                            'name' =>  $value->name,
-                            'store_address' =>$value->store_address,
+                            'name' => $value->name,
+                            'store_address' => $value->store_address,
                             'dl_number' => $value->dl_number,
                             'helpline_number' => $value->helpline_number,
-                            'store_mail' =>$value->store_mail,
-                            'store_start_date' =>$value->store_start_date,
-                            'store_meta_id' =>$value->store_meta_id,
-                            'store_pass_key' =>$value->store_pass_key,
-                            'store_status' =>$value->store_status,
-                            'store_verify_status' =>0
+                            'store_mail' => $value->store_mail,
+                            'store_start_date' => $value->store_start_date,
+                            'store_meta_id' => $value->store_meta_id,
+                            'store_pass_key' => $value->store_pass_key,
+                            'store_status' => $value->store_status,
+                            'store_verify_status' => 0
                         ]);
-                    }else{
+                    } else {
 
                         DB::table('store')->where('id', $getStore->id)->update([
-                            'name' =>  $value->name,
-                            'store_address' =>'',
+                            'name' => $value->name,
+                            'store_address' => '',
                             'dl_number' => '',
                             'helpline_number' => '',
-                            'store_mail' =>'',
-                            'store_start_date' =>'',
-                            'store_meta_id' =>'',
-                            'store_pass_key' =>'',
-                            'store_status' =>'',
-                            'store_verify_status' =>0
+                            'store_mail' => '',
+                            'store_start_date' => '',
+                            'store_meta_id' => '',
+                            'store_pass_key' => '',
+                            'store_status' => '',
+                            'store_verify_status' => 0
                         ]);
                     }
                 } else {
                     if ($value->store_meta_id == $storeId) {
                         DB::table('store')->where('store_meta_id', $value->store_meta_id)->update([
                             // 'id' => ++$currentStoreId,
-                            'name' =>  $value->name,
-                            'store_address' =>$value->store_address,
+                            'name' => $value->name,
+                            'store_address' => $value->store_address,
                             'dl_number' => $value->dl_number,
                             'helpline_number' => $value->helpline_number,
-                            'store_mail' =>$value->store_mail,
-                            'store_start_date' =>$value->store_start_date,
-                            'store_meta_id' =>$value->store_meta_id,
-                            'store_pass_key' =>$value->store_pass_key,
-                            'store_status' =>$value->store_status,
-                            'store_verify_status' =>$value->store_verify_status
+                            'store_mail' => $value->store_mail,
+                            'store_start_date' => $value->store_start_date,
+                            'store_meta_id' => $value->store_meta_id,
+                            'store_pass_key' => $value->store_pass_key,
+                            'store_status' => $value->store_status,
+                            'store_verify_status' => $value->store_verify_status
                         ]);
-                    }else{
+                    } else {
 
                         DB::table('store')->insert([
                             'id' => ++$currentStoreId,
-                            'name' =>  $value->name,
+                            'name' => $value->name,
                             'store_address' => '',
                             'dl_number' => '',
                             'helpline_number' => '',
-                            'store_mail' =>'',
-                            'store_start_date' =>'',
-                            'store_meta_id' =>'',
-                            'store_pass_key' =>'',
-                            'store_status' =>'',
-                            'store_verify_status' =>0
+                            'store_mail' => '',
+                            'store_start_date' => '',
+                            'store_meta_id' => '',
+                            'store_pass_key' => '',
+                            'store_status' => '',
+                            'store_verify_status' => 0
                         ]);
                     }
                 }
@@ -426,13 +428,13 @@ class DataFetchController extends Controller
                 'sync_date' => date('Y-m-d'),
                 'sync_status' => 'Succeed'
             ]);
-    
+
             DB::commit();
             return response()->json([
                 'status' => 200,
                 'resStatus' => true,
             ], 200);
-    
+
         } catch (\Throwable $th) {
             DB::rollback();
             DB::table('sync_history')->insert([
@@ -454,15 +456,17 @@ class DataFetchController extends Controller
         return response()->json(['message' => 'Database synced successfully']);
     }
 
-    private function getAllTables(){
+    private function getAllTables()
+    {
         $tables = DB::select('SHOW TABLES');
         $tableKey = 'Tables_in_' . env('DB_DATABASE');
 
         return collect($tables)->pluck($tableKey)->toArray();
     }
 
-    public function sendDataToAdminDatabase(Request $request, $storeId){
-        DB::beginTransaction(); 
+    public function sendDataToAdminDatabase(Request $request, $storeId)
+    {
+        DB::beginTransaction();
         try {
             $adminDB = DB::connection('admin_mysql');
 
@@ -488,17 +492,17 @@ class DataFetchController extends Controller
 
                 if (!$newData->isEmpty()) {
                     $dataArray = $newData->map(function ($item) {
-                        return (array) $item; 
+                        return (array) $item;
                     })->toArray();
-                
+
                     $columns = array_keys($dataArray[0]);
-                
+
                     $uniqueColumns = ['id'];
-                
+
                     $adminDB->table($table)->upsert(
                         $dataArray,
-                        $uniqueColumns, 
-                        $columns        
+                        $uniqueColumns,
+                        $columns
                     );
                 }
 
@@ -508,15 +512,16 @@ class DataFetchController extends Controller
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Sync completed successfully.']);
         } catch (\Exception $e) {
-            DB::rollBack(); 
+            DB::rollBack();
             \Log::error('Sync failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Sync failed: ' . $e->getMessage()]);
         }
     }
- 
-    
 
-    public function insertStore(Request $request){
+
+
+    public function insertStore(Request $request)
+    {
         try {
             $payload = [
                 "name" => $request->name,
@@ -527,12 +532,12 @@ class DataFetchController extends Controller
                 "store_start_date" => $request->store_start_date,
                 "store_meta_id" => $request->store_meta_id,
                 "store_pass_key" => $request->store_pass_key,
-                "store_status" =>$request->store_status,
+                "store_status" => $request->store_status,
                 "store_verify_status" => 1
             ];
 
             $insertStore = DB::table('store')->insert($payload);
-            if ( $insertStore) {
+            if ($insertStore) {
                 return response()->json([
                     'status' => 200,
                     'message' => "Store insert.",
@@ -544,7 +549,8 @@ class DataFetchController extends Controller
         }
     }
 
-    public function checkStore() {
+    public function checkStore()
+    {
         try {
             $getStore = DB::table('store')->get();
 
@@ -552,9 +558,9 @@ class DataFetchController extends Controller
                 return response()->json([
                     'status' => 200,
                     'resStatus' => true,
-                    'data'=> $getStore
+                    'data' => $getStore
                 ], 200);
-            }else{
+            } else {
                 return response()->json([
                     'status' => 400,
                     'resStatus' => false,
@@ -562,7 +568,7 @@ class DataFetchController extends Controller
                 ], 200);
             }
 
-          
+
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -570,12 +576,13 @@ class DataFetchController extends Controller
 
     }
 
-    public function getSyncHist(Request $request){
-        try { 
+    public function getSyncHist(Request $request)
+    {
+        try {
             $startDate = $request->query('start_date');
             $endDate = $request->query('end_date');
             $search = $request->query('search');
-            $page = $request->query('page') ;
+            $page = $request->query('page');
             $limit = $request->query('limit');
             $query = DB::table('sync_history');
             if ($startDate) {
@@ -584,10 +591,10 @@ class DataFetchController extends Controller
             if ($endDate) {
                 $query->where('sync_date', '<=', $endDate);
             }
-            if ($page && $limit ) { 
+            if ($page && $limit) {
                 $history = $query->paginate($limit, ['*'], 'page', $page ?? 1);
-                
-            }else{
+
+            } else {
 
                 $history = $query->get();
             }
@@ -607,110 +614,121 @@ class DataFetchController extends Controller
             throw $th;
         }
     }
-        
-    public function backupSQL(){
+
+    public function backupSQL()
+    {
         $database = env('DB_DATABASE');
         $username = env('DB_USERNAME');
         $password = env('DB_PASSWORD');
         $host = env('DB_HOST');
         $port = env('DB_PORT');
-    
+
         $fileName = "backup-" . date('Y-m-d_H-i-s') . ".sql";
         $relativeFilePath = "backup" . DIRECTORY_SEPARATOR . $fileName;
         $filePath = storage_path("app" . DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . $relativeFilePath);
-    
+
         if (!file_exists(storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'backup'))) {
             mkdir(storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'backup'), 0777, true);
         }
-    
+
         // Provide the full path to mysqldump for XAMPP
         $mysqldumpPath = "C:\\xampp\\mysql\\bin\\mysqldump.exe"; // Update this path as needed
-    
+
         // Ensure correct escaping of arguments and paths
         $command = "$mysqldumpPath --user=" . escapeshellarg(trim($username)) . " --password=" . escapeshellarg(trim($password)) . " --host=" . escapeshellarg(trim($host)) . " --port=" . intval(trim($port)) . " " . escapeshellarg(trim($database)) . " > \"" . $filePath . "\"";
-    
+
         // Debug command before executing
         // dd($command);
-    
+
         // Use proc_open for better control over the command execution
         $descriptorSpec = [
             0 => ["pipe", "r"],  // STDIN
             1 => ["pipe", "w"],  // STDOUT
             2 => ["pipe", "w"],  // STDERR
         ];
-    
+
         $process = proc_open($command, $descriptorSpec, $pipes);
-    
+
         if (!is_resource($process)) {
             return response()->json(['status' => 'error', 'message' => 'Failed to create backup.'], 500);
         }
-    
+
         // Close the pipes to avoid deadlock
         fclose($pipes[0]);
-    
+
         $output = stream_get_contents($pipes[1]);
         fclose($pipes[1]);
-    
+
         $errorOutput = stream_get_contents($pipes[2]);
         fclose($pipes[2]);
-    
+
         $result = proc_close($process);
-    
+
         if ($result !== 0) {
             return response()->json(['status' => 'error', 'message' => 'Failed to create backup.', 'error' => $errorOutput], 500);
         }
-    
+
         $fileUrl = url("storage/{$relativeFilePath}");
         DB::table('backup')->insert([
             'date' => date('Y-m-d H:i:s'),
             'file_path' => $fileUrl,
             'file_name' => $fileName
         ]);
-    
+
         return response()->json(['status' => 'success', 'file' => $fileName, 'file_url' => $fileUrl]);
     }
 
-    public function deleteBackup($id){
+    public function deleteBackup($id)
+    {
         $backup = DB::table('backup')->where('id', $id)->first();
 
         if (!$backup) {
             return response()->json(['status' => 'error', 'message' => 'Backup not found.'], 404);
         }
-            $relativeFilePath = "public/backup/{$backup->file_name}";
-            if (Storage::exists($relativeFilePath)) {
-                Storage::delete($relativeFilePath);
-            } else {
-                return response()->json(['status' => 'error', 'message' => 'File not found.'], 404);
-            }
+        $relativeFilePath = "public/backup/{$backup->file_name}";
+        if (Storage::exists($relativeFilePath)) {
+            Storage::delete($relativeFilePath);
+        } else {
+            return response()->json(['status' => 'error', 'message' => 'File not found.'], 404);
+        }
         DB::table('backup')->where('id', $id)->delete();
 
         return response()->json(['status' => 'success', 'message' => 'Backup File deleted successfully.']);
     }
 
-    public function getBackup(){
+    public function getBackup()
+    {
         $backupFile = DB::table('backup')->get();
         return response()->json(['status' => 'success', 'data' => $backupFile]);
 
     }
 
-    public function purchase_request_all(Request $request){
+    public function purchase_request_all(Request $request)
+    {
         try {
-            $id = $request->query('id'); 
-    
-            if ($id) {
-                $purchase_request = DB::table('purchase_stock_entry')->where('product_id', $id)->get();
-            } else {
-                $purchase_request = DB::table('purchase_stock_entry')->get();
+            $productId = $request->query('product_id') ?: $request->query('id');
+            $packId = $request->query('pack_id');
+
+            $query = DB::table('purchase_request');
+
+            if ($productId) {
+                $query->where('product_id', $productId);
             }
-    
+            if ($packId) {
+                $query->where('pack_id', $packId);
+            }
+
+            $purchase_request = $query->get();
+
             return response()->json(['status' => 'success', 'purchase_request' => $purchase_request]);
-    
+
         } catch (\Throwable $th) {
             return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
         }
     }
 
-    public function updateProductQty(Request $request) {
+    public function updateProductQty(Request $request)
+    {
         $product = Product::find($request->product_id);
         if ($product) {
             $product->quantity = $product->quantity - $request->assigned_qty;
@@ -720,6 +738,6 @@ class DataFetchController extends Controller
             return response()->json(['success' => false, 'message' => 'Product not found']);
         }
     }
-    
-    
+
+
 }

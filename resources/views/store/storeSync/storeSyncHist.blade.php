@@ -95,22 +95,25 @@
     function sync(store_id) {
         // Show loading modal
         $('#loadingModal').modal('show');
-        $('#loadingModal').css('display', 'block'); // Ensure modal is displayed
 
         console.log(store_id);
         
         ajaxGetData(`/sync-data/${store_id}`, (response) => {
             console.log(response);
             
-            $('#loadingModal').modal('hide'); // Hide loading modal
+            $('#loadingModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
             if (response?.status == 200) {
                 getSyncHist(); // Refresh sync history
             } else {
                 alert('Sync failed!');
             }
-        }).fail((error) => {
+        }, (error) => {
             console.error('Error during sync:', error);
-            $('#loadingModal').modal('hide'); // Hide loading modal
+            $('#loadingModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
             alert('An error occurred while syncing data.');
         });
     }
@@ -118,13 +121,7 @@
     function getSyncHist(startDate = '', endDate = '') {
         let url = `/api/get/sync/history?start_date=${startDate}&end_date=${endDate}`;
         
-        // Show loading modal while fetching data
-        $('#loadingModal').modal('show');
-        
         ajaxGetData(url, (response) => {            
-            $('#loadingModal').css('display', 'none'); // Hide loading modal
-            $('.modal-backdrop').remove(); // Remove backdrop
-
             if (response?.status == 404) {
                 $('#syncData').html(response?.data);
             } else {
@@ -140,6 +137,9 @@
                     `);
                 }
             }
+        }, (error) => {
+            console.error('Error fetching sync history:', error);
+            alert('Failed to fetch sync history.');
         });
     }
 

@@ -24,6 +24,13 @@ class StaffBilling extends Controller
     
             foreach ($product_billing as $key => $value) {
                 $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
+                if (!$product) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Product not found in stock entry.'
+                    ], 400);
+                }
                 $remainingQty = $product->qty - $value['qty'];
     
                 if ($remainingQty < 0) {
@@ -33,9 +40,41 @@ class StaffBilling extends Controller
                         'message' => 'Insufficient stock for the product.'
                     ], 400);
                 }
+
+                // Also check purchase_request stock
+                $pack = DB::table('pack')->where('pack_name', $value['pack'])->first();
+                $pr = null;
+                if ($pack) {
+                    $pr = DB::table('purchase_request')
+                        ->where('product_id', $value['productId'])
+                        ->where('pack_id', $pack->id)
+                        ->first();
+                }
+                
+                if (!$pr) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Product / pack size not assigned to store.'
+                    ], 400);
+                }
+
+                $remainingPrQty = $pr->qty - $value['qty'];
+                if ($remainingPrQty < 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => 'Insufficient store-assigned stock for the product.'
+                    ], 400);
+                }
     
                 DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
                     'qty' => $remainingQty,
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('purchase_request')->where('id', $pr->id)->update([
+                    'qty' => $remainingPrQty,
                     'updated_at' => now(),
                 ]);
             }
