@@ -247,88 +247,42 @@
                 customerData(this.value);
             });
 
-            $(document).on('change', '.product', function () {
-                console.log('Product changed');
+            $(document).on('change', '.product-pack-price', function () {
                 const count = $(this).data('count');
-                const productId = this.value;
+                const selected = $(this).find('option:selected');
+                const prId = $(this).val();
 
-                if (productId) {
-                    // Fetch product details
-                    ajaxGetData(`/products?id=${productId}`, (res) => {
-                        if (res?.data && res.data.length > 0) {
-                            const productData = res.data[0];
-                            categoryData(productData.category_id, count);
-                            subCategoryData(productData.sub_category_id, count);
-                            document.getElementById(`gstRate${count}`).value = productData.gst;
-                        } else {
-                            console.error('Product data not found');
-                        }
-                    });
+                if (prId) {
+                    const productId   = selected.data('product-id');
+                    const productName = selected.data('product-name');
+                    const packName    = selected.data('pack-name');
+                    const price       = selected.data('price');
+                    const gst         = selected.data('gst');
+                    const qty         = selected.data('qty');
+                    const category    = selected.data('category');
+                    const subCategory = selected.data('sub-category');
 
-                    // Fetch available pack sizes
-                    packData_fetch(productId, count);
+                    $(`#product_name${count}`).val(productId);
+                    $(`#pr_id${count}`).val(prId);
+                    $(`#pack${count}`).val(packName);
+                    $(`#unit_value${count}`).val(price);
+                    $(`#gstRate${count}`).val(gst);
+                    $(`#qty${count}`).val(qty);
+                    $(`#category${count}`).val(category);
+                    $(`#subCategory${count}`).val(subCategory);
+                    $(`#avail_qty_text_${count}`).text('Available: ' + qty);
+                    $(`#assignQty${count}`).val('').css('border-color', '');
                 } else {
-                    // Clear fields if no product is selected
+                    $(`#product_name${count}`).val('');
+                    $(`#pr_id${count}`).val('');
+                    $(`#pack${count}`).val('');
+                    $(`#unit_value${count}`).val('');
+                    $(`#gstRate${count}`).val('');
+                    $(`#qty${count}`).val('');
                     $(`#category${count}`).val('');
                     $(`#subCategory${count}`).val('');
-                    $(`#gstRate${count}`).val('');
-                    $(`#pack_selector${count}`).empty().append('<option value="">Choose Pack</option>');
-                    $(`#pack_selector${count}`).select2({ width: '100%' });
-                    $(`#qty${count}`).val('');
-                    $(`#unit_value${count}`).val('');
-                    $(`#pack${count}`).val('');
-                    $(`#assignQty${count}`).val('').css('border-color', '');
                     $(`#avail_qty_text_${count}`).text('Available: -');
-                }
-            });
-
-            $(document).on('change', '.pack-selector', function () {
-                const count = $(this).data('count');
-                const productId = $(`#product_name${count}`).val();
-                const packId = this.value;
-
-                if (packId) {
-                    ajaxGetData(`/api/purchase_request?product_id=${productId}&pack_id=${packId}`, (res) => {
-                        if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
-                            const requestData = res.purchase_request[0];
-                            if (requestData) {
-                                $(`#qty${count}`).val(requestData.qty);
-                                // Show available qty
-                                $(`#avail_qty_text_${count}`).text('Available: ' + requestData.qty);
-                                priceData(requestData.price_id, count);
-                                // Also update the readonly pack size field
-                                $(`#pack${count}`).val($(`#pack_selector${count} option:selected`).text());
-
-                                // Recalculate validation and available qty
-                                const inputQty = parseFloat($(`#assignQty${count}`).val()) || 0;
-                                const currentAvail = requestData.qty - inputQty;
-                                $(`#avail_qty_text_${count}`).text('Available: ' + currentAvail);
-                                if (inputQty > requestData.qty) {
-                                    $(`#assignQty${count}`).css('border-color', 'red');
-                                } else {
-                                    $(`#assignQty${count}`).css('border-color', '');
-                                }
-                            } else {
-                                $(`#qty${count}`).val('');
-                                $(`#unit_value${count}`).val('');
-                                $(`#pack${count}`).val('');
-                                $(`#assignQty${count}`).val('').css('border-color', '');
-                                $(`#avail_qty_text_${count}`).text('Available: -');
-                            }
-                        } else {
-                            $(`#qty${count}`).val('');
-                            $(`#unit_value${count}`).val('');
-                            $(`#pack${count}`).val('');
-                            $(`#assignQty${count}`).val('').css('border-color', '');
-                            $(`#avail_qty_text_${count}`).text('Available: -');
-                        }
-                    });
-                } else {
-                    $(`#qty${count}`).val('');
-                    $(`#unit_value${count}`).val('');
-                    $(`#pack${count}`).val('');
                     $(`#assignQty${count}`).val('').css('border-color', '');
-                    $(`#avail_qty_text_${count}`).text('Available: -');
                 }
             });
 
@@ -514,29 +468,42 @@
             })
         }
 
+        let billingProductOptions = [];
+
+        function loadBillingProductOptions(callback) {
+            if (billingProductOptions.length > 0) {
+                callback(billingProductOptions);
+                return;
+            }
+            ajaxGetData('/billing/product-options', (res) => {
+                billingProductOptions = res?.data || [];
+                callback(billingProductOptions);
+            });
+        }
+
         function productData(count) {
-            ajaxGetData(`/products`, (res) => {
-                const productSelector = $(`.product[data-count="${count}"]`);
-                productSelector.empty().append('<option value="">Choose Product</option>');
-                res?.data?.forEach(element => {
-                    productSelector.append(`<option value="${element.id}">${element.product_name}</option>`);
+            loadBillingProductOptions((options) => {
+                const sel = $(`#product_pack_price${count}`);
+                sel.empty().append('<option value="">Choose Product</option>');
+                options.forEach(opt => {
+                    sel.append(
+                        `<option value="${opt.purchase_request_id}"
+                            data-product-id="${opt.product_id}"
+                            data-product-name="${opt.product_name}"
+                            data-pack-id="${opt.pack_id}"
+                            data-pack-name="${opt.pack_name}"
+                            data-price="${opt.price_name}"
+                            data-gst="${opt.gst}"
+                            data-qty="${opt.avail_qty}"
+                            data-category="${opt.category_name}"
+                            data-sub-category="${opt.sub_category_name}"
+                        >${opt.product_name} - ${opt.pack_name} - ₹${opt.price_name}</option>`
+                    );
                 });
-                productSelector.select2({ width: '100%' });
+                sel.select2({ width: '100%' });
             });
         }
 
-        function packData_fetch(productId, count) {
-            console.log('Fetching packs for product:', productId);
-            ajaxGetData(`/api/packs/${productId}`, (res) => {
-                console.log('Response from /api/packs:', res);
-                const packSelector = $(`#pack_selector${count}`);
-                packSelector.empty().append('<option value="">Choose Pack</option>');
-                res?.data?.forEach(element => {
-                    packSelector.append(`<option value="${element.id}">${element.pack_name}</option>`);
-                });
-                packSelector.select2({ width: '100%' });
-            });
-        }
 
 
 
@@ -546,58 +513,35 @@
 
 
 
-
-        function categoryData(id, count) {
-            ajaxGetData(`/category?id=${id}`, (res)=>{
-                $(`#category${count}`).val(res?.data[0].category_name)
-            })
-        }
-
-        function packData(id, count){
-            console.log(id)
-            ajaxGetData(`/pack?id=${id}`, (res) =>{
-                $(`#pack${count}`).val(res?.data[0].pack_name)
-
-            })
-        }
-        function priceData(id, count){
-            ajaxGetData(`/price?id=${id}`, (res) =>{
-                $(`#unit_value${count}`).val(res?.data[0].price_name)
-
-            })
-        }
-
-        function subCategoryData(id, count) {
-            ajaxGetData(`/sub-category?id=${id}`, (res)=>{
-                $(`#subCategory${count}`).val(res?.data[0].sub_category_name)
-            })
-        }
 
         function addNewRow(id) {
             const newTbody = `
                 <tbody class="product-tbody new-row" id="row_block_${id}">
                     <!-- ROW 1 -->
                     <tr>
-                        <td style="width: 30%">
-                            <small class="text-muted font-weight-bold">Product</small>
-                            <input type="hidden" class="table-row-id row_id product" value="${id}">
-                            <select data-enable-search="true" class="form-control product mt-1" data-count="${id}" name="productName[]" id="product_name${id}">
+                        <td style="width: 40%" colspan="2">
+                            <small class="text-muted font-weight-bold">Product - Pack - Price</small>
+                            <input type="hidden" class="table-row-id row_id" value="${id}">
+                            <select class="form-control product-pack-price mt-1" data-count="${id}" name="productPackPrice[]" id="product_pack_price${id}">
                                 <option value="">Choose Product</option>
                             </select>
+                            <!-- Hidden fields populated on selection -->
+                            <input type="hidden" name="productName[]" id="product_name${id}" />
+                            <input type="hidden" name="pack[]" id="pack${id}" />
+                            <input type="hidden" name="purchase_request_id[]" id="pr_id${id}" />
+                            <input type="hidden" name="total_qty[]" id="qty${id}" />
+                            <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
+                            <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
+                            <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
+                            <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
                         </td>
-                        <td style="width: 25%">
+                        <td style="width: 30%">
                             <small class="text-muted font-weight-bold">Category</small>
                             <input type="text" class="form-control mt-1" name="category[]" id="category${id}" readonly />
                         </td>
-                        <td style="width: 25%">
+                        <td style="width: 30%">
                             <small class="text-muted font-weight-bold">Sub Category</small>
                             <input type="text" class="form-control mt-1" name="subCategory[]" id="subCategory${id}" readonly />
-                        </td>
-                        <td style="width: 20%">
-                            <small class="text-muted font-weight-bold">Pack Size</small>
-                            <select data-enable-search="true" class="form-control pack-selector mt-1" data-count="${id}" name="pack_selector[]" id="pack_selector${id}">
-                                <option value="">Choose Pack</option>
-                            </select>
                         </td>
                     </tr>
                     <!-- ROW 2 -->
@@ -605,14 +549,6 @@
                         <td>
                             <small class="text-muted font-weight-bold">Unit Value</small>
                             <input type="text" class="form-control mt-1" name="unit_value[]" id="unit_value${id}" readonly />
-                            
-                            <!-- Hidden Fields -->
-                            <input type="hidden" name="pack[]" id="pack${id}" />
-                            <input type="hidden" name="total_qty[]" id="qty${id}" />
-                            <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
-                            <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
-                            <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
-                            <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
                         </td>
                         <td>
                             <small class="text-muted font-weight-bold">Qty (<span id="avail_qty_text_${id}" class="text-info">Available: -</span>)</small>
@@ -631,8 +567,6 @@
             `;
             $('#dynamicForm').append(newTbody);
             productData(id);
-            $(`#product_name${id}`).select2({ width: '100%' });
-            $(`#pack_selector${id}`).select2({ width: '100%' });
         }
 
         function updateTotalForRow(row) {
@@ -768,22 +702,23 @@
             const products = [];
 
             rows.forEach(row => {
-                // Since row is now tbody, we can query safely
                 const productId = row.querySelector(`[name="productName[]"]`).value;
 
                 if (productId) {
-                    const category = row.querySelector(`[name="category[]"]`).value;
+                    const purchase_request_id = row.querySelector(`[name="purchase_request_id[]"]`).value;
+                    const category    = row.querySelector(`[name="category[]"]`).value;
                     const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
-                    const pack = row.querySelector(`[name="pack[]"]`).value;
-                    const unitValue = row.querySelector(`[name="unit_value[]"]`).value;
-                    const qty = row.querySelector(`[name="assignQty[]"]`).value;
-                    const discount = row.querySelector(`[name="discount[]"]`).value;
+                    const pack        = row.querySelector(`[name="pack[]"]`).value;
+                    const unitValue   = row.querySelector(`[name="unit_value[]"]`).value;
+                    const qty         = row.querySelector(`[name="assignQty[]"]`).value;
+                    const discount    = row.querySelector(`[name="discount[]"]`).value;
                     const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
-                    const gstRate = row.querySelector(`[name="gstRate[]"]`).value;
-                    const gstAmount = row.querySelector(`[name="gstAmount[]"]`).value;
+                    const gstRate     = row.querySelector(`[name="gstRate[]"]`).value;
+                    const gstAmount   = row.querySelector(`[name="gstAmount[]"]`).value;
 
                     products.push({
                         productId,
+                        purchase_request_id,
                         category,
                         subCategory,
                         pack,

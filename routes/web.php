@@ -19,7 +19,7 @@ Route::get('/login-page', function (){
     return view('store.login.login');
 })->name('login-page');
 
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])->name('login');
 
 
 Route::middleware(['auth'])->group(function () {
@@ -93,6 +93,7 @@ Route::get('/customers', [DataController:: class , 'customer_data']);
 Route::get('/staffs', [DataController:: class , 'staff_data']);
 Route::get('/doctors', [DataController:: class , 'doctor_data']);
 Route::get('/products', [DataController:: class , 'product_data']);
+Route::get('/billing/product-options', [DataController::class, 'billingProductOptions']);
 Route::get('/purchase/request', [DataController:: class , 'purchase_bill']);
 Route::get('/category', [DataController:: class , 'category_data']);
 Route::get('/sub-category', [DataController:: class , 'sub_category_data']);

@@ -207,7 +207,7 @@ class DataController extends Controller
                         ->select('pack.id', 'pack.pack_name')
                         ->distinct()
                         ->get();
-        
+
                     return response()->json([
                         'status' => 200,
                         'data' => $packs
@@ -215,5 +215,37 @@ class DataController extends Controller
                 } catch (\Throwable $th) {
                     throw $th;
                 }
-            }        
+            }
+
+    public function billingProductOptions() {
+        try {
+            $data = DB::table('purchase_request')
+                ->join('product', 'purchase_request.product_id', '=', 'product.id')
+                ->join('pack', 'purchase_request.pack_id', '=', 'pack.id')
+                ->join('price', 'purchase_request.price_id', '=', 'price.id')
+                ->join('category', 'product.category_id', '=', 'category.id')
+                ->join('sub_category', 'product.sub_category_id', '=', 'sub_category.id')
+                ->where('purchase_request.qty', '>', 0)
+                ->select(
+                    'purchase_request.id as purchase_request_id',
+                    'purchase_request.qty as avail_qty',
+                    'product.id as product_id',
+                    'product.product_name',
+                    'product.gst',
+                    'pack.id as pack_id',
+                    'pack.pack_name',
+                    'price.price_name',
+                    'category.category_name',
+                    'sub_category.sub_category_name'
+                )
+                ->orderBy('product.product_name')
+                ->orderBy('pack.pack_name')
+                ->orderBy('price.price_name')
+                ->get();
+
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
+}
