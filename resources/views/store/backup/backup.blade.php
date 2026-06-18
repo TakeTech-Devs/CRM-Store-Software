@@ -88,11 +88,10 @@
 
     function list(){
         ajaxGetData(`/api/backups`, (response) => {
-            console.log(response);
-
+            const backups = response?.data || [];
             $('#backupId').html('');
-            if (response && response.length > 0) {
-                response.forEach((element, index) => {
+            if (backups.length > 0) {
+                backups.forEach((element, index) => {
                     $('#backupId').append(`
                         <tr>
                             <td>${index + 1}</td>

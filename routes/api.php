@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\CustomerBilling;
 use App\Http\Controllers\Api\StaffBilling;
 use App\Http\Controllers\Api\DataFetchController;
 use App\Http\Controllers\Api\DoctorController;
-use App\Http\Controllers\Api\StockerTransferController;
+use App\Http\Controllers\Api\StockTransferController;
 use App\Http\Controllers\Api\ReportController;
 
 
@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ReportController;
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
+Route::post('/verify-store', [DataFetchController::class, 'verifyStore']);
 Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
 Route::post('/customer/billing/update/{billId}', [CustomerBilling::class, 'updateBilling']);
 Route::get('/customer/billing/list', [CustomerBilling:: class , 'listBilling']);
@@ -39,13 +40,11 @@ Route::get('/backup/{id}', [DataFetchController::class, 'deleteBackup']);
 
 Route::get('/purchase_request', [DataFetchController::class, 'purchase_request_all']);
 Route::get('/packs/{productId}', [DataController::class, 'packs_by_product']);
-Route::get('store-transfer', function () {
-    return response()->json(['message' => 'API is working']);
-});
+// Stock Transfer, Stores, and BillingProductOptions are in web.php (need session)
 
 Route::get('/doctor', [ReportController::class, 'getDoctors']);
 Route::get('/doctor-report', [ReportController::class, 'doctorWiseReport'])->name('doctor.report');
-Route::get('/commulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('commulative.report');
+Route::get('/cumulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('cumulative.report');
 Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');
 Route::get('/expiry-report', [ReportController::class, 'expiryReport'])->name('expiry.report');
 Route::get('/stock-report', [ReportController::class, 'stockReport'])->name('stock.report');

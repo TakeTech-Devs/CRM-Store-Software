@@ -32,9 +32,13 @@ class DataController extends Controller
     public function staff_data(){
         try {
             $id = request()->id ?? null;
+            $phone = request()->phone ?? null;
             $dataQuery =  DB::table('staff');
             if ($id) {
                 $dataQuery->where('id', $id);
+            }
+            if ($phone) {
+                $dataQuery->where('phone', $phone);
             }
             $data = $dataQuery->get();
             return response()->json([
@@ -234,7 +238,9 @@ class DataController extends Controller
                     'product.gst',
                     'pack.id as pack_id',
                     'pack.pack_name',
+                    'price.id as price_id',
                     'price.price_name',
+                    'product.brand_id',
                     'category.category_name',
                     'sub_category.sub_category_name'
                 )
@@ -246,6 +252,29 @@ class DataController extends Controller
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Throwable $th) {
             throw $th;
+        }
+    }
+
+    public function getStores(Request $request)
+    {
+        try {
+            $storeMetaId = session('storeId');
+            $localStore  = $storeMetaId ? DB::table('store')->where('store_meta_id', $storeMetaId)->first() : null;
+
+            $query = DB::connection('remote_mysql')
+                ->table('store')
+                ->where('store_status', 1)
+                ->select('id', 'name', 'store_address');
+
+            if ($localStore) {
+                $query->where('id', '!=', $localStore->id);
+            }
+
+            $stores = $query->orderBy('name')->get();
+
+            return response()->json(['status' => 200, 'data' => $stores], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status' => 500, 'message' => $th->getMessage()], 500);
         }
     }
 }

@@ -141,96 +141,81 @@ class ReportController extends Controller
     }
 
     public function getCumulativeSalesReport(Request $request){
+        $startDate = $request->query('start_date');
+        $endDate   = $request->query('end_date');
+
         $cumulativeReport = [
             'total_sales_amount' => 0,
-            'cash_payments' => 0,
-            'card_payments' => 0,
-            'online_payments' => 0,
-            'transactions' => []
+            'cash_payments'      => 0,
+            'card_payments'      => 0,
+            'online_payments'    => 0,
+            'transactions'       => []
         ];
 
-        $cashSources = [
-            'God' => [],
-            'Doctor' => [],
-            'Staff' => [],
-            'Diary' => []
-        ];
+        $staffQuery = DB::table('staff_billing');
+        if ($startDate) $staffQuery->where('billing_date', '>=', $startDate);
+        if ($endDate)   $staffQuery->where('billing_date', '<=', $endDate);
+        $staffBillingData = $staffQuery->get();
 
-        $staffBillingData = DB::table('staff_billing')
-            ->leftJoin('staff_product_billing', 'staff_billing.id', '=', 'staff_product_billing.cb_id')
-            ->leftJoin('product', 'staff_product_billing.productId', '=', 'product.id')
-            ->select('staff_billing.*', 'product.product_name', 'product.hsn_code')
-            ->get();
-
-        $customerBillingData = DB::table('customer_billing')
-            ->leftJoin('customer_product_billing', 'customer_billing.id', '=', 'customer_product_billing.cb_id')
-            ->leftJoin('product', 'customer_product_billing.productId', '=', 'product.id')
-            ->select('customer_billing.*', 'product.product_name', 'product.hsn_code')
-            ->get();
+        $customerQuery = DB::table('customer_billing');
+        if ($startDate) $customerQuery->where('billing_date', '>=', $startDate);
+        if ($endDate)   $customerQuery->where('billing_date', '<=', $endDate);
+        $customerBillingData = $customerQuery->get();
 
         foreach ($staffBillingData as $billing) {
             $paymentType = strtolower($billing->paymentType);
-            $cumulativeReport['total_sales_amount'] += $billing->total_amt;
+            $amt = (float) $billing->total_amt;
+            $cumulativeReport['total_sales_amount'] += $amt;
 
             if ($paymentType === 'cash') {
-                $cumulativeReport['cash_payments'] += $billing->total_amt;
-                $cashSources['Doctor'][] = $billing; 
-            }elseif ($paymentType === 'offline') {
-                $cumulativeReport['card_payments'] += $billing->total_amt;
-            }elseif ($paymentType === 'card') {
-                $cumulativeReport['card_payments'] += $billing->total_amt;
+                $cumulativeReport['cash_payments'] += $amt;
+            } elseif ($paymentType === 'card') {
+                $cumulativeReport['card_payments'] += $amt;
             } elseif ($paymentType === 'online') {
-                $cumulativeReport['online_payments'] += $billing->total_amt;
+                $cumulativeReport['online_payments'] += $amt;
             }
 
             $cumulativeReport['transactions'][] = [
-                'date' => $billing->billing_date,
-                'invoiceNo' => $billing->invoiceNo,
-                'staff_name' => $billing->staff_name,
-                'staff_phone' => $billing->staff_phone,
-                'doctor_name' => $billing->doctor_name,
-                // 'doctor_mobile' => $billing->doctor_mobile,
-                'sales_amount' => $billing->total_amt,
-                'payment_type' => $billing->paymentType,
-                'product_name' => $billing->product_name,
-                'hsn_code' => $billing->hsn_code
+                'type'        => 'Staff',
+                'date'        => $billing->billing_date,
+                'invoiceNo'   => $billing->invoiceNo,
+                'name'        => $billing->staff_name,
+                'phone'       => $billing->staff_phone,
+                'sales_amount'=> $amt,
+                'payment_type'=> $billing->paymentType,
             ];
         }
 
         foreach ($customerBillingData as $billing) {
             $paymentType = strtolower($billing->paymentType);
-            $cumulativeReport['total_sales_amount'] += $billing->total_amt;
+            $amt = (float) $billing->total_amt;
+            $cumulativeReport['total_sales_amount'] += $amt;
 
             if ($paymentType === 'cash') {
-                $cumulativeReport['cash_payments'] += $billing->total_amt;
-                $cashSources['Diary'][] = $billing; 
-            } else if ($paymentType === 'offline') {
-                $cumulativeReport['cash_payments'] += $billing->total_amt;
-            }elseif ($paymentType === 'card') {
-                $cumulativeReport['card_payments'] += $billing->total_amt;
+                $cumulativeReport['cash_payments'] += $amt;
+            } elseif ($paymentType === 'card') {
+                $cumulativeReport['card_payments'] += $amt;
             } elseif ($paymentType === 'online') {
-                $cumulativeReport['online_payments'] += $billing->total_amt;
+                $cumulativeReport['online_payments'] += $amt;
             }
 
             $cumulativeReport['transactions'][] = [
-                'date' => $billing->billing_date,
-                'invoiceNo' => $billing->invoiceNo,
-                'customer_name' => $billing->customer_name,
-                'customer_phone' => $billing->customer_phone,
-                'doctor_name' => $billing->doctor_name,
-                // 'doctor_mobile' => $billing->doctor_mobile,
-                'sales_amount' => $billing->total_amt,
-                'payment_type' => $billing->paymentType,
-                'product_name' => $billing->product_name,
-                'hsn_code' => $billing->hsn_code
+                'type'        => 'Customer',
+                'date'        => $billing->billing_date,
+                'invoiceNo'   => $billing->invoiceNo,
+                'name'        => $billing->customer_name,
+                'phone'       => $billing->customer_phone,
+                'sales_amount'=> $amt,
+                'payment_type'=> $billing->paymentType,
             ];
         }
 
-        $cumulativeReport['cash_sources'] = $cashSources;
+        // Sort all transactions by date descending
+        usort($cumulativeReport['transactions'], fn($a, $b) => strcmp($b['date'], $a['date']));
 
         return response()->json([
             'status' => 'success',
-            'data' => $cumulativeReport
+            'data'   => $cumulativeReport
         ]);
     }
 

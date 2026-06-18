@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\StaffBilling;
 
 
 use App\Http\Controllers\Api\LoginController;
+use App\Http\Controllers\Api\StockTransferController;
 
 
 
@@ -66,7 +67,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/doctor/report', function () {
             return view('store/reports/doctorReport');
         });
-        Route::get('/commulative/report', function () {
+        Route::get('/cumulative/report', function () {
             return view('store/reports/commulativeReport');
         });
         Route::get('/expiry/report', function () {
@@ -94,6 +95,13 @@ Route::get('/staffs', [DataController:: class , 'staff_data']);
 Route::get('/doctors', [DataController:: class , 'doctor_data']);
 Route::get('/products', [DataController:: class , 'product_data']);
 Route::get('/billing/product-options', [DataController::class, 'billingProductOptions']);
+Route::prefix('api')->group(function () {
+    Route::get('/stores', [DataController::class, 'getStores']);
+    Route::get('/billing/product-options', [DataController::class, 'billingProductOptions']);
+    Route::post('/stock-transfer/create', [StockTransferController::class, 'createTransfer']);
+    Route::get('/stock-transfer/list', [StockTransferController::class, 'listTransfers']);
+    Route::get('/stock-transfer/{id}', [StockTransferController::class, 'getTransferDetail']);
+});
 Route::get('/purchase/request', [DataController:: class , 'purchase_bill']);
 Route::get('/category', [DataController:: class , 'category_data']);
 Route::get('/sub-category', [DataController:: class , 'sub_category_data']);

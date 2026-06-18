@@ -1,376 +1,221 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Create Store Stock Transfer')
+@section('title', 'Create Stock Transfer')
 
 @section('content')
-    <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="text-dark">Create Store Transfer Billing</h2>
-            <div class="text-right">
-                <a href="{{ url('store/stock/transfer') }}" class="btn btn-secondary btn-sm">View Transfer List</a>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-dark">Create Stock Transfer</h2>
+        <a href="{{ url('store/stock/transfer') }}" class="btn btn-secondary btn-sm">View Transfers</a>
+    </div>
+
+    <div class="card p-3 mb-3">
+        <div class="form-row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label>Transfer No.</label>
+                    <input type="text" class="form-control" value="Auto-generated on submit" readonly>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="to_store_id">Transfer To <span class="text-danger">*</span></label>
+                    <select id="to_store_id" class="form-control select2-store">
+                        <option value="">-- Select Destination Store --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <input type="text" id="notes" class="form-control" placeholder="Optional notes">
+                </div>
             </div>
         </div>
-
-        <div class="mt-4 position-relative">
-            <form id="customerBillingCreate">
-                @csrf
-                <div class="form-row mb-2">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="stock_from">Store ID</label>
-                            <input type="text" name="stock_from" id="stock_from" class="form-control" value="{{ session('storeId', 'Store not found') }}" readonly>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        
-                        <div class="form-group">
-                            <label for="stock_to">Store To</label>
-                            <select data-enable-search="true"name="stock_to" id="stock_to" class="form-control">
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="transfer_id">Transfer ID</label>
-                            <input type="text" name="transfer_id" id="transfer_id" class="form-control" value="{{ uniqid() }}" readonly>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="dynamicForm">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Sub Category</th>
-                                <th>Pack</th>
-                                <th>Remaining Qty</th>
-                                <th>Unit Value</th>
-                                <th>Assign Qty</th>
-                                <th>Discount</th>
-                                <th>Total Amount</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formBody">
-                        </tbody>
-                    </table>
-                </div>
-
-                <button type="button" id="add_row" class="btn btn-sm btn-secondary mb-3 float-right ml-3">Add New Row</button>
-
-                <div class="form-group text-right">
-                    <label for="totalAmount">Total Amount: </label>
-                    <span id="totalAmount">0</span>
-                </div>
-
-                <div class="form-group text-right">
-                    <button type="button" id="submitBilling" class="btn btn-primary">Submit</button>
-                </div>
-            </form>
-        </div>
     </div>
-    <script>
-        $(document).ready(function() {
-            StoresList();
-            function StoresList() {
-                $.ajax({
-                    url: 'http://localhost:8000/api/stores',
-                    type: 'GET',
-                    success: function(response) {
-                        var stores = response.data;
-                        $('#stock_to').html('<option value="">Select Store</option>');
-                        $.each(stores, function(index, store) {
-                            $('#stock_to').append('<option value="' + store.id + '">' + store.name + '</option>');
-                        });
-                    }
-                });
-            }
 
-            count = 0;
+    <div class="table-responsive border mb-2">
+        <table class="table table-bordered table-sm text-center mb-0" id="itemsTable">
+            <thead class="thead-light">
+                <tr>
+                    <th style="min-width:280px">Product – Pack – Price</th>
+                    <th>Available Qty</th>
+                    <th style="min-width:110px">Transfer Qty <span class="text-danger">*</span></th>
+                    <th>Unit Value</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+        </table>
+    </div>
 
-            $(document).on('change', '.product', function () {
-                const count = $(this).data('count'); 
-                console.log("This Value", this.value);
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <button type="button" id="addRow" class="btn btn-sm btn-outline-secondary">+ Add Row</button>
+    </div>
 
-                ajaxGetData(`/products?id=${this.value}`, (res) => {
+    <div class="text-right">
+        <button type="button" id="submitTransfer" class="btn btn-primary">Submit Transfer</button>
+    </div>
+</div>
 
-                    if (res?.data && res.data.length > 0) {
-                        const productData = res.data[0];
-                        categoryData(productData.category_id, count);
-                        subCategoryData(productData.sub_category_id, count);
-                        // console.log("Product data: ",productData);
-                    } else {
-                        console.error('Product data not found');
-                    }
-                });
-                // console.log(this.value);
-                
-                ajaxGetData(`/api/purchase_request?id=${this.value}`, (res) => {
-                    
-                    if (Array.isArray(res.purchase_request) && res.purchase_request.length > 0) {
-                        const requestData = res.purchase_request.find(item => item.id);
-                        console.log("Request data Find Statement:", requestData.id);
-                        console.log("request data: ",requestData);
-                        
-                        
+<script>
+$(document).ready(function () {
+    let productOptions = [];
+    let rowCount = 0;
 
-                        if (requestData) {
-                            $(`#qty${count}`).val(requestData.qty);
-                            
-                            if (typeof priceData === 'function') {
-                                priceData(requestData.price_id, count);
-                            } else {
-                                console.error('priceData function is not defined');
-                            }
-                            
-                            if (typeof packData === 'function') {
-                                packData(requestData.pack_id, count);
-                            } else {
-                                console.error('packData function is not defined');
-                            }
-                        } else {
-                            $(`#qty${count}`).val('');
-                            $(`#unit_value${count}`).val('');
-                            $(`#pack${count}`).val('');
-                        }
-                    } else {
-                        $(`#qty${count}`).val('');
-                        $(`#unit_value${count}`).val('');
-                        $(`#pack${count}`).val('');
-                    }
-                });
+    // Load stores — destroy global select2 init first, repopulate, reinit
+    $.get('/api/stores', function (res) {
+        if (res.status === 200 && res.data.length) {
+            $('#to_store_id').select2('destroy');
+            $('#to_store_id').empty().append('<option value="">-- Select Destination Store --</option>');
+            $.each(res.data, function (i, s) {
+                const addr = s.store_address ? ' – ' + s.store_address : '';
+                $('#to_store_id').append(`<option value="${s.id}">${s.name}${addr}</option>`);
             });
+            $('#to_store_id').select2({ placeholder: '-- Select Destination Store --', width: '100%' });
+        } else {
+            console.warn('Stores API response:', res);
+        }
+    }).fail(function (xhr) {
+        console.error('Stores load failed:', xhr.responseText);
+    });
 
+    // Load product options first, THEN add the first row
+    $.get('/api/billing/product-options', function (res) {
+        if (res.status === 200) {
+            productOptions = res.data;
+        }
+        addRow(); // first row added only after options are ready
+    }).fail(function () {
+        addRow(); // still add a row even if load fails
+    });
 
-            
-
-            $(document).on('click', '#add_row', function () {
-                count = count + 1;
-                addNewRow(count)
-            })
-
-            $(document).on('click', '#submitBilling', function () {
-                const payload = gatherFormData();
-                console.log("Payload:", payload);
-                let csrfToken = $('meta[name="csrf-token"]').attr('content');
-                
-                ajaxPostData('http://localhost:8000/api/transfer/store', payload, csrfToken, (response) => {
-                    console.log("Response:", response);
-                    if (response.status == 200) {
-                        Swal.fire({
-                            title: "Store Stock Billing!",
-                            icon: "success",
-                            text: response.message || "Stock transfer Successfully.",
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                window.location.href = "/store/stock/transfer";
-                            }
-                        });
-                    } else {
-                        Swal.fire({
-                            title: "Error!",
-                            icon: "error",
-                            text: response || "Something went wrong.", 
-                        });
-                    }
-                }, (error) => {
-                    Swal.fire({
-                        title: "Error!",
-                        icon: "error",
-                        text: error.responseJSON || "An error occurred while processing the request.",
-                    });
-                });
-            });
-   
-            function productData() { 
-                ajaxGetData(`/api/purchase_request`, (res) => {
-                    for (let index = 0; index < res?.purchase_request?.length; index++) {
-                        const element = res?.purchase_request[index];
-                        productData_fetch(element?.product_id, element?.pack_id, count);
-                    }
-                });
-            }
-
-            function productData_fetch(id, pack_id, count) {
-                ajaxGetData(`/pack?id=${pack_id}`, (res) => {
-                    const pack_name = res?.data[0].pack_name;
-
-                    ajaxGetData(`/products?id=${id}`, (res) => {
-                        $(`.product[data-count="${count}"]`).append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
-                    });
-                });
-            }
-
-            function categoryData(id, count) {
-                ajaxGetData(`/category?id=${id}`, (res)=>{
-                    $(`#category${count}`).val(res?.data[0].category_name)
-                })
-            }
-
-            function packData(id, count){
-                ajaxGetData(`/pack?id=${id}`, (res) =>{
-                    $(`#pack${count}`).val(res?.data[0].pack_name)
-
-                })
-            }
-            function priceData(id, count){
-                ajaxGetData(`/price?id=${id}`, (res) =>{
-                    $(`#unit_value${count}`).val(res?.data[0].price_name)
-
-                })
-            }
-
-            function subCategoryData(id, count) {
-                ajaxGetData(`/sub-category?id=${id}`, (res)=>{
-                    $(`#subCategory${count}`).val(res?.data[0].sub_category_name)
-                })
-            }
-
-            function addNewRow(id) {
-                productData(); 
-
-                const newRow = `
-                    <tr>
-                        <td class="table-row-id row_id d-none product">${id}</td>
-                        <td class="table-row">
-                            <select data-enable-search="true" class="form-control product" data-count="${id}" name="productName[]" id="product_name${id}">
-                                <option value="">Choose Product</option>
-                            </select>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="category[]" id="category${id}" readonly />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="subCategory[]" id="subCategory${id}" readonly />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="pack[]" id="pack${id}" readonly />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="number" class="form-control" name="qty[]" id="qty${id}" readonly/>
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="unit_value[]" id="unit_value${id}" readonly />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="assignQty[]" id="assignQty${id}"  />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="number" class="form-control" name="discount[]" id="discount${id}" />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" class="form-control" name="totalAmount[]" id="totalAmount${id}" readonly />
-                            </div>
-                        </td>
-                        <td class="table-row">
-                            <button type="button" class="btn btn-sm btn-danger remove-row" data-count="${id}"><i class="fa fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-                $('#formBody').append(newRow);
-            }
-
-            function updateTotalForRow(row) {
-                const qty = parseFloat(row.find('input[name="qty"]').val()) || 0;
-                const unitValue = parseFloat(row.find('input[name="unit_value[]"]').val()) || 0;
-                const discount = parseFloat(row.find('input[name="discount[]"]').val()) || 0;
-                const totalAmount = (qty * unitValue) - ((qty * unitValue) * discount / 100);
-                row.find('input[name="totalAmount[]"]').val(totalAmount.toFixed(2));
-            }
-
-            $(document).on('input', 'input[name="qty"], input[name="unit_value[]"], input[name="discount[]"]', function() {
-                const row = $(this).closest('tr');
-                updateTotalForRow(row);
-                updateOverallTotal();
-            });
-
-            function updateOverallTotal() {
-                let overallTotal = 0;
-                $('input[name="totalAmount[]"]').each(function() {
-                    overallTotal += parseFloat($(this).val()) || 0;
-                });
-                $('#totalAmount').text(overallTotal.toFixed(2));
-            }
-
-            $(document).ready(function() {
-                $('tr').each(function() {
-                    updateTotalForRow($(this));
-                });
-                updateOverallTotal();
-            });
-
-            function calculateTotalAmount() {
-                let totalAmount = 0;
-                $('#formBody').find('tr').each(function () {
-                    const qty = parseFloat($(this).find('[name="assignQty[]"]').val()) || 0;
-                    const unitValue = parseFloat($(this).find('[name="unit_value[]"]').val()) || 0;
-                    const discount = parseFloat($(this).find('[name="discount[]"]').val()) || 0;
-                    const discountDecimal = discount / 100;
-                    const discountAmount = qty * unitValue * discountDecimal;
-                    const amount = (qty * unitValue) - discountAmount;
-
-                    $(this).find('[name="totalAmount[]"]').val(amount.toFixed(2));
-                    totalAmount += amount;
-                });
-                $('#totalAmount').text(totalAmount.toFixed(2));
-            }
-
-            $(document).on('input', '[name="qty[]"], [name="unitValue[]"], [name="discount[]"]', function () {
-                calculateTotalAmount();
-            });
-
-            function deleteRow(element) {
-                const row = element.closest("tr");
-                row.remove();
-                calculateTotalAmount(); 
-            }
-            function gatherFormData() {
-                let formData = {
-                    stock_from: $('#stock_from').val(),
-                    stock_to: $('#stock_to').val(),
-                    transfer_id: $('#transfer_id').val(),
-                    items: []
-                };
-
-                $('#formBody').find('tr').each(function() {
-                    const row = $(this);
-                    let itemData = {
-                        product_id: row.find('[name="productName[]"]').val() || '',  // Product ID
-                        category_id: row.find('[name="category[]"]').val() || '',    // Category ID
-                        sub_category_id: row.find('[name="subCategory[]"]').val() || '',  // Sub Category ID
-                        pack_id: row.find('[name="pack[]"]').val() || '',            // Pack ID
-                        qty: row.find('[name="assignQty[]"]').val() || '',                 // Quantity
-                        unit_value: row.find('[name="unit_value[]"]').val() || '',   // Unit Value
-                        assign_qty: row.find('[name="assignQty[]"]').val() || '',    // Assigned Quantity
-                        discount: row.find('[name="discount[]"]').val() || '',       // Discount
-                        total_amount: row.find('[name="totalAmount[]"]').val() || '' // Total Amount
-                    };
-
-                    formData.items.push(itemData);
-                });
-
-                return formData;
-            }
-
-
+    function buildProductSelect(rowId, selectedPrId) {
+        let opts = `<option value="">-- Select Product –  Pack – Price --</option>`;
+        productOptions.forEach(function (p) {
+            const label = `${p.product_name} – ${p.pack_name} – ${p.price_name} (Qty: ${p.avail_qty})`;
+            const sel   = selectedPrId == p.purchase_request_id ? 'selected' : '';
+            opts += `<option value="${p.purchase_request_id}" ${sel}
+                        data-product-id="${p.product_id}"
+                        data-product-name="${p.product_name}"
+                        data-pack-id="${p.pack_id}"
+                        data-pack-name="${p.pack_name}"
+                        data-price-id="${p.price_id}"
+                        data-price-name="${p.price_name}"
+                        data-brand-id="${p.brand_id ?? ''}"
+                        data-avail-qty="${p.avail_qty}"
+                        data-unit-value="${p.unit_value ?? p.price_name}"
+                    >${label}</option>`;
         });
-    </script>
+        return opts;
+    }
+
+    function addRow() {
+        rowCount++;
+        const id = rowCount;
+        const row = `
+            <tr id="row_${id}">
+                <td>
+                    <select class="form-control select2-product product-select" id="product_select_${id}" data-row="${id}">
+                        ${buildProductSelect(id, null)}
+                    </select>
+                </td>
+                <td class="align-middle"><span id="avail_qty_${id}">–</span></td>
+                <td>
+                    <input type="number" class="form-control transfer-qty" id="transfer_qty_${id}" data-row="${id}" min="1" step="1" placeholder="0">
+                </td>
+                <td class="align-middle"><span id="unit_value_${id}">–</span></td>
+                <td class="align-middle">
+                    <button type="button" class="btn btn-sm btn-danger remove-row" data-row="${id}"><i class="fa fa-trash"></i></button>
+                </td>
+            </tr>`;
+        $('#itemsBody').append(row);
+        $(`#product_select_${id}`).select2({ placeholder: '-- Select Product – Pack – Price --', width: '100%' });
+    }
+
+    $('#addRow').on('click', addRow);
+
+    $(document).on('change', '.product-select', function () {
+        const rowId = $(this).data('row');
+        const opt   = $(this).find('option:selected');
+        const avail = opt.data('avail-qty') ?? '–';
+        const unit  = opt.data('price-name') ?? opt.data('unit-value') ?? '–';
+        $(`#avail_qty_${rowId}`).text(avail !== undefined ? avail : '–');
+        $(`#unit_value_${rowId}`).text(unit !== undefined ? unit : '–');
+        $(`#transfer_qty_${rowId}`).attr('max', avail);
+    });
+
+    $(document).on('click', '.remove-row', function () {
+        const rowId = $(this).data('row');
+        $(`#row_${rowId}`).remove();
+    });
+
+    $('#submitTransfer').on('click', function () {
+        const toStoreId = $('#to_store_id').val();
+        if (!toStoreId) {
+            Swal.fire('Validation', 'Please select a destination store.', 'warning');
+            return;
+        }
+
+        const items = [];
+        let valid = true;
+
+        $('#itemsBody tr').each(function () {
+            const rowId = $(this).attr('id').replace('row_', '');
+            const sel   = $(`#product_select_${rowId}`);
+            const opt   = sel.find('option:selected');
+            const qty   = parseFloat($(`#transfer_qty_${rowId}`).val()) || 0;
+
+            if (!sel.val()) { valid = false; Swal.fire('Validation', 'Please select a product for every row.', 'warning'); return false; }
+            if (qty <= 0)   { valid = false; Swal.fire('Validation', 'Transfer qty must be > 0.', 'warning'); return false; }
+            const avail = parseFloat(opt.data('avail-qty')) || 0;
+            if (qty > avail){ valid = false; Swal.fire('Validation', `Transfer qty exceeds available stock for ${opt.data('product-name')}.`, 'warning'); return false; }
+
+            items.push({
+                purchase_request_id: sel.val(),
+                product_id:   opt.data('product-id'),
+                product_name: opt.data('product-name'),
+                pack_id:      opt.data('pack-id'),
+                pack_name:    opt.data('pack-name'),
+                price_id:     opt.data('price-id'),
+                brand_id:     opt.data('brand-id') || null,
+                unit_value:   opt.data('unit-value') || opt.data('price-name'),
+                qty:          qty,
+            });
+        });
+
+        if (!valid) return;
+        if (items.length === 0) { Swal.fire('Validation', 'Add at least one product row.', 'warning'); return; }
+
+        const payload = {
+            to_store_id: toStoreId,
+            notes:       $('#notes').val(),
+            items:       items,
+        };
+
+        $.ajax({
+            url: '/api/stock-transfer/create',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (res) {
+                if (res.status === 200) {
+                    Swal.fire({
+                        title: 'Transfer Created!',
+                        icon: 'success',
+                        text: `Transfer No: ${res.transfer_no}`,
+                    }).then(() => { window.location.href = '/store/stock/transfer'; });
+                } else {
+                    Swal.fire('Error', res.message || 'Something went wrong.', 'error');
+                }
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.message || 'An error occurred.';
+                Swal.fire('Error', msg, 'error');
+            }
+        });
+    });
+});
+</script>
 @endsection

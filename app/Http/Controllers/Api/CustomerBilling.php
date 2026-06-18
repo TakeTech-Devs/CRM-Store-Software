@@ -15,7 +15,7 @@ class CustomerBilling extends Controller
     {
         try {
             // Retrieve storeId from the session (set during login)
-            $storeMetaId = $request->session()->get('storeId');
+            $storeMetaId = session('storeId');
 
             if (!$storeMetaId) {
                 return response()->json([
@@ -26,11 +26,13 @@ class CustomerBilling extends Controller
 
             $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
             $storeId = $store?->id;
-    
+
+            // Generate invoice number: #INVS{store_id_padded}{YY}{MM}{sequence}
+            $invoiceNo = $this->generateInvoiceNumber($storeId);
+
             // Billing and product details from the request
             $customer_phone = $request->customer_phone;
             $doctor_name = $request->doctor_name;
-            $invoiceNo = $request->invoiceNo;
             $paymentType = $request->paymentType;
             $product_billing = $request->product_billings;
             $billing_date = $request->billing_date;
@@ -120,6 +122,23 @@ class CustomerBilling extends Controller
         }
     }
     
+    private function generateInvoiceNumber(int $storeId): string
+    {
+        $yy  = date('y');   // e.g. 26
+        $mm  = date('m');   // e.g. 06
+        $storeCode = 'C' . str_pad($storeId, 3, '0', STR_PAD_LEFT);  // e.g. C003
+
+        $count = DB::table('customer_billing')
+            ->where('store_id', $storeId)
+            ->whereYear('billing_date', date('Y'))
+            ->whereMonth('billing_date', date('m'))
+            ->count();
+
+        $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT);  // e.g. 001
+
+        return '#INV' . $storeCode . $yy . $mm . $sequence;
+    }
+
     public function listBilling(Request $request){
         
         try {
@@ -347,15 +366,18 @@ class CustomerBilling extends Controller
 
             // Fetch store details
             $store = DB::table('store')
-                ->where('store_meta_id', '=', $bill->store_id)
+                ->where('id', '=', $bill->store_id)
                 ->first();
 
-            // Fetch bill items from customer_product_billing
+            // Fetch bill items with product and doctor name
             $billItems = DB::table('customer_product_billing')
                 ->join('product', 'customer_product_billing.productId', '=', 'product.id')
                 ->where('customer_product_billing.cb_id', '=', $billId)
                 ->select('customer_product_billing.*', 'product.product_name')
                 ->get();
+
+            // Fetch doctor name
+            $doctor = DB::table('doctor')->where('id', '=', $bill->doctor_name)->first();
 
             // Fetch customer details
             $customer = DB::table('customer')
@@ -368,7 +390,8 @@ class CustomerBilling extends Controller
                     'bill' => $bill,
                     'items' => $billItems,
                     'customer' => $customer,
-                    'store'=> $store,
+                    'store' => $store,
+                    'doctor_name' => $doctor?->name ?? 'N/A',
                 ]
             ], 200);
         } catch (\Throwable $th) {
@@ -383,7 +406,7 @@ class CustomerBilling extends Controller
     public function updateBilling(Request $request, $billId)
     {
         try {
-            $storeMetaId = $request->session()->get('storeId');
+            $storeMetaId = session('storeId');
             if (!$storeMetaId) {
                 return response()->json(['status' => 403, 'message' => 'Store not logged in.'], 403);
             }
@@ -521,7 +544,7 @@ class CustomerBilling extends Controller
 
     public function getStoreInfo(Request $request) {
         try {
-            $storeId = $request->session()->get('storeId');
+            $storeId = session('storeId');
             
             if (!$storeId) {
                 return response()->json([
@@ -566,3 +589,4 @@ class CustomerBilling extends Controller
 
     
 }
+

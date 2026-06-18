@@ -95,7 +95,7 @@
                         <label for="invoiceNo">Invoice No</label>
                         <div class="form-group d-flex align-items-center">
                             <input type="text" name="invoiceNo" id="invoiceNo" class="form-control"
-                                value="{{ uniqid() }}" disabled>
+                                value="Auto-generated on submit" disabled>
                         </div>
                     </div>
                 </div>
@@ -742,7 +742,6 @@
                 customer_phone: $('#customer_phone').val(),
                 doctor_name: $('#doctor_name').val(),
                 paymentType: $('#paymentType').val(),
-                invoiceNo: $('#invoiceNo').val(),
                 customer_name: $('#customer_name').val(),
                 total_amt: $('#totalAmount').text(),
                 gstAmount: $('#totalGST').text(),

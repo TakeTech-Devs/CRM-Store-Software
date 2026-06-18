@@ -1,244 +1,225 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Store Stock Transfer')
+@section('title', 'Stock Transfer')
 
 @section('content')
-    <style>
-        /* Styling as needed */
-        .pagination {
-            margin-top: 10px;
-        }
-        .table tbody+tbody {
-            border-top: none !important;
-        }
-        @media print {
-            body * {
-                border: none !important;
-                box-shadow: none !important;
-            }
-            .table tbody+tbody {
-                border-top: none !important;
-            }
-            #printButton {
-                display: none;
-            }
-            @page {
-                size: A4 landscape;
-            }
-        }
-        .loader {
-            border: 10px solid #f3f3f3; 
-            border-top: 10px solid #A54217; 
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-            margin-top: 10%;
-            margin-left: 50%;
-            display: none;
-            bottom: 25px;
-            position: absolute;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+<style>
+    .loader {
+        border: 10px solid #f3f3f3;
+        border-top: 10px solid #A54217;
+        border-radius: 50%;
+        width: 50px; height: 50px;
+        animation: spin 1.5s linear infinite;
+        margin: 60px auto; display: none;
+    }
+    @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
+    .badge-pending  { background:#ffc107; color:#000; }
+    .badge-received { background:#28a745; color:#fff; }
+</style>
 
-    <div class="container-fluid">
-        <div class="d-flex align-items-center justify-content-between">
-            <h2 class="text-dark bold">Store Stock Transfer</h2>
-            <div class="text-right">
-                <a href="{{ url('store/create/stockTransfer') }}" class="btn btn-secondary btn-sm">Create Stock Transfer</a>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-dark">Stock Transfer</h2>
+        <a href="{{ url('store/create/stockTransfer') }}" class="btn btn-primary btn-sm">+ Create Transfer</a>
+    </div>
+
+    {{-- Tabs --}}
+    <ul class="nav nav-tabs mb-3" id="transferTabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="#" data-type="sent">Sent</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" data-type="received">Received</a>
+        </li>
+    </ul>
+
+    {{-- Filters --}}
+    <div class="form-row align-items-end mb-3">
+        <div class="col-auto">
+            <label>Start Date</label>
+            <input type="date" class="form-control" id="start_date">
+        </div>
+        <div class="col-auto">
+            <label>End Date</label>
+            <input type="date" class="form-control" id="end_date">
+        </div>
+        <div class="col-auto" style="margin-top:1.85rem">
+            <button class="btn btn-success btn-md" id="filterBtn">Find</button>
+            <button class="btn btn-secondary btn-md ml-1" id="clearBtn">Clear</button>
+        </div>
+    </div>
+
+    <div class="loader" id="loader"></div>
+
+    <div class="table-responsive border mt-2 mb-5">
+        <table class="table table-bordered text-center mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>#</th>
+                    <th>Transfer No.</th>
+                    <th>From Store</th>
+                    <th>To Store</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="transferBody">
+                <tr><td colspan="8" class="text-muted">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{-- Detail Modal --}}
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transfer Detail – <span id="modal_transfer_no"></span></h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
-        </div>
-
-        <div class="form-row d-flex align-items-center justify-content-between my-3">
-            <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-                <div class="form-group d-flex align-items-end justify-content-around">
-                    <div class="form-group mx-1">
-                        <label for="start_date_input">Start Date</label>
-                        <input type="date" class="form-control" id="start_date_input" name="start_date_input">
-                    </div>
-                    <div class="form-group mx-1">
-                        <label for="end_date_input">End Date</label>
-                        <input type="date" class="form-control" id="end_date_input" name="end_date_input">
-                    </div>
-                    <div class="form-group" style="margin-top: 1.85rem !important;">
-                        <button type="button" class="btn btn-success btn-md mx-1" id="filterBilling">Find</button>
-                    </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4"><strong>From:</strong> <span id="modal_from"></span></div>
+                    <div class="col-md-4"><strong>To:</strong> <span id="modal_to"></span></div>
+                    <div class="col-md-4"><strong>Date:</strong> <span id="modal_date"></span></div>
                 </div>
-                <div class="d-flex align-items-center justify-content-around">
-                    <form class="d-flex align-items-center justify-content-between">
-                        <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                            <label for="searchBillingNumber" class="mt-2">Search: </label> &nbsp;&nbsp;
-                            <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
-                        </div>
-                    </form>
+                <div class="row mb-3">
+                    <div class="col-md-4"><strong>Status:</strong> <span id="modal_status"></span></div>
+                    <div class="col-md-4"><strong>Received At:</strong> <span id="modal_received_at"></span></div>
+                    <div class="col-md-4"><strong>Notes:</strong> <span id="modal_notes"></span></div>
                 </div>
-            </div>
-        </div>
-
-        <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group" aria-label="Show Entries and Export">  
-            <div class="d-flex align-items-center justify-content-center">
-                <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                    <label for="showbillingEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                    <select data-enable-search="true" class="form-control form-control-md mt-1" style="width: auto;" id="showbillingEntries">
-                        <option selected>10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
-                    </select>
-                </div>
-            </div> 
-            <div class="grandTotalAmount text-right mt-3">
-                <strong>Total Amount: <span id="total">0.00/-</span></strong>
-            </div>
-        </div>
-        
-        <div class="table-responsive border mt-3 mb-5">
-            <table id="purchase-entry-table" class="table p-2 text-center">
-                <thead>
-                    <tr>
-                        <th style="padding: 0 0.5rem;">Sno.</th>
-                        <th style="padding: 0 0.5rem;">Stock From</th>
-                        <th style="padding: 0 0.5rem;">Stock To</th>
-                        <th style="padding: 0 0.5rem;">Product</th>
-                        <th style="padding: 0 0.5rem;">Quantity</th>
-                        <th style="padding: 0 0.5rem;">Unit Value</th>
-                        <th style="padding: 0 0.5rem;">Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody id="billing"></tbody>
-            </table>   
-            <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
-        </div>
-
-        <div class="container mt-3">
-            <div class="row justify-content-end">
-                <div class="col-auto">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm"></ul>
-                    </nav>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm text-center">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Pack</th>
+                                <th>Price / Unit</th>
+                                <th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal_items"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    
-    
-    <div class="loader" id="loader"></div>
+<script>
+$(document).ready(function () {
+    let currentType = 'sent';
 
-
-    <script>
-        $(document).ready(function () {
-    let products = {};
-    let stores = {};
-
-    function fetchProducts() {
-        return $.ajax({
-            url: 'http://localhost:8000/api/products',
-            type: 'GET',
-            success: function (response) {
-                products = response.data.reduce((acc, item) => {
-                    acc[item.id] = item.product_name;
-                    return acc;
-                }, {});
-            }
-        });
-    }
-
-    function fetchStores() {
-        return $.ajax({
-            url: 'http://localhost:8000/api/stores',
-            type: 'GET',
-            success: function (response) {
-                stores = response.data.reduce((acc, item) => {
-                    acc[item.id] = item.name;
-                    return acc;
-                }, {});
-            }
-        });
-    }
-
-    function fetchStockTransferData(page = 1, filters = {}) {
+    function loadTransfers(type, startDate, endDate) {
         $('#loader').show();
-        $.when(fetchProducts(), fetchStores()).done(function () {
-            $.ajax({
-                url: 'http://localhost:8000/api/transfer/store/list',
-                type: 'GET',
-                data: { page: page, ...filters },
-                success: function (response) {
-                    $('#loader').hide();
-                    
-                    $('#billing').empty();
-                    
-                    if (response.data && response.data.length > 0) {
-                        let tableContent = '';
-                        let totalAmount = 0;
+        $('#transferBody').html('<tr><td colspan="8" class="text-muted">Loading…</td></tr>');
 
-                        response.data.forEach((item, index) => {
-                            // Calculate total price for the row
-                            const rowTotal = item.unit_value * item.qty;
-                            totalAmount += rowTotal;
-
-                            tableContent += `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${stores[item.stock_from] || item.stock_from}</td>
-                                    <td>${stores[item.stock_to] || item.stock_to}</td>
-                                    <td>${products[item.product] || item.product}</td>
-                                    <td>${item.qty}</td>
-                                    <td>${item.unit_value}</td>
-                                    <td>${rowTotal.toFixed(2)}</td>
-                                </tr>
-                            `;
-                        });
-
-                        $('#billing').html(tableContent);
-                        $('#total').text(totalAmount.toFixed(2) + '/-');
-                    } else {
-                        $('#billing').html('<tr><td colspan="7">No data found</td></tr>');
-                        $('#total').text('0.00/-');
-                    }
-                },
-                error: function() {
-                    $('#loader').hide();
-                    $('#billing').html('<tr><td colspan="7">Error loading data</td></tr>');
-                    $('#total').text('0.00/-');
+        $.ajax({
+            url: '/api/stock-transfer/list',
+            type: 'GET',
+            data: { type: type, start_date: startDate || '', end_date: endDate || '' },
+            success: function (res) {
+                $('#loader').hide();
+                if (res.status !== 200 || !res.data.length) {
+                    $('#transferBody').html('<tr><td colspan="8" class="text-muted">No transfers found.</td></tr>');
+                    return;
                 }
-            });
+
+                let html = '';
+                res.data.forEach(function (t, idx) {
+                    const statusBadge = t.status === 'received'
+                        ? `<span class="badge badge-received">Received</span>`
+                        : `<span class="badge badge-pending">Pending</span>`;
+
+                    html += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td><strong>${t.transfer_no}</strong></td>
+                            <td>${t.from_store_name}</td>
+                            <td>${t.to_store_name}</td>
+                            <td>${t.transfer_date}</td>
+                            <td>${t.item_count}</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info view-detail" data-id="${t.id}">View</button>
+                            </td>
+                        </tr>`;
+                });
+                $('#transferBody').html(html);
+            },
+            error: function () {
+                $('#loader').hide();
+                $('#transferBody').html('<tr><td colspan="8" class="text-danger">Failed to load transfers.</td></tr>');
+            }
         });
     }
 
-    fetchStockTransferData();
-
-    $('#filterBilling').on('click', function () {
-        const startDate = $('#start_date_input').val();
-        const endDate = $('#end_date_input').val();
-        fetchStockTransferData(1, { start_date: startDate, end_date: endDate });
-    });
-
-    $('#searchBillingNumber').on('keyup', function () {
-        const searchQuery = $(this).val();
-        fetchStockTransferData(1, { search: searchQuery });
-    });
-
-    $('#showbillingEntries').on('change', function () {
-        fetchStockTransferData(1, { per_page: $(this).val() });
-    });
-
-    $(document).on('click', '.pagination a', function (e) {
+    // Tab switching
+    $('#transferTabs a').on('click', function (e) {
         e.preventDefault();
-        const page = $(this).attr('href').split('page=')[1];
-        fetchStockTransferData(page);
+        $('#transferTabs a').removeClass('active');
+        $(this).addClass('active');
+        currentType = $(this).data('type');
+        loadTransfers(currentType, $('#start_date').val(), $('#end_date').val());
     });
 
-    $('#printButton').on('click', function () {
-        window.print();
+    $('#filterBtn').on('click', function () {
+        const s = $('#start_date').val();
+        const e = $('#end_date').val();
+        if (s && e && e < s) {
+            Swal.fire('Validation', 'End date must be after start date.', 'warning');
+            return;
+        }
+        loadTransfers(currentType, s, e);
     });
+
+    $('#clearBtn').on('click', function () {
+        $('#start_date').val('');
+        $('#end_date').val('');
+        loadTransfers(currentType, '', '');
+    });
+
+    // View detail
+    $(document).on('click', '.view-detail', function () {
+        const id = $(this).data('id');
+        $.get(`/api/stock-transfer/${id}`, function (res) {
+            if (res.status !== 200) { Swal.fire('Error', 'Could not load detail.', 'error'); return; }
+            const d = res.data;
+            $('#modal_transfer_no').text(d.transfer.transfer_no);
+            $('#modal_from').text(d.from_store_name);
+            $('#modal_to').text(d.to_store_name);
+            $('#modal_date').text(d.transfer.transfer_date);
+            const statusBadge = d.transfer.status === 'received'
+                ? `<span class="badge badge-received">Received</span>`
+                : `<span class="badge badge-pending">Pending</span>`;
+            $('#modal_status').html(statusBadge);
+            $('#modal_received_at').text(d.transfer.received_at ?? '–');
+            $('#modal_notes').text(d.transfer.notes || '–');
+
+            let itemsHtml = '';
+            d.items.forEach(function (item, i) {
+                itemsHtml += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${item.product_name}</td>
+                        <td>${item.pack_name}</td>
+                        <td>${item.unit_value}</td>
+                        <td>${item.qty}</td>
+                    </tr>`;
+            });
+            $('#modal_items').html(itemsHtml);
+            $('#detailModal').modal('show');
+        }).fail(function () {
+            Swal.fire('Error', 'Could not load detail.', 'error');
+        });
+    });
+
+    // Initial load
+    loadTransfers(currentType, '', '');
 });
-
-
-    </script>
+</script>
 @endsection

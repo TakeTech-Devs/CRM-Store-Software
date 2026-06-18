@@ -11,46 +11,37 @@ class StaffBilling extends Controller
 {
     public function createBilling(Request $request){
         try {
+            $storeMetaId = session('storeId');
+
+            if (!$storeMetaId) {
+                return response()->json([
+                    'status' => 403,
+                    'message' => 'Store not logged in.'
+                ], 403);
+            }
+
+            $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
+            $storeId = $store?->id;
+
+            $invoiceNo = $this->generateInvoiceNumber($storeId);
+
             $staff_phone = $request->staff_phone;
             $doctor_name = $request->doctor_name;
-            $invoiceNo = $request->invoiceNo;
             $paymentType = $request->paymentType;
             $product_billing = $request->product_billings;
             $billing_date = $request->billing_date;
             $staff_name = $request->staff_name;
+            $billingType = $request->billingType;
             $total_amt = $request->total_amt;
-    
-            DB::beginTransaction();
-    
-            foreach ($product_billing as $key => $value) {
-                $product = DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->first();
-                if (!$product) {
-                    DB::rollBack();
-                    return response()->json([
-                        'status' => 400,
-                        'message' => 'Product not found in stock entry.'
-                    ], 400);
-                }
-                $remainingQty = $product->qty - $value['qty'];
-    
-                if ($remainingQty < 0) {
-                    DB::rollBack();
-                    return response()->json([
-                        'status' => 400,
-                        'message' => 'Insufficient stock for the product.'
-                    ], 400);
-                }
+            $gstAmount = $request->gstAmount;
+            $cgst = $request->cgst;
+            $sgst = $request->sgst;
 
-                // Also check purchase_request stock
-                $pack = DB::table('pack')->where('pack_name', $value['pack'])->first();
-                $pr = null;
-                if ($pack) {
-                    $pr = DB::table('purchase_request')
-                        ->where('product_id', $value['productId'])
-                        ->where('pack_id', $pack->id)
-                        ->first();
-                }
-                
+            DB::beginTransaction();
+
+            foreach ($product_billing as $key => $value) {
+                $pr = DB::table('purchase_request')->where('id', $value['purchase_request_id'])->first();
+
                 if (!$pr) {
                     DB::rollBack();
                     return response()->json([
@@ -67,30 +58,30 @@ class StaffBilling extends Controller
                         'message' => 'Insufficient store-assigned stock for the product.'
                     ], 400);
                 }
-    
-                DB::table('purchase_stock_entry')->where('product_id', $value['productId'])->update([
-                    'qty' => $remainingQty,
-                    'updated_at' => now(),
-                ]);
 
                 DB::table('purchase_request')->where('id', $pr->id)->update([
                     'qty' => $remainingPrQty,
                     'updated_at' => now(),
                 ]);
             }
-    
+
             $insert_cb = DB::table('staff_billing')->insertGetId([
+                'store_id' => $storeId,
                 'staff_phone' => $staff_phone,
                 'staff_name' => $staff_name,
                 'doctor_name' => $doctor_name,
                 'invoiceNo' => $invoiceNo,
                 'paymentType' => $paymentType,
                 'billing_date' => $billing_date,
+                'billingType' => $billingType,
                 'total_amt' => $total_amt,
+                'gst' => $gstAmount,
+                'cgst' => $cgst,
+                'sgst' => $sgst,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-    
+
             foreach ($product_billing as $key => $value) {
                 DB::table('staff_product_billing')->insert([
                     'category' => $value['category'],
@@ -102,21 +93,41 @@ class StaffBilling extends Controller
                     'totalAmount' => $value['totalAmount'],
                     'unitValue' => $value['unitValue'],
                     'cb_id' => $insert_cb,
+                    'gstRate' => $value['gstRate'],
+                    'gstAmount' => $value['gstAmount'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
             }
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'status' => 200,
-                'data' => 'Success'
+                'data' => 'Success',
+                'bill_id' => $insert_cb
             ], 200);
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
         }
+    }
+
+    private function generateInvoiceNumber(int $storeId): string
+    {
+        $yy  = date('y');
+        $mm  = date('m');
+        $storeCode = 'S' . str_pad($storeId, 3, '0', STR_PAD_LEFT);
+
+        $count = DB::table('staff_billing')
+            ->where('store_id', $storeId)
+            ->whereYear('billing_date', date('Y'))
+            ->whereMonth('billing_date', date('m'))
+            ->count();
+
+        $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+
+        return '#INV' . $storeCode . $yy . $mm . $sequence;
     }
     
     
@@ -339,20 +350,25 @@ class StaffBilling extends Controller
                 ], 404);
             }
 
+            $store = DB::table('store')
+                ->where('id', '=', $bill->store_id)
+                ->first();
+
             $billItems = DB::table('staff_product_billing')
-                ->where('cb_id', '=', $billId)
+                ->join('product', 'staff_product_billing.productId', '=', 'product.id')
+                ->where('staff_product_billing.cb_id', '=', $billId)
+                ->select('staff_product_billing.*', 'product.product_name')
                 ->get();
 
-            $staff = DB::table('staff')
-                ->where('id', '=', $bill->id)
-                ->first();
+            $doctor = DB::table('doctor')->where('id', '=', $bill->doctor_name)->first();
 
             return response()->json([
                 'status' => 200,
                 'data' => [
                     'bill' => $bill,
                     'items' => $billItems,
-                    'staff' => $staff
+                    'store' => $store,
+                    'doctor_name' => $doctor?->name ?? 'N/A',
                 ]
             ], 200);
         } catch (\Throwable $th) {
@@ -366,7 +382,7 @@ class StaffBilling extends Controller
 
     public function getStoreInfo(Request $request) {
         try {
-            $storeId = $request->session()->get('storeId');
+            $storeId = session('storeId');
             
             if (!$storeId) {
                 return response()->json([
@@ -405,3 +421,4 @@ class StaffBilling extends Controller
         }
     }
 }
+

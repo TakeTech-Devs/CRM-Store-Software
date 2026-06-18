@@ -279,115 +279,101 @@
 
 
 <script>
-    $(document).on('click', '#filterBilling', function () {
-    let startDate = $('#start_date_input').val();
-    let endDate = $('#end_date_input').val();
-
-    if (!startDate || !endDate) {
-        alert("Please select both start and end dates.");
-        return;
-    }
-
-    // Disable button and show loading text
-    let filterButton = $('#filterBilling');
-    filterButton.prop('disabled', true).text('Filtering...');
-
-    $.ajax({
-        url: "/api/customer/bill/filter",
-        type: "GET",
-        data: { start_date: startDate, end_date: endDate },
-        success: function(response) {
-            console.log("Filter response:", response);
-            
-            if (response.status === 200 && response.data.length > 0) {
-                console.log(response.data); // Debugging output
-                displayFilteredData(response.data);
-            } else {
-                $("#billing").html('<tr><td colspan="7" class="text-center">No records match the selected date range.</td></tr>');
-            }
-        },
-        error: function(xhr) {
-            console.error("Error:", xhr.responseText);
-            alert("Failed to fetch data. Please try again.");
-        },
-        complete: function() {
-            // Enable button after request is complete
-            filterButton.prop('disabled', false).text('Filter');
+    // Keep end date always >= start date
+    $('#start_date_input').on('change', function () {
+        $('#end_date_input').attr('min', $(this).val());
+        if ($('#end_date_input').val() && $('#end_date_input').val() < $(this).val()) {
+            $('#end_date_input').val($(this).val());
         }
     });
-});
 
-function displayFilteredData(data) {
-    console.log("Filtered data:", data);
-    
-    let tbody = $("#billing");
-    tbody.empty(); // Clear previous data
+    $(document).on('click', '#filterBilling', function () {
+        let startDate = $('#start_date_input').val();
+        let endDate = $('#end_date_input').val();
 
-    data.forEach((bill, index) => {
-        tbody.append(`
-            <tr>
-                <td>${index + 1}</td>
-                <td>${bill.invoiceNo}</td>
-                <td>${bill.customer_name}</td>
-                <td>${bill.billing_date}</td>
-                <td>${bill.paymentType}</td>
-                <td>${bill.total_amt}</td>
-                <td>
-                    <a href="/customer/billing/${bill.id}/view" class="btn btn-sm btn-primary">View</a>
-                    <a href="/store/customer/billing/${bill.id}/edit" class="btn btn-sm btn-warning ml-2">Edit</a>
-                </td>
-            </tr>
-        `);
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+
+        let filterButton = $(this);
+        filterButton.prop('disabled', true).text('Filtering...');
+
+        $.ajax({
+            type: 'GET',
+            url: `/api/customer/billing/list?start_date=${startDate}&end_date=${endDate}`,
+            success: function (response) {
+                if (response.status === 200) {
+                    bill_list(response.data);
+                } else {
+                    showNoRecords();
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 404) {
+                    showNoRecords();
+                } else {
+                    alert('Failed to fetch data. Please try again.');
+                }
+            },
+            complete: function () {
+                filterButton.prop('disabled', false).text('Find');
+            }
+        });
     });
-}
+
+    function showNoRecords() {
+        $('#purchase-entry-table tbody').html('<tr><td colspan="7" class="text-center">No records found</td></tr>');
+        $('.grandTotalAmount').html('<strong>Total Amount: 0.00/-</strong>');
+    }
+
+    function bill_list(response) {
+        $('#purchase-entry-table tbody').empty();
+        let grandTotal = 0;
+        if (Array.isArray(response) && response.length > 0) {
+            response.reverse();
+            $.each(response, function(index, brand) {
+                let totalAmount = parseFloat(brand?.total_amt) || 0;
+                grandTotal += totalAmount;
+                $('#purchase-entry-table tbody').append(`
+                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                        <td scope="row"> ${index+1} </td>
+                        <td> ${brand?.invoiceNo} </td>
+                        <td> ${brand?.customer_name} </td>
+                        <td> ${brand?.billing_date} </td>
+                        <td> ${brand?.paymentType} </td>
+                        <td> ${totalAmount.toFixed(2)} </td>
+                        <td>
+                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                        </td>
+                    </tr>
+                `);
+            });
+            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+        } else {
+            showNoRecords();
+        }
+    }
 
 
 
     $(document).ready(function() {
         api_for_bill();
 
-        // SEARCH FUNCATIONALITY 
-        $('#search').on('input', function() {
+        // SEARCH FUNCTIONALITY
+        $('#searchBillingNumber').on('input', function() {
             var searchText = $(this).val().toLowerCase();
             var found = false;
             $('.bill-row').each(function() {
-                var brandName = $(this).find('td:eq(1)').text().toLowerCase();
-                if (brandName.includes(searchText)) {
+                var invoiceNo = $(this).find('td:eq(1)').text().toLowerCase();
+                if (invoiceNo.includes(searchText)) {
                     $(this).show();
                     found = true;
                 } else {
                     $(this).hide();
                 }
             });
-            if (found) {
-                $('#noBrandFoundMessage').hide();
-            } else {
-                $('#noBrandFoundMessage').show();
-            }
-        });
-
-        // DATE FILTER 
-        $(document).on('click', '.storeFilterBtn', function() {
-            let startDate = $('#start_date_input').val();
-            let endDate = $('#end_date_input').val();
-            $.ajax({
-                url: '/customer/bill/filter/',
-                method: 'GET',
-                data: {
-                    start_date_input: startDate,
-                    end_date_input: endDate
-                },
-                success: function(response) {
-                    if (response.status === 200) {
-                        displayFilteredData(response.data);
-                    } else {
-                        console.error('Failed to fetch data:', response);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching data:', error);
-                }
-            });
+            $('#noBrandFoundMessage').toggle(!found);
         });
 
         let productList = {};
@@ -469,71 +455,25 @@ function displayFilteredData(data) {
                     let items = data.items;
                     let store = data.store;
 
-                    var grandTotalElement = document.querySelector('.grandTotal');
-                    var invoiceElement = document.querySelector('.invoiceNo');
-                    var billingDateElement = document.querySelector('.billingDate');
-                    var customernameElement = document.querySelector('.customerName');
-                    var drNameElement = document.querySelector('.drName');
-                    var totalGSTElement = document.querySelector('.totalGST');
-                    var totalCGSTElement = document.querySelector('.totalCGST');
-                    var totalSGSTElement = document.querySelector('.totalSGST');
-                    var storeAddress = document.querySelector('.storeAddress');
-                    var dlNumber = document.querySelector('.dlNumber');
-                    var helplineNumber = document.querySelector('.helplineNumber');
-
-                    if (storeAddress && store.store_address) {
-                        storeAddress.textContent = store.store_address;
-                    } else {
-                        storeAddress.textContent = 'Not Provided';
-                    }
-
-                    if (dlNumber && store.dl_number) {
-                        dlNumber.textContent = store.dl_number;
-                    } else {
-                        dlNumber.textContent = 'Not Provided';
-                    }
-
-                    if (helplineNumber && store.helpline_number) {
-                        helplineNumber.textContent = store.helpline_number;
-                    } else {
-                        helplineNumber.textContent = 'Not Provided';
-                    }
-
-                    var taxableValue = (bill.total_amt - bill.gst).toFixed(2);
-                    $('.taxableValue').text(taxableValue);
-                    if (grandTotalElement) {
-                        grandTotalElement.textContent = bill.total_amt;
-                    }
-                    if (invoiceElement) {
-                        invoiceElement.textContent = bill.invoiceNo;
-                    }
-                    if (billingDateElement) {
-                        billingDateElement.textContent = bill.billing_date;
-                    }
-                    if (customernameElement) {
-                        customernameElement.textContent = bill.customer_name;
-                    }
-                    if (drNameElement) {
-                        drNameElement.textContent = doctorList[bill.doctor_name] || 'N/A';
-                    }
-
-                    if (totalGSTElement) {
-                    totalGSTElement.textContent = bill.gst || 0;
-                    }
-                    if (totalCGSTElement) {
-                    totalCGSTElement.textContent = bill.cgst || 0;
-                    }
-                    if (totalSGSTElement) {
-                    totalSGSTElement.textContent = bill.sgst || 0;
-                    }
-
+                    $('.invoiceNo').text(bill.invoiceNo);
+                    $('.billingDate').text(bill.billing_date);
+                    $('.customerName').text(bill.customer_name);
+                    $('.drName').text(data.doctor_name || 'N/A');
+                    $('.grandTotal').text(parseFloat(bill.total_amt).toFixed(2));
+                    $('.taxableValue').text((parseFloat(bill.total_amt) - parseFloat(bill.gst || 0)).toFixed(2));
+                    $('.totalGST').text(parseFloat(bill.gst || 0).toFixed(2));
+                    $('.totalCGST').text(parseFloat(bill.cgst || 0).toFixed(2));
+                    $('.totalSGST').text(parseFloat(bill.sgst || 0).toFixed(2));
+                    $('.storeAddress').text(store?.store_address || 'Not Provided');
+                    $('.dlNumber').text(store?.dl_number || 'Not Provided');
+                    $('.helplineNumber').text(store?.helpline_number || 'Not Provided');
 
                     $('#invoice_table tbody').empty();
                     items.forEach((item, index) => {
                         $('#invoice_table tbody').append(`
                             <tr>
                                 <td>${index + 1}</td>
-                                <td>${productList[item.productId] || 'N/A'}</td>
+                                <td>${item.product_name || 'N/A'}</td>
                                 <td>${item.qty || '0'}</td>
                                 <td>${item.pack || 'N/A'}</td>
                                 <td>${item.unitValue || '0.00'}/-</td>
@@ -564,40 +504,6 @@ function displayFilteredData(data) {
         });
     }
 
-    function bill_list(response) {
-        $('#purchase-entry-table tbody').empty();
-        let grandTotal = 0;
-        if (Array.isArray(response) > 0) {
-            response.reverse();
-            $.each(response, function(index, brand) {
-                let totalAmount = parseFloat(brand?.total_amt) || 0;
-                grandTotal += totalAmount;
-                let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
-                $('#purchase-entry-table tbody').append(`
-                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                        <td scope="row"> ${index+1} </td>
-                        <td> ${brand?.invoiceNo} </td>
-                        <td> ${brand?.customer_name} </td>
-                        <td> ${brand?.billing_date} </td>
-                        <td> ${brand?.paymentType} </td>
-                        <td> ${totalAmount.toFixed(2)} </td>
-                        <td>
-                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
-                            <a href="/store/customer/billing/${brand.id}/edit" class="bg-warning px-2 py-1 text-white ml-2">Edit</a>
-                        </td>
-                    </tr>
-                `);
-            });
-            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-        } else {
-            $('#purchase-entry-table tbody').append(`
-                <tr>
-                    <td class="text-center" colspan="4">No Brand Found</td>
-                </tr>
-            `);
-            $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
-        }
-    }
 
     // DISPLAY DATE FILTER 
     function displayFilteredData(data) {
@@ -615,7 +521,6 @@ function displayFilteredData(data) {
                     <td>${customerBill.total_amt}</td>
                     <td>
                         <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
-                        <a href="/store/customer/billing/${customerBill.id}/edit" class="bg-warning px-2 py-1 text-white ml-2">Edit</a>
                         <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
                     </td>
                 </tr>

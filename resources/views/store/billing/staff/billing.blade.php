@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Customer Billing')
+@section('title', 'Staff Billing')
 
 @section('content')
 <style>
@@ -46,89 +46,47 @@
     }
 
     @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 </style>
 
 <div class="container-fluid">
     <div class="d-flex align-items-center justify-content-between">
-        <h2 class="text-dark bold ">Staff Billing Page</h1>
-            <div class="text-right">
-                <a href="{{ url('store/staff/create/billing') }}" class="btn btn-secondary btn-sm">Create New
-                    Billing</a>
-            </div>
+        <h2 class="text-dark bold">Staff Billing Page</h2>
+        <div class="text-right">
+            <a href="{{ url('store/staff/create/billing') }}" class="btn btn-secondary btn-sm">Create New Billing</a>
+        </div>
     </div>
-    <div class="form-row d-flex align-items-center justify-content-between my-3">
-        <div class="col-md-12 form-group d-flex align-items-end justify-content-between">
-            <div class="form-group d-flex align-items-end justify-content-around">
+
+    <div class="form-row d-flex align-items-center justify-content-between">
+        <div class="col-md-12 form-group d-flex align-items-start justify-content-between mb-0">
+            <div class="form-group d-flex align-items-start justify-content-around">
                 <div class="form-group mx-1">
                     <label for="start_date_input">Start Date</label>
                     <input type="date" class="form-control" id="start_date_input" name="start_date_input">
                 </div>
                 <div class="form-group mx-1">
-
                     <label for="end_date_input">End Date</label>
                     <input type="date" class="form-control" id="end_date_input" name="end_date_input">
                 </div>
-                <!-- <div class="form-group"> -->
-                <!-- <button type="button" class="btn btn-success btn-md mx-1 storeFilterBtn">Find</button> -->
-                <div class="form-group" style="margin-top: 1.85rem !important;">
-                    <button type="button" class="btn btn-success btn-md mx-1 filterBtn" id="filterBilling">Find</button>
+                <div class="form-group" style="margin-top: 2rem !important;">
+                    <button type="button" class="btn btn-success btn-md mx-1" id="filterBilling">Find</button>
                 </div>
             </div>
-            <div class="d-flex align-items-center justify-content-around">
-                <form class="d-flex align-items-center justify-content-between">
-                    <div class="form-group d-flex align-items-center justify-content-center mx-3">
-                        <label for="search" class="mt-2">Search: </label> &nbsp;&nbsp;
-                        <!-- <input type="text" class="form-control" id="search" placeholder="Search Bill No."> -->
-                        <input type="text" class="form-control" id="searchBillingNumber"
-                            placeholder="Search Billing No.">
-                    </div>
-                </form>
+            <div class="d-flex align-items-start justify-content-around">
+                <div class="form-group mx-3">
+                    <label for="searchBillingNumber">Search: </label> &nbsp;&nbsp;
+                    <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
+                </div>
             </div>
         </div>
     </div>
-    <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group"
-        aria-label="Show Entries and Export">
-        <div class="d-flex align-items-center justify-content-center">
-            <div class="show-entries form-group d-flex align-items-baseline justify-content-between">
-                <label for="showEntries" class="d-inline-block">Show Entries: &nbsp;</label>
-                <select data-enable-search="true" class="form-control form-control-md mt-1" style="width: auto;"
-                    id="showbillingEntries" onchange="updatePagination()">
-                    <option selected>10</option>
-                    <option>25</option>
-                    <option>50</option>
-                    <option>100</option>
-                </select>
-            </div>
-            {{-- <div class="download-buttons" style="margin-left:25px !important;">
-                <div class="download-options d-flex align-items-baseline justify-content-between">
 
-
-                    <p>Export as : </p>&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn mx-1 btn-md btn-success" id="exportReport">
-                        <i class="fas fa-file-excel"></i>
-                    </button>
-                    <button type="button" class="btn mx-1 btn-md btn-primary">
-                        <i class="fas fa-file-word"></i>
-                    </button>
-                    <button type="button" class="btn mx-1 btn-md btn-danger">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>
-                </div>
-            </div> --}}
-        </div>
-        <div class="grandTotalAmount text-right mt-3">
+    <div class="form-row btn-group d-flex align-items-center justify-content-between" role="group">
+        <div class="d-flex align-items-center justify-content-center"></div>
+        <div class="grandTotalAmount text-right">
             <strong>Total Amount: 0.00/-</strong>
-            <div class="totalAmount">
-                <strong>Total Amount: <span id="total">0/- </span></strong>
-            </div>
         </div>
 
         <div class="table-responsive border mt-3 mb-5">
@@ -136,125 +94,100 @@
                 <thead>
                     <tr>
                         <th class="text-dark">#</th>
-                        <th class="text-dark">Customer Bill No</th>
-                        <th class="text-dark">Customer Name</th>
+                        <th class="text-dark">Staff Bill No</th>
+                        <th class="text-dark">Staff Name</th>
                         <th class="text-dark">Bill Date</th>
                         <th class="text-dark">Payment Type</th>
                         <th class="text-dark">Total Amount</th>
                         <th class="text-dark">Actions</th>
                     </tr>
                 </thead>
-
-                <tbody id="billing">
-
-
-                </tbody>
+                <tbody id="billing"></tbody>
             </table>
             <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
-
         </div>
+
         <div class="container mt-3">
             <div class="row justify-content-end">
                 <div class="col-auto">
                     <nav aria-label="...">
-                        <ul class="pagination pagination-sm">
-                        </ul>
+                        <ul class="pagination pagination-sm"></ul>
                     </nav>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PRINT MODEL  -->
-    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel"
-        aria-hidden="true">
+    <!-- PRINT MODAL -->
+    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-md" role="document">
             <div class="modal-content" style="border: none;">
                 <div class="modal-body" style="padding: 10px; width:100%;">
                     <div id="printArea">
-                        <table class="border p-2 my-2">
-                            <h1 class="text-center fw-bold"
-                                style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT
-                                AID</h1>
+                        <table class="border p-2">
+                            <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>
                             <div class="col-md-12">
-                                <div class="details d-flex align-items-start justify-content-between"
-                                    style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
                                     <div class="left">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            Invoice No: <span class="invoiceNo"
-                                                style="font-size: 14px !important; font-weight:400;"></span> </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
-                                            <span class="billingDate"
-                                                style="font-size: 14px !important; font-weight:400;"></span>
-                                        </p>
-                                        <p
-                                            style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            GSTIN: <span class="gstin"
-                                                style="font-size: 14px !important; font-weight:400;">GST123456</span>
-                                        </p>
-                                        <p
-                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            Staff: <span class="customerName"
-                                                style="font-size: 14px !important; font-weight:400;"></span></p>
-                                        <p
-                                            style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            Dr Name: <span class="drName"
-                                                style="font-size: 14px !important; font-weight:400;"></span></p>
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">Invoice No: <span class="invoiceNo" style="font-size: 16px !important; font-weight:600;"></span></p>
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">Date: <span class="billingDate" style="font-size: 16px !important; font-weight:600;"></span></p>
+                                        <p style="width: 150%; font-size: 16px !important; font-weight:800; line-height: 5px;">GSTIN: <span class="gstin" style="font-size: 16px !important; font-weight:600;">GST123456</span></p>
+                                        <p style="width: 200%; font-size: 16px !important; font-weight:800; line-height: 5px;">Staff: <span class="staffName" style="font-size: 16px !important; font-weight:600;"></span></p>
+                                        <p style="width: 200%; font-size: 16px !important; font-weight:800; line-height: 5px;">Dr Name: <span class="drName" style="font-size: 16px !important; font-weight:600;"></span></p>
                                     </div>
                                     <div class="right">
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL.
-                                            No. : <span class="dlNumber"
-                                                style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
-                                        </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            Helpline : <span class="helplineNumber"
-                                                style="font-size: 14px !important; font-weight:400;">8100968101</span>
-                                        </p>
-                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
-                                            Address : <span class="storeAddress"
-                                                style="font-size: 12px !important; font-weight:400;">Loading...</span>
-                                        </p>
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">DL. No. : <span class="dlNumber" style="font-size: 16px !important; font-weight:600;">HL-1046-S</span></p>
+                                        <p style="font-size: 16px !important; font-weight:800; line-height: 5px;">Helpline : <span class="helplineNumber" style="font-size: 16px !important; font-weight:600;">8100968101</span></p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="product-details text-center m-0 col-md-12">
-
                                 <table class="w-100" id="invoice_table">
-                                    <thead
-                                        style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                    <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important; font-size: 16px; font-weight: 800;">
                                         <tr>
                                             <th>SNo.</th>
                                             <th>Medicine</th>
                                             <th>Qty</th>
                                             <th>Pack</th>
                                             <th>MRP</th>
+                                            <th>GST Amount</th>
                                             <th>Amount</th>
                                         </tr>
                                     </thead>
-
-                                    <tbody
-                                        style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
-
-                                    </tbody>
+                                    <tbody style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important; font-size: 16px; font-weight: 600;"></tbody>
                                 </table>
                                 <div class="col-md-12 my-3" style="text-align:right !important">
-                                    <th>Grand Total: <span class="grandTotal"></span>/-</th>
+                                    <table class="w-100 table table-bordered mt-3" style="font-size: 16px; font-weight: 600;">
+                                        <thead>
+                                            <tr style="text-align: right;">
+                                                <th>Taxable Value</th>
+                                                <th>CGST</th>
+                                                <th>SGST</th>
+                                                <th>Total Tax Amount</th>
+                                                <th>Grand Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody style="text-align: right;">
+                                            <tr>
+                                                <td><span class="taxableValue">0.00</span>/-</td>
+                                                <td><span class="totalCGST">0.00</span>/-</td>
+                                                <td><span class="totalSGST">0.00</span>/-</td>
+                                                <td><span class="totalGST">0.00</span>/-</td>
+                                                <td><span class="grandTotal">0.00</span>/-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-
-                                <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
-                                    <span>Address : 15/1A Mohini Monen Road, Bhawanipur (Near Jadubabu bazar) Kolkata
-                                        700020</span><br>
-                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor,
-                                        "Merlin Grove Behala
-                                        Kolkata-700008</span>
+                                <div class="address text-center" style="font-size: 14px !important; font-weight: 600; margin-top:15px; color: #000000 !important;">
+                                    <span>Address : <span class="storeAddress"></span></span><br>
+                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor, "Merlin Grove Behala Kolkata-700008</span>
                                 </div>
-                                <div class="note text-center" style="font-size: 12px !important;">
+                                <div class="note text-center" style="font-size: 14px !important; font-weight: 600;">
                                     <p>Medicine once sold would not be returned or exchanged</p>
                                     <span>******** Thank You ********</span>
                                 </div>
                             </div>
-
                         </table>
                     </div>
                     <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
@@ -265,326 +198,195 @@
             </div>
         </div>
     </div>
-
-
 </div>
 
-
-
 <script>
-    $(document).ready(function() {
+    // Keep end date always >= start date
+    $('#start_date_input').on('change', function () {
+        $('#end_date_input').attr('min', $(this).val());
+        if ($('#end_date_input').val() && $('#end_date_input').val() < $(this).val()) {
+            $('#end_date_input').val($(this).val());
+        }
+    });
+
+    $(document).on('click', '#filterBilling', function () {
+        let startDate = $('#start_date_input').val();
+        let endDate = $('#end_date_input').val();
+
+        if (!startDate || !endDate) {
+            alert("Please select both start and end dates.");
+            return;
+        }
+
+        let filterButton = $(this);
+        filterButton.prop('disabled', true).text('Filtering...');
+
+        $.ajax({
+            type: 'GET',
+            url: `/api/staff/billing/list?start_date=${startDate}&end_date=${endDate}`,
+            success: function (response) {
+                if (response.status === 200) {
+                    bill_list(response.data);
+                } else {
+                    showNoRecords();
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 404) {
+                    showNoRecords();
+                } else {
+                    alert('Failed to fetch data. Please try again.');
+                }
+            },
+            complete: function () {
+                filterButton.prop('disabled', false).text('Find');
+            }
+        });
+    });
+
+    function showNoRecords() {
+        $('#purchase-entry-table tbody').html('<tr><td colspan="7" class="text-center">No records found</td></tr>');
+        $('.grandTotalAmount').html('<strong>Total Amount: 0.00/-</strong>');
+    }
+
+    function bill_list(response) {
+        $('#purchase-entry-table tbody').empty();
+        let grandTotal = 0;
+        if (Array.isArray(response) && response.length > 0) {
+            response.reverse();
+            $.each(response, function(index, brand) {
+                let totalAmount = parseFloat(brand?.total_amt) || 0;
+                grandTotal += totalAmount;
+                $('#purchase-entry-table tbody').append(`
+                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                        <td scope="row">${index + 1}</td>
+                        <td>${brand?.invoiceNo}</td>
+                        <td>${brand?.staff_name}</td>
+                        <td>${brand?.billing_date}</td>
+                        <td>${brand?.paymentType}</td>
+                        <td>${totalAmount.toFixed(2)}</td>
+                        <td>
+                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                        </td>
+                    </tr>
+                `);
+            });
+            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+        } else {
+            showNoRecords();
+        }
+    }
+
+    $(document).ready(function () {
         api_for_bill();
 
-        // SEARCH FUNCATIONALITY 
-        $('#search').on('input', function() {
+        // SEARCH FUNCTIONALITY
+        $('#searchBillingNumber').on('input', function () {
             var searchText = $(this).val().toLowerCase();
             var found = false;
-            $('.bill-row').each(function() {
-                var brandName = $(this).find('td:eq(1)').text().toLowerCase();
-                if (brandName.includes(searchText)) {
+            $('.bill-row').each(function () {
+                var invoiceNo = $(this).find('td:eq(1)').text().toLowerCase();
+                if (invoiceNo.includes(searchText)) {
                     $(this).show();
                     found = true;
                 } else {
                     $(this).hide();
                 }
             });
-            if (found) {
-                $('#noBrandFoundMessage').hide();
-            } else {
-                $('#noBrandFoundMessage').show();
-            }
+            $('#noBrandFoundMessage').toggle(!found);
         });
 
-        // DATE FILTER 
-        $(document).on('click', '.storeFilterBtn', function() {
-            let startDate = $('#start_date_input').val();
-            let endDate = $('#end_date_input').val();
+        // VIEW BILL
+        $(document).on('click', '.viewBill', function () {
+            let billId = $(this).data('store-id');
+
             $.ajax({
-                url: '/api/staff/bill/filter/',
+                url: `/api/staff/bill/${billId}`,
                 method: 'GET',
-                data: {
-                    start_date_input: startDate,
-                    end_date_input: endDate
-                },
-                success: function(response) {
+                success: function (response) {
                     if (response.status === 200) {
-                        displayFilteredData(response.data);
-                    } else {
-                        console.error('Failed to fetch data:', response);
+                        let data = response.data;
+                        let bill = data.bill;
+                        let items = data.items;
+                        let store = data.store;
+
+                        $('.invoiceNo').text(bill.invoiceNo);
+                        $('.billingDate').text(bill.billing_date);
+                        $('.staffName').text(bill.staff_name);
+                        $('.drName').text(data.doctor_name || 'N/A');
+                        $('.grandTotal').text(parseFloat(bill.total_amt).toFixed(2));
+                        $('.taxableValue').text((parseFloat(bill.total_amt) - parseFloat(bill.gst || 0)).toFixed(2));
+                        $('.totalGST').text(parseFloat(bill.gst || 0).toFixed(2));
+                        $('.totalCGST').text(parseFloat(bill.cgst || 0).toFixed(2));
+                        $('.totalSGST').text(parseFloat(bill.sgst || 0).toFixed(2));
+                        $('.storeAddress').text(store?.store_address || 'Not Provided');
+                        $('.dlNumber').text(store?.dl_number || 'Not Provided');
+                        $('.helplineNumber').text(store?.helpline_number || 'Not Provided');
+
+                        $('#invoice_table tbody').empty();
+                        items.forEach((item, index) => {
+                            $('#invoice_table tbody').append(`
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.product_name || 'N/A'}</td>
+                                    <td>${item.qty || '0'}</td>
+                                    <td>${item.pack || 'N/A'}</td>
+                                    <td>${item.unitValue || '0.00'}/-</td>
+                                    <td>${item.gstAmount || '0.00'}/-</td>
+                                    <td>${item.totalAmount || '0.00'}/-</td>
+                                </tr>
+                            `);
+                        });
+
+                        $('#printModal').modal('show');
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('Error fetching data:', error);
+                error: function (xhr, status, error) {
+                    console.error('Error fetching bill details:', error);
                 }
             });
         });
-
-        let productList = {};
-        let doctorList = {};
-
-        // Fetch products list
-        function fetchProducts() {
-            return $.ajax({
-                url: '/products', // Adjust the endpoint as necessary
-                method: 'GET'
-            }).done(function(response) {
-                if (response.status === 200) {
-                    productList = response.data.reduce((acc, product) => {
-                        acc[product.id] = product.product_name;
-                        return acc;
-                    }, {});
-                } else {
-                    console.error('Failed to fetch products:', response);
-                }
-            }).fail(function(xhr, status, error) {
-                console.error('Error fetching products:', error);
-            });
-        }
-
-        function fetchDoctors() {
-            return $.ajax({
-                url: '/doctors', 
-                method: 'GET'
-            }).done(function(response) {
-                if (response.status === 200) {
-                    doctorList = response.data.reduce((acc, doctor) => {
-                        acc[doctor.id] = doctor.name;
-                        return acc;
-                    }, {});
-                } else {
-                    console.error('Failed to fetch doctors:', response);
-                }
-            }).fail(function(xhr, status, error) {
-                console.error('Error fetching doctors:', error);
-            });
-        }
-
-        function fetchStoreInfo() {
-            return $.ajax({
-                url: '/api/store/info',
-                method: 'GET'
-            }).done(function(response) {
-                if (response.status === 200) {
-                    // Update store information in the print modal
-                    $('.dlNumber').text(response.data.dl_number);
-                    $('.helplineNumber').text(response.data.helpline_number);
-                    $('.storeAddress').text(response.data.store_address);
-                } else {
-                    console.error('Failed to fetch store info:', response);
-                }
-            }).fail(function(xhr, status, error) {
-                console.error('Error fetching store info:', error);
-            });
-        }
-
-        $(document).ready(function() {
-            $.when(fetchProducts(), fetchDoctors(), fetchStoreInfo()).done(function() {
-                console.log('Data loaded successfully');
-            });
-        });
-
-
-        $(document).on('click', '.viewBill', function() {
-        let billId = $(this).data('store-id');
-
-        $.ajax({
-            url: `/api/staff/bill/${billId}`,
-            method: 'GET',
-            success: function(response) {
-                if (response.status === 200) {
-                    let data = response.data;
-                    let bill = data.bill;
-                    let items = data.items;
-
-                    var grandTotalElement = document.querySelector('.grandTotal');
-                    var invoiceElement = document.querySelector('.invoiceNo');
-                    var billingDateElement = document.querySelector('.billingDate');
-                    var customernameElement = document.querySelector('.customerName');
-                    var drNameElement = document.querySelector('.drName');
-
-                    if (grandTotalElement) {
-                        grandTotalElement.textContent = bill.total_amt;
-                    }
-                    if (invoiceElement) {
-                        invoiceElement.textContent = bill.invoiceNo;
-                    }
-                    if (billingDateElement) {
-                        billingDateElement.textContent = bill.billing_date;
-                    }
-                    if (customernameElement) {
-                        customernameElement.textContent = bill.staff_name;
-                    }
-                    if (drNameElement) {
-                        drNameElement.textContent = doctorList[bill.doctor_name] || 'N/A';
-                    }
-
-                    $('#invoice_table tbody').empty();
-                    items.forEach((item, index) => {
-                        $('#invoice_table tbody').append(`
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td>${productList[item.productId] || 'N/A'}</td>
-                                <td>${item.qty || '0'}</td>
-                                <td>${item.pack || 'N/A'}</td>
-                                <td>${item.unitValue || '0.00'}/-</td>
-                                <td>${item.totalAmount || '0.00'}/-</td>
-                            </tr>
-                        `);
-                    });
-
-                    $('#printModal').modal('show');
-                } else {
-                    console.error('Failed to fetch bill details:', response);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error fetching bill details:', error);
-            }
-        });
-    });
 
         function api_for_bill() {
-            $('#loader').show();
             ajaxGetData(`/api/staff/billing/list`, (response) => {
-                $('#loader').hide();
                 bill_list(response.data);
+            }, () => {
+                showNoRecords();
             });
         }
 
-        function bill_list(response) {
-            $('#purchase-entry-table tbody').empty();
-            let grandTotal = 0;
-            if (Array.isArray(response) > 0) {
-                response.reverse();
-                $.each(response, function(index, brand) {
-                    let totalAmount = parseFloat(brand?.total_amt) || 0;
-                    grandTotal += totalAmount;
-                    let formattedStatus = (brand.status == 1) ? 'Active' : 'Deactive';
-                    $('#purchase-entry-table tbody').append(`
-                        <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                            <td scope="row"> ${index+1} </td>
-                            <td> ${brand?.invoiceNo} </td>
-                            <td> ${brand?.staff_name} </td>
-                            <td> ${brand?.billing_date} </td>
-                            <td> ${brand?.paymentType} </td>
-                            <td> ${totalAmount.toFixed(2)} </td>
-                            <td>
-                                <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
-                            </td>
-                        </tr>
-                    `);
-                });
-                $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-            } else {
-                $('#purchase-entry-table tbody').append(`
-                    <tr>
-                        <td class="text-center" colspan="4">No Brand Found</td>
-                    </tr>
-                `);
-                $('.grandTotalAmount').html(`<strong>Total Amount: 0.00/-</strong>`);
-            }
-        }
-
-        // DISPLAY DATE FILTER 
-        function displayFilteredData(data) {
-            let tableBody = $('#purchase-entry-table tbody');
-            tableBody.empty();
-            if (data.length > 0) {
-                data.forEach((customerBill, index) => {
-                    tableBody.append(`
-                    <tr>
-                    <td scope="row">${index + 1}</td>   
-                        <td>${customerBill.invoiceNo}</td>   
-                        <td>${customerBill.staff_name}</td>
-                        <td>${customerBill.billing_date}</td>
-                        <td>${customerBill.paymentType}</td>
-                        <td>${customerBill.total_amt}</td>
-                        <td>
-                            <button class="bg-info px-2 py-1 viewBill" data-toggle="modal" data-target="#printModal" data-store-id="${customerBill.id}">&#x1F441;</button>
-                            <i class="fa fa-download bg-warning text-light px-2 py-2"></i>
-                        </td>
-                    </tr>
-                    `);
-                });
-            } else {
-                tableBody.append('<tr><td colspan="6">No records found</td></tr>');
-            }
-        }
-
-        function populateModal(bill) {
-            console.log(bill);
-            $('#printModal .modal-body').html(`
-                <p><strong>Invoice No:</strong> ${bill.invoiceNo}</p>
-                <p><strong>Staff Name:</strong> ${bill.staff_name}</p>
-                <p><strong>Billing Date:</strong> ${bill.billing_date}</p>
-                <p><strong>Payment Type:</strong> ${bill.paymentType}</p>
-                <p><strong>Total Amount:</strong> ${bill.total_amt}</p>
-            `);
-        }
         function printModalContent() {
             var printContent = document.getElementById("printArea").innerHTML;
-            var originalContent = document.body.innerHTML;
-
-            printContent = printContent.replace('<button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>', '');
-
             var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
-            if (modalBackdrop) {
-                modalBackdrop.remove();
-            }
-
+            if (modalBackdrop) modalBackdrop.remove();
             document.body.innerHTML = printContent;
-
             window.print();
-
-            document.body.innerHTML = originalContent;
-
-            $('#printModal').modal('show');
+            location.reload();
         }
 
-        document.getElementById("printButton").addEventListener("click", function() {
+        document.getElementById("printButton").addEventListener("click", function () {
             printModalContent();
         });
-
-
     });
+</script>
 
-
-        
 <script>
-    document.getElementById("printButtonTVS").addEventListener("click", function() {
+    document.getElementById("printButtonTVS").addEventListener("click", function () {
         printModalContentTVS();
     });
 
     function printModalContentTVS() {
         var printContent = document.getElementById("printArea").innerHTML;
-        var originalContent = document.body.innerHTML;
-
         var printWindow = window.open('', '', 'height=600,width=400');
         printWindow.document.write('<html><head><title>Print</title>');
         printWindow.document.write(`
             <style>
-                body {
-                    font-family: 'Courier New', Courier, monospace;
-                    font-size: 8px;
-                    width: 4in;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                }
-                th, td {
-                    padding: 2px;
-                    text-align: left;
-                }
-                .text-center {
-                    text-align: center;
-                }
-                .fw-bold {
-                    font-weight: bold;
-                }
-                #printButton, #printButtonTVS {
-                    display: none;
-                }
+                body { font-family: 'Courier New', Courier, monospace; font-size: 8px; width: 4in; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { padding: 2px; text-align: left; }
+                .text-center { text-align: center; }
+                .fw-bold { font-weight: bold; }
+                #printButton, #printButtonTVS { display: none; }
             </style>
         `);
         printWindow.document.write('</head><body>');
