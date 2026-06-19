@@ -405,25 +405,149 @@ class ReportController extends Controller
         ]);
     }
 
-    public function monthlyEarnings()
+    public function monthlyEarnings(Request $request)
     {
-        $currentMonth = now()->format('Y-m');
+        $storeMetaId = session('storeId');
+        $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
+        $storeId = $store?->id;
 
-        $customerSales = DB::table('customer_billing')
-            ->whereYear('billing_date', now()->year)
-            ->whereMonth('billing_date', now()->month)
-            ->sum('total_amt');
+        $query = function ($table) use ($storeId) {
+            $q = DB::table($table)
+                ->whereYear('billing_date', now()->year)
+                ->whereMonth('billing_date', now()->month);
+            if ($storeId) $q->where('store_id', $storeId);
+            return $q->sum('total_amt');
+        };
 
-        $staffSales = DB::table('staff_billing')
-            ->whereYear('billing_date', now()->year)
-            ->whereMonth('billing_date', now()->month)
-            ->sum('total_amt');
-
-        $totalEarnings = $customerSales + $staffSales;
+        $totalEarnings = $query('customer_billing') + $query('staff_billing');
 
         return response()->json([
             'status' => 'success',
             'data' => $totalEarnings
+        ]);
+    }
+
+    public function analyticsData(Request $request)
+    {
+        $storeMetaId = session('storeId');
+        $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
+        $storeId = $store?->id;
+
+        $today = now()->toDateString();
+        $weekStart = now()->startOfWeek()->toDateString();
+        $monthStart = now()->startOfMonth()->toDateString();
+
+        // Sales overview — customer + staff combined
+        $salesQuery = function ($from, $to) use ($storeId) {
+            $c = DB::table('customer_billing')
+                ->where('store_id', $storeId)
+                ->whereBetween('billing_date', [$from, $to])
+                ->sum('total_amt');
+            $s = DB::table('staff_billing')
+                ->where('store_id', $storeId)
+                ->whereBetween('billing_date', [$from, $to])
+                ->sum('total_amt');
+            return round($c + $s, 2);
+        };
+
+        // Use whereYear/whereMonth for the month total to avoid timezone edge cases
+        $monthCustomer = DB::table('customer_billing')
+            ->where('store_id', $storeId)
+            ->whereYear('billing_date', now()->year)
+            ->whereMonth('billing_date', now()->month)
+            ->sum('total_amt');
+        $monthStaff = DB::table('staff_billing')
+            ->where('store_id', $storeId)
+            ->whereYear('billing_date', now()->year)
+            ->whereMonth('billing_date', now()->month)
+            ->sum('total_amt');
+
+        $salesOverview = [
+            'today'  => $salesQuery($today, $today),
+            'week'   => $salesQuery($weekStart, $today),
+            'month'  => round($monthCustomer + $monthStaff, 2),
+        ];
+
+        // Monthly trend — last 6 months
+        $monthlyTrend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $m = now()->subMonths($i);
+            $label = $m->format('M Y');
+            $mStart = $m->startOfMonth()->toDateString();
+            $mEnd   = $m->endOfMonth()->toDateString();
+            $monthlyTrend[] = [
+                'month' => $label,
+                'amount' => $salesQuery($mStart, $mEnd),
+            ];
+        }
+
+        // Top 5 products by qty sold (regular)
+        $topProducts = DB::table('customer_product_billing as cpb')
+            ->join('product', 'cpb.productId', '=', 'product.id')
+            ->join('customer_billing as cb', 'cpb.cb_id', '=', 'cb.id')
+            ->where('cb.store_id', $storeId)
+            ->selectRaw('product.product_name, SUM(cpb.qty) as total_qty')
+            ->groupBy('product.product_name')
+            ->orderByDesc('total_qty')
+            ->limit(5)
+            ->get();
+
+        // Payment breakdown
+        $paymentBreakdown = DB::table('customer_billing')
+            ->where('store_id', $storeId)
+            ->selectRaw('paymentType, COUNT(*) as count, SUM(total_amt) as total')
+            ->groupBy('paymentType')
+            ->get();
+
+        // Doctor-wise sales (top 5)
+        $doctorSales = DB::table('customer_billing as cb')
+            ->join('doctor', 'cb.doctor_name', '=', 'doctor.id')
+            ->where('cb.store_id', $storeId)
+            ->whereNotNull('cb.doctor_name')
+            ->selectRaw('doctor.name as doctor_name, COUNT(*) as bill_count, SUM(cb.total_amt) as total_amt')
+            ->groupBy('doctor.name')
+            ->orderByDesc('total_amt')
+            ->limit(5)
+            ->get();
+
+        // Inhouse vs Regular (by qty sold)
+        $regularQty = DB::table('customer_product_billing as cpb')
+            ->join('customer_billing as cb', 'cpb.cb_id', '=', 'cb.id')
+            ->where('cb.store_id', $storeId)
+            ->whereNotNull('cpb.productId')
+            ->sum('cpb.qty');
+
+        $inhouseQty = DB::table('customer_product_billing as cpb')
+            ->join('customer_billing as cb', 'cpb.cb_id', '=', 'cb.id')
+            ->where('cb.store_id', $storeId)
+            ->whereNotNull('cpb.inhouse_product_id')
+            ->sum('cpb.qty');
+
+        // Expiry track — medicines expiring in next 90 days or already expired
+        $expiryTrack = DB::table('purchase_request as pr')
+            ->join('store_assign', 'pr.store_assign_id', '=', 'store_assign.id')
+            ->join('product', 'pr.product_id', '=', 'product.id')
+            ->join('pack', 'pr.pack_id', '=', 'pack.id')
+            ->where('store_assign.store_id', $storeId)
+            ->where('pr.qty', '>', 0)
+            ->whereNotNull('pr.exp_date')
+            ->where('pr.exp_date', '<=', now()->addDays(90)->toDateString())
+            ->select('product.product_name', 'pack.pack_name', 'pr.qty', DB::raw('pr.exp_date as expiry_date'))
+            ->orderBy('pr.exp_date')
+            ->limit(20)
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => [
+                'sales_overview'   => $salesOverview,
+                'monthly_trend'    => $monthlyTrend,
+                'top_products'     => $topProducts,
+                'payment_breakdown'=> $paymentBreakdown,
+                'doctor_sales'     => $doctorSales,
+                'inhouse_vs_regular' => ['regular' => (int)$regularQty, 'inhouse' => (int)$inhouseQty],
+                'expiry_track'     => $expiryTrack,
+            ]
         ]);
     }
 }

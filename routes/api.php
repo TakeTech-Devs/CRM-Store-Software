@@ -51,4 +51,4 @@ Route::get('/stock-report', [ReportController::class, 'stockReport'])->name('sto
 Route::get('/yesterday-sale', [ReportController::class, 'yesterdaySale']);
 Route::get('/today-sale', [ReportController::class, 'todaySale']);
 Route::get('/zero-stock-medicine', [ReportController::class, 'zeroStockMedicine']);
-Route::get('/monthly-earnings', [ReportController::class, 'monthlyEarnings']);
+// monthly-earnings moved to web.php (needs session for store_id filtering)

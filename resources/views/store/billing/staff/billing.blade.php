@@ -89,7 +89,7 @@
             <strong>Total Amount: 0.00/-</strong>
         </div>
 
-        <div class="table-responsive border mt-3 mb-5">
+        <div class="table-responsive border mt-3">
             <table id="purchase-entry-table" class="table p-2 text-center">
                 <thead>
                     <tr>
@@ -107,11 +107,14 @@
             <div id="noBrandFoundMessage" class="text-center mt-3" style="display: none;">No Bill Entry found</div>
         </div>
 
-        <div class="container mt-3">
-            <div class="row justify-content-end">
+        <div class="container mt-2 mb-3">
+            <div class="row justify-content-between align-items-center">
                 <div class="col-auto">
-                    <nav aria-label="...">
-                        <ul class="pagination pagination-sm"></ul>
+                    <small class="text-muted" id="billPaginationInfo"></small>
+                </div>
+                <div class="col-auto">
+                    <nav aria-label="Bill pagination">
+                        <ul class="pagination pagination-sm mb-0"></ul>
                     </nav>
                 </div>
             </div>
@@ -244,35 +247,78 @@
         });
     });
 
+    let allBills = [];
+    const PAGE_SIZE = 10;
+    let currentPage = 1;
+
     function showNoRecords() {
         $('#purchase-entry-table tbody').html('<tr><td colspan="7" class="text-center">No records found</td></tr>');
         $('.grandTotalAmount').html('<strong>Total Amount: 0.00/-</strong>');
+        $('.pagination').empty();
+        $('#billPaginationInfo').text('');
     }
 
+    function renderPage(page) {
+        currentPage = page;
+        const start = (page - 1) * PAGE_SIZE;
+        const pageItems = allBills.slice(start, start + PAGE_SIZE);
+        const tbody = $('#purchase-entry-table tbody').empty();
+
+        pageItems.forEach((brand, i) => {
+            let totalAmount = parseFloat(brand?.total_amt) || 0;
+            tbody.append(`
+                <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
+                    <td>${start + i + 1}</td>
+                    <td>${brand?.invoiceNo}</td>
+                    <td>${brand?.staff_name}</td>
+                    <td>${brand?.billing_date}</td>
+                    <td>${brand?.paymentType}</td>
+                    <td>${totalAmount.toFixed(2)}</td>
+                    <td>
+                        <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                    </td>
+                </tr>
+            `);
+        });
+
+        renderPagination();
+        const showing = Math.min(start + PAGE_SIZE, allBills.length);
+        $('#billPaginationInfo').text(`Showing ${start + 1} to ${showing} of ${allBills.length} records`);
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(allBills.length / PAGE_SIZE);
+        const $ul = $('.pagination').empty();
+        if (totalPages <= 1) return;
+
+        $ul.append(`<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`);
+
+        for (let p = 1; p <= totalPages; p++) {
+            $ul.append(`<li class="page-item ${p === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${p}">${p}</a></li>`);
+        }
+
+        $ul.append(`<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`);
+    }
+
+    $(document).on('click', '.pagination .page-link', function(e) {
+        e.preventDefault();
+        const page = parseInt($(this).data('page'));
+        if (page >= 1 && page <= Math.ceil(allBills.length / PAGE_SIZE)) {
+            renderPage(page);
+        }
+    });
+
     function bill_list(response) {
-        $('#purchase-entry-table tbody').empty();
-        let grandTotal = 0;
         if (Array.isArray(response) && response.length > 0) {
-            response.reverse();
-            $.each(response, function(index, brand) {
-                let totalAmount = parseFloat(brand?.total_amt) || 0;
-                grandTotal += totalAmount;
-                $('#purchase-entry-table tbody').append(`
-                    <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
-                        <td scope="row">${index + 1}</td>
-                        <td>${brand?.invoiceNo}</td>
-                        <td>${brand?.staff_name}</td>
-                        <td>${brand?.billing_date}</td>
-                        <td>${brand?.paymentType}</td>
-                        <td>${totalAmount.toFixed(2)}</td>
-                        <td>
-                            <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
-                        </td>
-                    </tr>
-                `);
-            });
+            allBills = response.slice().reverse();
+            let grandTotal = allBills.reduce((s, b) => s + (parseFloat(b.total_amt) || 0), 0);
             $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+            renderPage(1);
         } else {
+            allBills = [];
             showNoRecords();
         }
     }

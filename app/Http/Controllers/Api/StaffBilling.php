@@ -40,6 +40,8 @@ class StaffBilling extends Controller
             DB::beginTransaction();
 
             foreach ($product_billing as $key => $value) {
+                if (filter_var($value['is_inhouse'] ?? false, FILTER_VALIDATE_BOOLEAN)) continue;
+
                 $pr = DB::table('purchase_request')->where('id', $value['purchase_request_id'])->first();
 
                 if (!$pr) {
@@ -87,7 +89,8 @@ class StaffBilling extends Controller
                     'category' => $value['category'],
                     'discount' => $value['discount'],
                     'pack' => $value['pack'],
-                    'productId' => $value['productId'],
+                    'productId' => $value['productId'] ?? null,
+                    'inhouse_product_id' => $value['inhouse_product_id'] ?? null,
                     'qty' => $value['qty'],
                     'subCategory' => $value['subCategory'],
                     'totalAmount' => $value['totalAmount'],
@@ -355,9 +358,13 @@ class StaffBilling extends Controller
                 ->first();
 
             $billItems = DB::table('staff_product_billing')
-                ->join('product', 'staff_product_billing.productId', '=', 'product.id')
+                ->leftJoin('product', 'staff_product_billing.productId', '=', 'product.id')
+                ->leftJoin('inhouse_product', 'staff_product_billing.inhouse_product_id', '=', 'inhouse_product.id')
                 ->where('staff_product_billing.cb_id', '=', $billId)
-                ->select('staff_product_billing.*', 'product.product_name')
+                ->select(
+                    'staff_product_billing.*',
+                    DB::raw('COALESCE(product.product_name, CONCAT("[Inhouse] ", inhouse_product.product_name)) as product_name')
+                )
                 ->get();
 
             $doctor = DB::table('doctor')->where('id', '=', $bill->doctor_name)->first();

@@ -39,7 +39,7 @@
             <div id="content">
                 @include('layouts.header')
 
-                <div class="container-fluid">
+                <div class="container-fluid pt-4">
 
                     @yield('content')
                 </div>

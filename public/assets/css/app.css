@@ -20,6 +20,10 @@
     width: 25px !important;
 
   }
+#content-wrapper {
+    min-height: 100vh;
+}
+
 table{
     z-index: 00000;
 }

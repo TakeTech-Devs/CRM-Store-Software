@@ -447,7 +447,7 @@ class DataFetchController extends Controller
                 ->first();
 
             if (!$remoteStore) {
-                $this->writeSyncHistory('Failed', 'Store not found in admin database');
+                $this->writeSyncHistory('Failed', 'Store not found in admin database', 'Sync In');
 
                 return response()->json([
                     'status' => 404,
@@ -468,6 +468,7 @@ class DataFetchController extends Controller
                 'product' => $this->syncRemoteTable('product', ['id', 'product_name', 'brand_id', 'category_id', 'sub_category_id', 'hsn_code', 'gst', 'status', 'created_at', 'updated_at']),
                 'customer' => $this->syncRemoteTable('customer', ['id', 'name', 'mail', 'phone', 'status', 'created_at', 'updated_at']),
                 'doctor' => $this->syncRemoteTable('doctor', ['id', 'name', 'mail', 'phone', 'degree', 'status', 'created_at', 'updated_at']),
+                'inhouse_product' => $this->syncRemoteTable('inhouse_product', ['id', 'product_name', 'price', 'category_id', 'sub_category_id', 'pack_id', 'status', 'created_at', 'updated_at']),
             ];
 
             $summary['store_assign'] = $this->syncStoreAssignments($remoteStore, $storeMetaId);
@@ -475,7 +476,7 @@ class DataFetchController extends Controller
             $localStore = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
             $summary['incoming_transfers'] = $this->applyIncomingTransfers($localStore);
 
-            $this->writeSyncHistory('Succeed');
+            $this->writeSyncHistory('Succeed', null, 'Sync In');
             DB::commit();
 
             return response()->json([
@@ -489,7 +490,7 @@ class DataFetchController extends Controller
                 DB::rollBack();
             }
 
-            $this->writeSyncHistory('Failed', $th->getMessage());
+            $this->writeSyncHistory('Failed', $th->getMessage(), 'Sync In');
 
             return response()->json([
                 'status' => 500,
@@ -815,13 +816,14 @@ class DataFetchController extends Controller
         return array_intersect_key($payload, array_flip($columns));
     }
 
-    private function writeSyncHistory(string $status, ?string $message = null): void
+    private function writeSyncHistory(string $status, ?string $message = null, string $type = ''): void
     {
         $payload = [
-            'sync_date' => date('Y-m-d'),
+            'sync_date'   => date('Y-m-d'),
+            'sync_type'   => $type,
             'sync_status' => $message ? "{$status}: " . substr($message, 0, 180) : $status,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ];
 
         DB::table('sync_history')->insert($this->onlyExistingColumns('sync_history', $payload));
@@ -900,7 +902,7 @@ class DataFetchController extends Controller
                 \Log::info("Sync out: pushed {$table} â€” {$summary[$table]} record(s).");
             }
 
-            $this->writeSyncHistory('Succeed');
+            $this->writeSyncHistory('Succeed', null, 'Sync Out');
             DB::commit();
 
             return response()->json([
@@ -910,7 +912,7 @@ class DataFetchController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->writeSyncHistory('Failed', $e->getMessage());
+            $this->writeSyncHistory('Failed', $e->getMessage(), 'Sync Out');
             \Log::error('Sync out failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Sync out failed: ' . $e->getMessage()]);
         }
@@ -982,7 +984,7 @@ class DataFetchController extends Controller
             $search = $request->query('search');
             $page = $request->query('page');
             $limit = $request->query('limit');
-            $query = DB::table('sync_history');
+            $query = DB::table('sync_history')->orderByDesc('id');
             if ($startDate) {
                 $query->where('sync_date', '>=', $startDate);
             }
@@ -991,9 +993,7 @@ class DataFetchController extends Controller
             }
             if ($page && $limit) {
                 $history = $query->paginate($limit, ['*'], 'page', $page ?? 1);
-
             } else {
-
                 $history = $query->get();
             }
 

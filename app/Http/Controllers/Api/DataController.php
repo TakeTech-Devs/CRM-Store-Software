@@ -223,7 +223,8 @@ class DataController extends Controller
 
     public function billingProductOptions() {
         try {
-            $data = DB::table('purchase_request')
+            // Regular store-assigned products
+            $regular = DB::table('purchase_request')
                 ->join('product', 'purchase_request.product_id', '=', 'product.id')
                 ->join('pack', 'purchase_request.pack_id', '=', 'pack.id')
                 ->join('price', 'purchase_request.price_id', '=', 'price.id')
@@ -231,6 +232,7 @@ class DataController extends Controller
                 ->join('sub_category', 'product.sub_category_id', '=', 'sub_category.id')
                 ->where('purchase_request.qty', '>', 0)
                 ->select(
+                    DB::raw("'regular' as type"),
                     'purchase_request.id as purchase_request_id',
                     'purchase_request.qty as avail_qty',
                     'product.id as product_id',
@@ -242,12 +244,40 @@ class DataController extends Controller
                     'price.price_name',
                     'product.brand_id',
                     'category.category_name',
-                    'sub_category.sub_category_name'
+                    'sub_category.sub_category_name',
+                    DB::raw('NULL as inhouse_product_id')
                 )
                 ->orderBy('product.product_name')
                 ->orderBy('pack.pack_name')
                 ->orderBy('price.price_name')
                 ->get();
+
+            // Inhouse products — no stock, flat price, no GST
+            $inhouse = DB::table('inhouse_product')
+                ->join('category', 'inhouse_product.category_id', '=', 'category.id')
+                ->join('sub_category', 'inhouse_product.sub_category_id', '=', 'sub_category.id')
+                ->join('pack', 'inhouse_product.pack_id', '=', 'pack.id')
+                ->where('inhouse_product.status', 1)
+                ->select(
+                    DB::raw("'inhouse' as type"),
+                    DB::raw('NULL as purchase_request_id'),
+                    DB::raw('NULL as avail_qty'),
+                    DB::raw('NULL as product_id'),
+                    'inhouse_product.product_name',
+                    DB::raw('0 as gst'),
+                    'pack.id as pack_id',
+                    'pack.pack_name',
+                    DB::raw('NULL as price_id'),
+                    'inhouse_product.price as price_name',
+                    DB::raw('NULL as brand_id'),
+                    'category.category_name',
+                    'sub_category.sub_category_name',
+                    'inhouse_product.id as inhouse_product_id'
+                )
+                ->orderBy('inhouse_product.product_name')
+                ->get();
+
+            $data = $regular->concat($inhouse)->values();
 
             return response()->json(['status' => 200, 'data' => $data], 200);
         } catch (\Throwable $th) {

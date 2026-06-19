@@ -85,6 +85,7 @@
                     <a class="collapse-item" href="{{url('store/details')}}">Store Details</a>
                     <a class="collapse-item" href="{{url('store/stock/transfer')}}">Store Stock Transfer</a>
                     <a class="collapse-item" href="{{url('store/sync/history')}}">Store Sync History</a>
+                    <a class="collapse-item" href="{{url('store/analytics')}}">Store Analytics</a>
                 </div>
             </div>
         </li>

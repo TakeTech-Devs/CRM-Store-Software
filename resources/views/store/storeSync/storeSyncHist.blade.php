@@ -9,6 +9,8 @@
     .badge-in       { background: #007bff; color: #fff; padding: 4px 8px; border-radius: 10px; font-size: 0.75rem; }
     .badge-out      { background: #fd7e14; color: #fff; padding: 4px 8px; border-radius: 10px; font-size: 0.75rem; }
     #syncData tr:hover { background: #f8f9fa; }
+    #syncData td, #syncData th { white-space: nowrap; vertical-align: middle; padding: .55rem 1rem; }
+    .table thead th { white-space: nowrap; }
 </style>
 
 <div class="container-fluid">
@@ -62,39 +64,23 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center shadow-sm">
-                <div class="card-body py-3">
-                    <h6 class="text-muted mb-1">Sync In</h6>
-                    <h4 class="mb-0 font-weight-bold text-primary" id="syncInCount">0</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center shadow-sm">
-                <div class="card-body py-3">
-                    <h6 class="text-muted mb-1">Sync Out</h6>
-                    <h4 class="mb-0 font-weight-bold text-warning" id="syncOutCount">0</h4>
-                </div>
-            </div>
-        </div>
     </div>
 
     {{-- Table --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead style="background:#f4f6f9;">
-                        <tr>
-                            <th class="pl-3" style="width:60px">#</th>
-                            <th>Sync Date</th>
-                            <th>Type</th>
-                            <th>Status</th>
+    <div class="d-flex justify-content-center">
+        <div style="width:500px;">
+            <div class="card shadow-sm" style="border-radius:12px;overflow:hidden;">
+                <table class="table table-hover mb-0 text-center">
+                    <thead>
+                        <tr style="background:#f4f6f9;">
+                            <th style="width:50px;padding:.65rem .75rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:700;">#</th>
+                            <th style="padding:.65rem .75rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:700;">Sync Date</th>
+                            <th style="width:110px;padding:.65rem .75rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:700;">Type</th>
+                            <th style="width:110px;padding:.65rem .75rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:700;">Status</th>
                         </tr>
                     </thead>
                     <tbody id="syncData">
-                        <tr><td colspan="4" class="text-center text-muted py-4">Loading…</td></tr>
+                        <tr><td colspan="4" class="text-muted py-4">Loading…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -137,11 +123,14 @@ $(document).ready(function () {
     });
 });
 
+const syncErrors = [];
+
 function getSyncHist(startDate = '', endDate = '') {
     const url = `/api/get/sync/history?start_date=${startDate}&end_date=${endDate}`;
     ajaxGetData(url, function (response) {
         const rows = response?.data ?? [];
         $('#syncData').empty();
+        syncErrors.length = 0; // reset on each load
 
         if (!rows.length) {
             $('#syncData').html('<tr><td colspan="4" class="text-center text-muted py-4">No sync records found.</td></tr>');
@@ -149,26 +138,15 @@ function getSyncHist(startDate = '', endDate = '') {
             return;
         }
 
-        let successCount = 0, inCount = 0, outCount = 0;
+        let successCount = 0;
 
         rows.forEach(function (item, idx) {
             const isSuccess = (item.sync_status || '').toLowerCase() === 'succeed';
+            const errIdx = syncErrors.length;
+            if (!isSuccess) syncErrors.push(item.sync_status || 'Unknown error');
             const statusBadge = isSuccess
                 ? `<span class="badge-succeed">Succeed</span>`
-                : `<span class="badge-failed">${item.sync_status}</span>`;
-
-            // Guess type from sync_date or a type field if it exists
-            const syncType = item.sync_type || '';
-            let typeBadge = '';
-            if (syncType === 'in' || syncType === 'Sync In') {
-                typeBadge = `<span class="badge-in">Sync In</span>`;
-                inCount++;
-            } else if (syncType === 'out' || syncType === 'Sync Out') {
-                typeBadge = `<span class="badge-out">Sync Out</span>`;
-                outCount++;
-            } else {
-                typeBadge = `<span class="text-muted">–</span>`;
-            }
+                : `<span class="badge-failed" style="cursor:pointer" title="Click to view error" onclick="showError(${errIdx})">Failed <i class='fa fa-info-circle'></i></span>`;
 
             if (isSuccess) successCount++;
 
@@ -177,15 +155,26 @@ function getSyncHist(startDate = '', endDate = '') {
             let displayDate = rawDate;
             try {
                 const d = new Date(rawDate);
-                if (!isNaN(d)) displayDate = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+                if (!isNaN(d)) {
+                    const dd  = String(d.getDate()).padStart(2,'0');
+                    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+                    displayDate = `${dd} ${mon} ${d.getFullYear()}`;
+                }
             } catch(e) {}
+
+            const syncType = item.sync_type || '–';
+            const typeBadge = syncType === 'Sync In'
+                ? `<span class="badge-in">Sync In</span>`
+                : syncType === 'Sync Out'
+                    ? `<span class="badge-out">Sync Out</span>`
+                    : `<span class="text-muted">–</span>`;
 
             $('#syncData').append(`
                 <tr>
-                    <td class="pl-3 text-muted">${idx + 1}</td>
-                    <td><strong>${displayDate}</strong></td>
-                    <td>${typeBadge}</td>
-                    <td>${statusBadge}</td>
+                    <td class="text-muted" style="padding:.5rem .75rem">${idx + 1}</td>
+                    <td style="padding:.5rem .75rem;font-weight:600">${displayDate}</td>
+                    <td style="padding:.5rem .75rem">${typeBadge}</td>
+                    <td style="padding:.5rem .75rem">${statusBadge}</td>
                 </tr>
             `);
         });
@@ -193,9 +182,6 @@ function getSyncHist(startDate = '', endDate = '') {
         // Update summary cards
         $('#totalSyncs').text(rows.length);
         $('#successSyncs').text(successCount);
-        $('#syncInCount').text(inCount);
-        $('#syncOutCount').text(outCount);
-        if (inCount > 0 || outCount > 0) $('#summaryCards').show();
     }, function () {
         $('#syncData').html('<tr><td colspan="4" class="text-center text-danger py-4">Failed to load sync history.</td></tr>');
     });
@@ -220,6 +206,17 @@ function sync(store_id) {
             $('body').removeClass('modal-open');
             Swal.fire('Error', 'An error occurred while syncing.', 'error');
         });
+    });
+}
+
+function showError(idx) {
+    const msg = syncErrors[idx] || 'Unknown error';
+    Swal.fire({
+        title: 'Sync Error Detail',
+        html: `<div style="text-align:left;font-size:.82rem;word-break:break-all;max-height:300px;overflow-y:auto;background:#f8f9fa;padding:10px;border-radius:8px;">${msg}</div>`,
+        icon: 'error',
+        confirmButtonText: 'Close',
+        width: 600,
     });
 }
 

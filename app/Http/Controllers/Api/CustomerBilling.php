@@ -44,9 +44,11 @@ class CustomerBilling extends Controller
             $sgst = $request->sgst;
     
             DB::beginTransaction();
-    
-            // Loop through product billing and check stock
+
+            // Loop through product billing — deduct stock only for regular items
             foreach ($product_billing as $key => $value) {
+                if (filter_var($value['is_inhouse'] ?? false, FILTER_VALIDATE_BOOLEAN)) continue;
+
                 $pr = DB::table('purchase_request')->where('id', $value['purchase_request_id'])->first();
 
                 if (!$pr) {
@@ -71,7 +73,7 @@ class CustomerBilling extends Controller
                     'updated_at' => now(),
                 ]);
             }
-    
+
             // Insert into customer_billing table including the store_id
             $insert_cb = DB::table('customer_billing')->insertGetId([
                 'store_id' => $storeId, // Use storeId from session
@@ -96,7 +98,8 @@ class CustomerBilling extends Controller
                     'category' => $value['category'],
                     'discount' => $value['discount'],
                     'pack' => $value['pack'],
-                    'productId' => $value['productId'],
+                    'productId' => $value['productId'] ?? null,
+                    'inhouse_product_id' => $value['inhouse_product_id'] ?? null,
                     'qty' => $value['qty'],
                     'subCategory' => $value['subCategory'],
                     'totalAmount' => $value['totalAmount'],
@@ -369,11 +372,15 @@ class CustomerBilling extends Controller
                 ->where('id', '=', $bill->store_id)
                 ->first();
 
-            // Fetch bill items with product and doctor name
+            // Fetch bill items — LEFT JOIN both product and inhouse_product
             $billItems = DB::table('customer_product_billing')
-                ->join('product', 'customer_product_billing.productId', '=', 'product.id')
+                ->leftJoin('product', 'customer_product_billing.productId', '=', 'product.id')
+                ->leftJoin('inhouse_product', 'customer_product_billing.inhouse_product_id', '=', 'inhouse_product.id')
                 ->where('customer_product_billing.cb_id', '=', $billId)
-                ->select('customer_product_billing.*', 'product.product_name')
+                ->select(
+                    'customer_product_billing.*',
+                    DB::raw('COALESCE(product.product_name, CONCAT("[Inhouse] ", inhouse_product.product_name)) as product_name')
+                )
                 ->get();
 
             // Fetch doctor name

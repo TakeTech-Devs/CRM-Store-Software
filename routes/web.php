@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\StaffBilling;
 
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\StockTransferController;
+use App\Http\Controllers\Api\ReportController;
 
 
 
@@ -79,6 +80,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/stock/report', function () {
             return view('store/reports/stockReport');
         });
+        Route::get('/analytics', function () {
+            return view('store/analytics/analytics');
+        });
     });
 });
 
@@ -101,6 +105,8 @@ Route::prefix('api')->group(function () {
     Route::post('/stock-transfer/create', [StockTransferController::class, 'createTransfer']);
     Route::get('/stock-transfer/list', [StockTransferController::class, 'listTransfers']);
     Route::get('/stock-transfer/{id}', [StockTransferController::class, 'getTransferDetail']);
+    Route::get('/analytics', [ReportController::class, 'analyticsData']);
+    Route::get('/monthly-earnings', [ReportController::class, 'monthlyEarnings']);
 });
 Route::get('/purchase/request', [DataController:: class , 'purchase_bill']);
 Route::get('/category', [DataController:: class , 'category_data']);
