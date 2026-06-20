@@ -1022,26 +1022,34 @@
                 $(document).on('click', '#backToList', function() {
                     window.location.href = "/store/customer/billing";
                 });
+
+                // Clicking outside or closing modal refreshes the page
+                $('#printModal').on('hidden.bs.modal', function () {
+                    window.location.reload();
+                });
             }
         });
 
         // Print function
         function printModalContent() {
             var printContent = document.getElementById("printArea").innerHTML;
-            var originalContent = document.body.innerHTML;
-
-            // Remove all buttons from print content
-            printContent = printContent.replace(/<button[^>]*>.*?<\/button>/g, '');
-
-            var modalBackdrop = document.getElementsByClassName("modal-backdrop")[0];
-            if (modalBackdrop) {
-                modalBackdrop.remove();
-            }
-
-            document.body.innerHTML = printContent;
-            window.print();
-            document.body.innerHTML = originalContent;
-            $('#printModal').modal('show');
+            var printWindow = window.open('', '', 'height=800,width=600');
+            printWindow.document.write('<html><head><title>Print</title>');
+            printWindow.document.write(`
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 4px 6px; text-align: left; }
+                    .text-center { text-align: center; }
+                    .fw-bold { font-weight: bold; }
+                    #printButton, #printButtonTVS, #createNewBill, #backToList { display: none; }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
         }
 
         function printModalContentTVS() {
