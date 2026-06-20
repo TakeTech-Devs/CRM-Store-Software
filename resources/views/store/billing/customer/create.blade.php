@@ -42,9 +42,9 @@
                     <div class="form-group">
                         <label for="customer_phone">Customer Phone Number</label>
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" list="customer_phones" name="customer_phone" id="customer_phone" class="form-control" placeholder="Enter or choose customer phone number...">
-                            <datalist id="customer_phones">
-                            </datalist>
+                            <select name="customer_phone" id="customer_phone" class="form-control select2-manual" style="width:100%">
+                                <option value="">Enter or choose customer phone number...</option>
+                            </select>
                             <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal"
                                 data-target="#addCustomer">
                                 <i class="fas fa-plus"></i>
@@ -243,11 +243,37 @@
     $(document).ready(function () {
             count = 1
             addNewRow(count)
-            customerData(null)
-            doctorData()
-            $(document).on('blur', '#customer_phone', function () {
-                customerData(this.value);
+
+            // Initialize select2 once — options are filled by customerData() separately
+            $('#customer_phone').select2({
+                placeholder: 'Enter or choose customer phone number...',
+                allowClear: true,
+                width: '100%',
+                tags: true,
+                createTag: function (params) {
+                    const term = $.trim(params.term);
+                    if (!term) return null;
+                    return { id: term, text: term, newTag: true };
+                },
             });
+            $('#customer_phone').on('change', function () {
+                const phone = $(this).val();
+                if (!phone) { $('#customer_name').val(''); return; }
+                const opt = $(this).find('option:selected');
+                const isNew = opt.data('select2-tag') === true;
+                if (isNew) {
+                    $('#customer_name').val('');
+                    $('#addCustomer').modal('show');
+                    $('#phone').val(phone);
+                    $('#name').focus();
+                } else {
+                    const parts = opt.text().split(' — ');
+                    $('#customer_name').val(parts.length > 1 ? parts.slice(1).join(' — ') : '');
+                }
+            });
+
+            customerData()
+            doctorData()
 
             $(document).on('change', '.product-pack-price', function () {
                 const count = $(this).data('count');
@@ -386,7 +412,12 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') 
                     },
                     success: function(response) {
-                        customerData();
+                        const newPhone = $('#phone').val();
+                        const newName  = $('#name').val();
+                        customerData(function () {
+                            $('#customer_phone').val(newPhone).trigger('change.select2');
+                            $('#customer_name').val(newName);
+                        });
                         Swal.fire({
                             title: "Customer !",
                             icon: "success",
@@ -433,27 +464,15 @@
             });
         });  
 
-        function customerData(phone) {
-            if (phone) {
-                ajaxGetData(`/customers?phone=${phone}`, (res)=>{
-                    if (res?.data && res.data.length > 0) {
-                        $('#customer_name').val(res?.data[0]?.name || '');
-                    } else {
-                        // Phone number doesn't exist, open modal
-                        $('#addCustomer').modal('show');
-                        $('#addCustomer #phone').val(phone);
-                        $('#addCustomer #name').focus();
-                    }
+        function customerData(callback) {
+            ajaxGetData('/customers', (res) => {
+                const customers = res?.data || [];
+                $('#customer_phone').find('option:not(:first)').remove();
+                customers.forEach(c => {
+                    $('#customer_phone').append(`<option value="${c.phone}">${c.phone} — ${c.name}</option>`);
                 });
-            } else {
-                ajaxGetData('/customers', (res)=>{
-                    const datalist = $('#customer_phones');
-                    datalist.empty();
-                    res?.data?.forEach(element => {
-                        datalist.append(`<option value="${element.phone}">`);
-                    });
-                });
-            }
+                if (typeof callback === 'function') callback();
+            });
         }
 
         function updateProductQuantity(product_id, assigned_qty) {

@@ -91,22 +91,42 @@ $(document).ready(function () {
     });
 
     function buildProductSelect(rowId, selectedPrId) {
-        let opts = `<option value="">-- Select Product –  Pack – Price --</option>`;
-        productOptions.forEach(function (p) {
-            const label = `${p.product_name} – ${p.pack_name} – ${p.price_name} (Qty: ${p.avail_qty})`;
-            const sel   = selectedPrId == p.purchase_request_id ? 'selected' : '';
-            opts += `<option value="${p.purchase_request_id}" ${sel}
-                        data-product-id="${p.product_id}"
-                        data-product-name="${p.product_name}"
-                        data-pack-id="${p.pack_id}"
-                        data-pack-name="${p.pack_name}"
-                        data-price-id="${p.price_id}"
-                        data-price-name="${p.price_name}"
-                        data-brand-id="${p.brand_id ?? ''}"
-                        data-avail-qty="${p.avail_qty}"
-                        data-unit-value="${p.unit_value ?? p.price_name}"
-                    >${label}</option>`;
-        });
+        let opts = `<option value=""></option>`;
+
+        const regular = productOptions.filter(p => p.type === 'regular');
+        const inhouse = productOptions.filter(p => p.type === 'inhouse');
+
+        if (regular.length) {
+            opts += `<optgroup label="— Regular Products —">`;
+            regular.forEach(function (p) {
+                const label = `${p.product_name} – ${p.pack_name} – ${p.price_name} (Qty: ${p.avail_qty})`;
+                const sel   = selectedPrId == p.purchase_request_id ? 'selected' : '';
+                opts += `<option value="${p.purchase_request_id}" ${sel}
+                            data-product-id="${p.product_id}"
+                            data-product-name="${p.product_name}"
+                            data-pack-id="${p.pack_id}"
+                            data-pack-name="${p.pack_name}"
+                            data-price-id="${p.price_id}"
+                            data-price-name="${p.price_name}"
+                            data-brand-id="${p.brand_id ?? ''}"
+                            data-avail-qty="${p.avail_qty}"
+                            data-unit-value="${p.unit_value ?? p.price_name}"
+                        >${label}</option>`;
+            });
+            opts += `</optgroup>`;
+        }
+
+        if (inhouse.length) {
+            opts += `<optgroup label="— Inhouse Products —">`;
+            inhouse.forEach(function (p) {
+                const label = `[Inhouse] ${p.product_name} – ${p.pack_name} – ${p.price_name}`;
+                opts += `<option value="" disabled
+                            data-product-name="${p.product_name}"
+                        >${label}</option>`;
+            });
+            opts += `</optgroup>`;
+        }
+
         return opts;
     }
 
@@ -131,6 +151,11 @@ $(document).ready(function () {
             </tr>`;
         $('#itemsBody').append(row);
         $(`#product_select_${id}`).select2({ placeholder: '-- Select Product – Pack – Price --', width: '100%' });
+        $(`#product_select_${id}`).on('select2:open', function () {
+            setTimeout(function () {
+                $('.select2-results__options').scrollTop(0);
+            }, 0);
+        });
     }
 
     $('#addRow').on('click', addRow);

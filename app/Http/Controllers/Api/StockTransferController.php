@@ -151,6 +151,9 @@ class StockTransferController extends Controller
                 foreach ([$t->from_store_id, $t->to_store_id] as $sid) {
                     if (!isset($storeCache[$sid])) {
                         $s = DB::table('store')->where('id', $sid)->first();
+                        if (!$s) {
+                            $s = DB::connection('remote_mysql')->table('store')->where('id', $sid)->first();
+                        }
                         $storeCache[$sid] = $s?->name ?? "Store #{$sid}";
                     }
                 }
@@ -186,8 +189,10 @@ class StockTransferController extends Controller
             }
 
             $items     = DB::table('stock_transfer_items')->where('transfer_id', $id)->get();
-            $fromStore = DB::table('store')->where('id', $transfer->from_store_id)->first();
-            $toStore   = DB::table('store')->where('id', $transfer->to_store_id)->first();
+            $fromStore = DB::table('store')->where('id', $transfer->from_store_id)->first()
+                ?? DB::connection('remote_mysql')->table('store')->where('id', $transfer->from_store_id)->first();
+            $toStore   = DB::table('store')->where('id', $transfer->to_store_id)->first()
+                ?? DB::connection('remote_mysql')->table('store')->where('id', $transfer->to_store_id)->first();
 
             return response()->json([
                 'status' => 200,

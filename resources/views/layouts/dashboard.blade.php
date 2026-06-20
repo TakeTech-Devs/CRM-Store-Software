@@ -57,7 +57,7 @@
 
     <script>
         $(document).ready(function(){
-            $("select").select2();
+            $("select:not(.select2-manual)").select2();
         });
     </script>
 

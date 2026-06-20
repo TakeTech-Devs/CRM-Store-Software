@@ -132,7 +132,7 @@ $(document).ready(function () {
                 let html = '';
                 res.data.forEach(function (t, idx) {
                     const statusBadge = t.status === 'received'
-                        ? `<span class="badge badge-received">Received</span>`
+                        ? `<span class="badge badge-received">${type === 'sent' ? 'Sent' : 'Received'}</span>`
                         : `<span class="badge badge-pending">Pending</span>`;
 
                     html += `
@@ -194,7 +194,7 @@ $(document).ready(function () {
             $('#modal_to').text(d.to_store_name);
             $('#modal_date').text(d.transfer.transfer_date);
             const statusBadge = d.transfer.status === 'received'
-                ? `<span class="badge badge-received">Received</span>`
+                ? `<span class="badge badge-received">${currentType === 'sent' ? 'Sent' : 'Received'}</span>`
                 : `<span class="badge badge-pending">Pending</span>`;
             $('#modal_status').html(statusBadge);
             $('#modal_received_at').text(d.transfer.received_at ?? '–');

@@ -41,8 +41,9 @@
                     <div class="form-group">
                         <label for="staff_phone">Staff Phone Number</label>
                         <div class="form-group d-flex align-items-center">
-                            <input type="text" list="staff_phones" name="staff_phone" id="staff_phone" class="form-control" placeholder="Enter or choose staff phone number...">
-                            <datalist id="staff_phones"></datalist>
+                            <select name="staff_phone" id="staff_phone" class="form-control select2-manual" style="width:100%">
+                                <option value="">Enter or choose staff phone number...</option>
+                            </select>
                             <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addStaff">
                                 <i class="fas fa-plus"></i>
                             </button>
@@ -331,12 +332,36 @@
     $(document).ready(function () {
         count = 1;
         addNewRow(count);
-        staffData(null);
-        doctorData();
 
-        $(document).on('blur', '#staff_phone', function () {
-            staffData(this.value);
+        $('#staff_phone').select2({
+            placeholder: 'Enter or choose staff phone number...',
+            allowClear: true,
+            width: '100%',
+            tags: true,
+            createTag: function (params) {
+                const term = $.trim(params.term);
+                if (!term) return null;
+                return { id: term, text: term, newTag: true };
+            },
         });
+        $('#staff_phone').on('change', function () {
+            const phone = $(this).val();
+            if (!phone) { $('#staff_name').val(''); return; }
+            const opt = $(this).find('option:selected');
+            const isNew = opt.data('select2-tag') === true;
+            if (isNew) {
+                $('#staff_name').val('');
+                $('#addStaff').modal('show');
+                $('#staff_modal_phone').val(phone);
+                $('#staff_modal_name').focus();
+            } else {
+                const parts = opt.text().split(' — ');
+                $('#staff_name').val(parts.length > 1 ? parts.slice(1).join(' — ') : '');
+            }
+        });
+
+        staffData();
+        doctorData();
 
         $(document).on('change', '.product-pack-price', function () {
             const count = $(this).data('count');
@@ -462,7 +487,12 @@
                 },
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
-                    staffData(null);
+                    const newPhone = $('#staff_modal_phone').val();
+                    const newName  = $('#staff_modal_name').val();
+                    staffData(function () {
+                        $('#staff_phone').val(newPhone).trigger('change.select2');
+                        $('#staff_name').val(newName);
+                    });
                     $('#addStaffForm')[0].reset();
                     Swal.fire({ title: "Staff!", icon: "success", text: "Staff Added Successfully." });
                     $('#addStaff').modal('hide');
@@ -520,26 +550,15 @@
         calculateTotalAmount();
     });
 
-    function staffData(phone) {
-        if (phone) {
-            ajaxGetData(`/staffs?phone=${phone}`, (res) => {
-                if (res?.data && res.data.length > 0) {
-                    $('#staff_name').val(res?.data[0]?.name || '');
-                } else {
-                    $('#addStaff').modal('show');
-                    $('#staff_modal_phone').val(phone);
-                    $('#staff_modal_name').focus();
-                }
+    function staffData(callback) {
+        ajaxGetData('/staffs', (res) => {
+            const staffs = res?.data || [];
+            $('#staff_phone').find('option:not(:first)').remove();
+            staffs.forEach(s => {
+                $('#staff_phone').append(`<option value="${s.phone}">${s.phone} — ${s.name}</option>`);
             });
-        } else {
-            ajaxGetData('/staffs', (res) => {
-                const datalist = $('#staff_phones');
-                datalist.empty();
-                res?.data?.forEach(element => {
-                    datalist.append(`<option value="${element.phone}">`);
-                });
-            });
-        }
+            if (typeof callback === 'function') callback();
+        });
     }
 
     function doctorData() {
