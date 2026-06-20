@@ -184,26 +184,30 @@ class StaffBilling extends Controller
 
     public function create_staff(Request $request){
         try {
+            if (empty($request->stf_id)) {
+                return response()->json(['status' => 422, 'data' => 'Company Staff ID is required.'], 422);
+            }
+
+            $store    = DB::table('store')->first();
+            $storeKey = $store->id ?? 0;
+
             $payload = [
-                'name'=>$request->name,
-                'mail'=>$request->mail,
-                'phone'=>$request->phone,
-                'status'=>$request->status,
+                'stf_id'     => $request->stf_id,
+                'store_id'   => $storeKey,
+                'name'       => $request->name,
+                'mail'       => $request->mail,
+                'phone'      => $request->phone,
+                'status'     => $request->status,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
 
             $staff = Staff::insert($payload);
             if ($staff) {
-                return response()->json([
-                    'status'=>200,
-                    'data'=>$staff
-                ],200);
+                return response()->json(['status' => 200, 'data' => $request->stf_id], 200);
             }
-            else{
-                return response()->json([
-                    'status'=>404,
-                    'data'=>'No records found'
-                ],404);
-            }
+
+            return response()->json(['status' => 404, 'data' => 'Failed to create staff'], 404);
         } catch (\Throwable $th) {
             throw $th;
         }

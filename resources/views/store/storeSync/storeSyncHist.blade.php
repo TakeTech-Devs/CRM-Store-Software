@@ -128,7 +128,7 @@ const syncErrors = [];
 function getSyncHist(startDate = '', endDate = '') {
     const url = `/api/get/sync/history?start_date=${startDate}&end_date=${endDate}`;
     ajaxGetData(url, function (response) {
-        const rows = response?.data ?? [];
+        const rows = Array.isArray(response?.data) ? response.data : [];
         $('#syncData').empty();
         syncErrors.length = 0; // reset on each load
 

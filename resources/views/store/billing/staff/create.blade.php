@@ -144,6 +144,10 @@
             <div class="modal-body">
                 <form id="addStaffForm" class="container">
                     <div class="form-group">
+                        <label for="staff_modal_stf_id">Company Staff ID</label>
+                        <input type="text" class="form-control" id="staff_modal_stf_id" name="stf_id" placeholder="e.g. EMP-001" required>
+                    </div>
+                    <div class="form-group">
                         <label for="staff_modal_name">Staff Name</label>
                         <input type="text" class="form-control" id="staff_modal_name" name="name" required>
                     </div>
@@ -450,6 +454,7 @@
                 url: '/api/staff',
                 type: 'POST',
                 data: {
+                    stf_id: $('#staff_modal_stf_id').val(),
                     name: $('#staff_modal_name').val(),
                     mail: $('#staff_modal_mail').val(),
                     phone: $('#staff_modal_phone').val(),
@@ -458,11 +463,13 @@
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
                     staffData(null);
+                    $('#addStaffForm')[0].reset();
                     Swal.fire({ title: "Staff!", icon: "success", text: "Staff Added Successfully." });
                     $('#addStaff').modal('hide');
                 },
                 error: function (xhr) {
-                    alert('An error occurred: ' + xhr.responseText);
+                    const msg = xhr.responseJSON?.data || 'An error occurred.';
+                    Swal.fire({ title: 'Error', icon: 'error', text: msg });
                 }
             });
         });

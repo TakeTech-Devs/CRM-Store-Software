@@ -352,7 +352,7 @@ $(document).ready(function () {
 
     // Last sync
     $.get('/api/get/sync/history', function (r) {
-        const rows = r?.data || [];
+        const rows = Array.isArray(r?.data) ? r.data : [];
         if (!rows.length) { $('#lastSyncPanel').html('<p class="text-muted mb-0" style="font-size:.8rem">No sync records.</p>'); return; }
         const last = rows[0];
         const isOk = (last.sync_status||'').toLowerCase()==='succeed';
@@ -362,7 +362,7 @@ $(document).ready(function () {
                 <span style="font-size:.8rem;color:#64748b">${last.sync_type||'Sync'} &nbsp;·&nbsp; ${d}</span>
                 <span style="font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:8px;background:${isOk?'#f0fdf4':'#fef2f2'};color:${isOk?'#16a34a':'#dc2626'}">${isOk?'Succeed':'Failed'}</span>
             </div>
-            <p style="font-size:.73rem;color:#94a3b8;margin:4px 0 0">Total records: ${rows.length}</p>
+            <p style="font-size:.73rem;color:#94a3b8;margin:4px 0 0">Total syncs: ${rows.length}</p>
         `);
     });
 

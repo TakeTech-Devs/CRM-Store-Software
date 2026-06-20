@@ -466,7 +466,8 @@ class DataFetchController extends Controller
                 'pack' => $this->syncRemoteTable('pack', ['id', 'pack_name', 'status', 'created_at', 'updated_at']),
                 'price' => $this->syncRemoteTable('price', ['id', 'price_name', 'created_at', 'updated_at']),
                 'product' => $this->syncRemoteTable('product', ['id', 'product_name', 'brand_id', 'category_id', 'sub_category_id', 'hsn_code', 'gst', 'status', 'created_at', 'updated_at']),
-                'customer' => $this->syncRemoteTable('customer', ['id', 'name', 'mail', 'phone', 'status', 'created_at', 'updated_at']),
+                'customer' => $this->syncCustomerTable(),
+                'staff'  => $this->syncStaffTable(),
                 'doctor' => $this->syncRemoteTable('doctor', ['id', 'name', 'mail', 'phone', 'degree', 'status', 'created_at', 'updated_at']),
                 'inhouse_product' => $this->syncRemoteTable('inhouse_product', ['id', 'product_name', 'price', 'category_id', 'sub_category_id', 'pack_id', 'status', 'created_at', 'updated_at']),
             ];
@@ -523,6 +524,60 @@ class DataFetchController extends Controller
         }
 
         return $rows->count();
+    }
+
+    private function syncStaffTable(): int
+    {
+        $remoteRows = DB::connection('remote_mysql')
+            ->table('staff')
+            ->select(['stf_id', 'store_id', 'name', 'mail', 'phone', 'status', 'created_at', 'updated_at'])
+            ->whereNotNull('stf_id')
+            ->get();
+
+        foreach ($remoteRows as $row) {
+            DB::table('staff')->updateOrInsert(
+                ['store_id' => $row->store_id, 'phone' => $row->phone],
+                $this->onlyExistingColumns('staff', [
+                    'stf_id'     => $row->stf_id,
+                    'store_id'   => $row->store_id,
+                    'name'       => $row->name,
+                    'mail'       => $row->mail,
+                    'phone'      => $row->phone,
+                    'status'     => $row->status,
+                    'created_at' => $row->created_at ?? now(),
+                    'updated_at' => $row->updated_at ?? now(),
+                ])
+            );
+        }
+
+        return $remoteRows->count();
+    }
+
+    private function syncCustomerTable(): int
+    {
+        $remoteRows = DB::connection('remote_mysql')
+            ->table('customer')
+            ->select(['cus_id', 'store_id', 'name', 'mail', 'phone', 'status', 'created_at', 'updated_at'])
+            ->whereNotNull('cus_id')
+            ->get();
+
+        foreach ($remoteRows as $row) {
+            DB::table('customer')->updateOrInsert(
+                ['store_id' => $row->store_id, 'phone' => $row->phone],
+                $this->onlyExistingColumns('customer', [
+                    'cus_id'     => $row->cus_id,
+                    'store_id'   => $row->store_id,
+                    'name'       => $row->name,
+                    'mail'       => $row->mail,
+                    'phone'      => $row->phone,
+                    'status'     => $row->status,
+                    'created_at' => $row->created_at ?? now(),
+                    'updated_at' => $row->updated_at ?? now(),
+                ])
+            );
+        }
+
+        return $remoteRows->count();
     }
 
     private function syncStoreAssignments(object $remoteStore, string $storeMetaId): array
@@ -717,91 +772,112 @@ class DataFetchController extends Controller
     {
         if (!$localStore) return 0;
 
-        $pendingTransfers = DB::connection('remote_mysql')
+        // Resolve this store's ID on the remote DB
+        $remoteStore = DB::connection('remote_mysql')
+            ->table('store')
+            ->where('store_meta_id', $localStore->store_meta_id)
+            ->first();
+
+        if (!$remoteStore) return 0;
+
+        // Remote stock_transfer is flat: id, stock_from, stock_to, product (product_id), qty, unit_value, discount, price
+        $remoteTransfers = DB::connection('remote_mysql')
             ->table('stock_transfer')
-            ->where('to_store_id', $localStore->id)
-            ->where('status', 'pending')
+            ->where('stock_to', $remoteStore->id)
             ->get();
+
+        if ($remoteTransfers->isEmpty()) return 0;
+
+        // Collect remote IDs that are already imported (stored as transfer_no 'RT-{id}')
+        $importedNos = DB::table('stock_transfer')
+            ->where('transfer_no', 'like', 'RT-%')
+            ->pluck('transfer_no')
+            ->map(fn($tn) => (int) str_replace('RT-', '', $tn))
+            ->toArray();
 
         $applied = 0;
 
-        foreach ($pendingTransfers as $transfer) {
-            $items = DB::connection('remote_mysql')
-                ->table('stock_transfer_items')
-                ->where('transfer_id', $transfer->id)
-                ->get();
+        foreach ($remoteTransfers as $transfer) {
+            if (in_array($transfer->id, $importedNos)) continue;
 
-            // Upsert the transfer record locally (use transfer_no as the natural key)
-            DB::table('stock_transfer')->updateOrInsert(
-                ['transfer_no' => $transfer->transfer_no],
-                $this->onlyExistingColumns('stock_transfer', [
-                    'transfer_no'   => $transfer->transfer_no,
-                    'from_store_id' => $transfer->from_store_id,
-                    'to_store_id'   => $transfer->to_store_id,
-                    'transfer_date' => $transfer->transfer_date,
-                    'status'        => 'received',
-                    'received_at'   => now(),
-                    'notes'         => $transfer->notes,
-                    'created_at'    => $transfer->created_at ?? now(),
-                    'updated_at'    => now(),
-                ])
-            );
+            $transferNo = 'RT-' . $transfer->id;
+            $productId  = $transfer->product ?? null;
 
-            $localTransfer = DB::table('stock_transfer')->where('transfer_no', $transfer->transfer_no)->first();
+            if (!$productId) continue;
 
-            foreach ($items as $item) {
-                // Upsert item locally
-                DB::table('stock_transfer_items')->updateOrInsert(
-                    ['transfer_id' => $localTransfer->id, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
-                    $this->onlyExistingColumns('stock_transfer_items', [
-                        'transfer_id'         => $localTransfer->id,
-                        'purchase_request_id' => $item->purchase_request_id,
-                        'product_id'          => $item->product_id,
-                        'product_name'        => $item->product_name,
-                        'pack_id'             => $item->pack_id,
-                        'pack_name'           => $item->pack_name,
-                        'price_id'            => $item->price_id,
-                        'brand_id'            => $item->brand_id ?? null,
-                        'unit_value'          => $item->unit_value,
-                        'qty'                 => $item->qty,
-                        'created_at'          => $item->created_at ?? now(),
-                        'updated_at'          => now(),
-                    ])
-                );
+            // Look up product details from local purchase_request for the same product
+            $localPR = DB::table('purchase_request')
+                ->where('product_id', $productId)
+                ->whereNotNull('pack_id')
+                ->whereNotNull('price_id')
+                ->first();
 
-                // Add to local purchase_request â€” find existing by product+pack+price
-                $existingPR = DB::table('purchase_request')
-                    ->where('product_id', $item->product_id)
-                    ->where('pack_id', $item->pack_id)
-                    ->where('price_id', $item->price_id)
-                    ->first();
+            $packId    = $localPR->pack_id    ?? 0;
+            $priceId   = $localPR->price_id   ?? 0;
+            $brandId   = $localPR->brand_id   ?? 1;
 
-                if ($existingPR) {
-                    DB::table('purchase_request')->where('id', $existingPR->id)->update([
-                        'qty'        => (string)((float)$existingPR->qty + (float)$item->qty),
-                        'updated_at' => now(),
-                    ]);
-                } else {
-                    DB::table('purchase_request')->insert($this->onlyExistingColumns('purchase_request', [
-                        'store_assign_id' => null,
-                        'transfer_id'     => $localTransfer->id,
-                        'brand_id'        => $item->brand_id ?? 1,
-                        'product_id'      => $item->product_id,
-                        'pack_id'         => $item->pack_id,
-                        'price_id'        => $item->price_id,
-                        'qty'             => $item->qty,
-                        'qty_left'        => $item->qty,
-                        'exp_date'        => date('Y-m-d', strtotime('+1 year')),
-                        'created_at'      => now(),
-                        'updated_at'      => now(),
-                    ]));
-                }
+            // Resolve display names from local tables if available
+            $product     = DB::table('product')->where('id', $productId)->first();
+            $productName = $product->product_name ?? ('Product #' . $productId);
+            $pack        = DB::table('pack')->where('id', $packId)->first();
+            $packName    = $pack->pack_name ?? '';
+
+            // Insert local transfer header
+            DB::table('stock_transfer')->insert([
+                'transfer_no'   => $transferNo,
+                'from_store_id' => $transfer->stock_from ?? 0,
+                'to_store_id'   => $localStore->id,
+                'transfer_date' => now()->toDateString(),
+                'status'        => 'received',
+                'received_at'   => now(),
+                'notes'         => null,
+                'created_at'    => $transfer->created_at ?? now(),
+                'updated_at'    => now(),
+            ]);
+
+            $localTransfer = DB::table('stock_transfer')->where('transfer_no', $transferNo)->first();
+
+            // Insert transfer item
+            DB::table('stock_transfer_items')->insert([
+                'transfer_id'  => $localTransfer->id,
+                'product_id'   => $productId,
+                'product_name' => $productName,
+                'pack_id'      => $packId,
+                'pack_name'    => $packName,
+                'price_id'     => $priceId,
+                'brand_id'     => $brandId,
+                'unit_value'   => $transfer->unit_value ?? 0,
+                'qty'          => $transfer->qty ?? 0,
+                'created_at'   => $transfer->created_at ?? now(),
+                'updated_at'   => now(),
+            ]);
+
+            // Update local stock
+            $existingPR = DB::table('purchase_request')
+                ->where('product_id', $productId)
+                ->first();
+
+            if ($existingPR) {
+                DB::table('purchase_request')->where('id', $existingPR->id)->update([
+                    'qty'        => (string)((float)$existingPR->qty + (float)($transfer->qty ?? 0)),
+                    'qty_left'   => (string)((float)($existingPR->qty_left ?? $existingPR->qty) + (float)($transfer->qty ?? 0)),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('purchase_request')->insert($this->onlyExistingColumns('purchase_request', [
+                    'store_assign_id' => null,
+                    'transfer_id'     => $localTransfer->id,
+                    'brand_id'        => $brandId,
+                    'product_id'      => $productId,
+                    'pack_id'         => $packId,
+                    'price_id'        => $priceId,
+                    'qty'             => $transfer->qty ?? 0,
+                    'qty_left'        => $transfer->qty ?? 0,
+                    'exp_date'        => date('Y-m-d', strtotime('+1 year')),
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ]));
             }
-
-            // Mark as received in admin DB
-            DB::connection('remote_mysql')->table('stock_transfer')
-                ->where('id', $transfer->id)
-                ->update(['status' => 'received', 'received_at' => now(), 'updated_at' => now()]);
 
             $applied++;
         }
@@ -848,13 +924,55 @@ class DataFetchController extends Controller
         return collect($tables)->pluck($tableKey)->toArray();
     }
 
+    private function pushStaffToAdmin($adminDB): int
+    {
+        if (!$adminDB->getSchemaBuilder()->hasTable('staff')) return 0;
+
+        $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing('staff');
+        $localStaff   = DB::table('staff')->whereNotNull('stf_id')->get();
+
+        foreach ($localStaff as $staff) {
+            $payload = array_intersect_key((array) $staff, array_flip($adminColumns));
+            unset($payload['id']); // never overwrite admin's PK
+            $adminDB->table('staff')->updateOrInsert(
+                ['store_id' => $staff->store_id, 'phone' => $staff->phone],
+                $payload
+            );
+        }
+
+        return $localStaff->count();
+    }
+
+    private function pushCustomersToAdmin($adminDB): int
+    {
+        if (!$adminDB->getSchemaBuilder()->hasTable('customer')) return 0;
+
+        $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing('customer');
+        $localCustomers = DB::table('customer')->whereNotNull('cus_id')->get();
+
+        foreach ($localCustomers as $customer) {
+            $payload = array_intersect_key((array) $customer, array_flip($adminColumns));
+            unset($payload['id']); // never overwrite admin's PK
+            $adminDB->table('customer')->updateOrInsert(
+                ['store_id' => $customer->store_id, 'phone' => $customer->phone],
+                $payload
+            );
+        }
+
+        return $localCustomers->count();
+    }
+
     public function sendDataToAdminDatabase(Request $request, $storeId)
     {
         DB::beginTransaction();
         try {
             $adminDB = DB::connection('remote_mysql');
 
-            // Only billing tables are sent to admin â€” everything else is admin's source of truth.
+            // Push customers and staff first — billing references them on admin.
+            $summary['customer'] = $this->pushCustomersToAdmin($adminDB);
+            $summary['staff']    = $this->pushStaffToAdmin($adminDB);
+
+            // Only billing tables are sent to admin — everything else is admin's source of truth.
             // Parent must come before child to satisfy foreign key constraints on upsert.
             $billingTables = [
                 'customer_billing',
@@ -1137,32 +1255,45 @@ class DataFetchController extends Controller
         }
     }
     public function verifyStore(Request $request){
-        // Fetch store data
-        $store_meta_id = $request->get('storeId');
-        $store_passkey= $request->get('storePassKey');
-        $store_mail= $request->get('storeMail');
-        $remoteDataStore = DB::connection('remote_mysql')->table('store')->where('store_meta_id', $store_meta_id)->first();
-        if($store_passkey==$remoteDataStore->store_pass_key && $store_mail==$remoteDataStore->store_mail){
-            $createStore=Store::create([
-                "id"=> $remoteDataStore->id,
-                "name" => $remoteDataStore->name,
-                "store_address" => $remoteDataStore->store_address,
-                "dl_number" => $remoteDataStore->dl_number,
-                "helpline_number" => $remoteDataStore->helpline_number,
-                "store_mail" => $remoteDataStore->store_mail,
-                "store_start_date" => $remoteDataStore->store_start_date,
-                "store_meta_id" => $remoteDataStore->store_meta_id,
-                "store_pass_key" => $remoteDataStore->store_pass_key,
-                "store_status" => $remoteDataStore->store_status,
-                "store_verify_status" => 1
-            ]);
-            if($createStore){
-                redirect('/login-page');
+        try {
+            $store_meta_id = $request->get('storeId');
+            $store_passkey = $request->get('storePassKey');
+            $store_mail    = $request->get('storeMail');
+
+            $remoteDataStore = DB::connection('remote_mysql')->table('store')->where('store_meta_id', $store_meta_id)->first();
+
+            if (!$remoteDataStore) {
+                return response()->json(['success' => false, 'message' => 'Store not found.'], 404);
             }
-        }else{
-            return 'Enter Credentials Correctly';
+
+            if ($store_passkey !== $remoteDataStore->store_pass_key || $store_mail !== $remoteDataStore->store_mail) {
+                return response()->json(['success' => false, 'message' => 'Invalid Store ID, Pass Key or Email.'], 401);
+            }
+
+            // Check if already set up
+            $existing = DB::table('store')->where('store_meta_id', $store_meta_id)->exists();
+            if ($existing) {
+                return response()->json(['success' => false, 'message' => 'Store is already verified and set up.'], 409);
+            }
+
+            Store::create([
+                "id"                 => $remoteDataStore->id,
+                "name"               => $remoteDataStore->name,
+                "store_address"      => $remoteDataStore->store_address,
+                "dl_number"          => $remoteDataStore->dl_number,
+                "helpline_number"    => $remoteDataStore->helpline_number,
+                "store_mail"         => $remoteDataStore->store_mail,
+                "store_start_date"   => $remoteDataStore->store_start_date,
+                "store_meta_id"      => $remoteDataStore->store_meta_id,
+                "store_pass_key"     => $remoteDataStore->store_pass_key,
+                "store_status"       => $remoteDataStore->store_status,
+                "store_verify_status"=> 1,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Store verified successfully.'], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['success' => false, 'message' => 'Verification failed: ' . $th->getMessage()], 500);
         }
-        
     }
 
 }

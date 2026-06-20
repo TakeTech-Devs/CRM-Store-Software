@@ -604,6 +604,10 @@
 
         document.body.innerHTML = originalContent;
 
+        // Remove stale backdrop that was captured in originalContent
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css('padding-right', '');
+
         $('#printModal').modal('show');
     }
 

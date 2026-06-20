@@ -193,26 +193,39 @@ class CustomerBilling extends Controller
 
     public function create_customer(Request $request){
         try {
+            // Single-store local DB — always exactly one row in store table
+            $store = DB::table('store')->first();
+            $storeKey = $store->id ?? 0;
+
+            // Generate globally unique cus_id: CUS-{storeKey}-{00001}
+            $last = DB::table('customer')
+                ->where('cus_id', 'like', "CUS-{$storeKey}-%")
+                ->orderByDesc('id')
+                ->value('cus_id');
+
+            $next  = $last ? ((int) explode('-', $last)[2]) + 1 : 1;
+            $cusId = 'CUS-' . $storeKey . '-' . str_pad($next, 5, '0', STR_PAD_LEFT);
+
             $payload = [
-                'name'=>$request->name,
-                'mail'=>$request->mail,
-                'phone'=>$request->phone,
-                'status'=>$request->status,
+                'cus_id'     => $cusId,
+                'store_id'   => $storeKey,
+                'name'       => $request->name,
+                'mail'       => $request->mail,
+                'phone'      => $request->phone,
+                'status'     => $request->status,
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
 
             $customer = Customer::insert($payload);
             if ($customer) {
                 return response()->json([
-                    'status'=>200,
-                    'data'=>$customer
-                ],200);
+                    'status' => 200,
+                    'data'   => $cusId,
+                ], 200);
             }
-            else{
-                return response()->json([
-                    'status'=>404,
-                    'data'=>'No records found'
-                ],404);
-            }
+
+            return response()->json(['status' => 404, 'data' => 'Failed to create customer'], 404);
         } catch (\Throwable $th) {
             throw $th;
         }
