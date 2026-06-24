@@ -985,12 +985,13 @@ class DataFetchController extends Controller
         DB::beginTransaction();
         try {
             $adminDB = DB::connection('remote_mysql');
+            $adminDB->statement('SET FOREIGN_KEY_CHECKS=0');
 
-            // Push customers and staff first — billing references them on admin.
+            // Push customers and staff first - billing references them on admin.
             $summary['customer'] = $this->pushCustomersToAdmin($adminDB);
             $summary['staff']    = $this->pushStaffToAdmin($adminDB);
 
-            // Only billing tables are sent to admin — everything else is admin's source of truth.
+            // Only billing tables are sent to admin - everything else is admin's source of truth.
             // Parent must come before child to satisfy foreign key constraints on upsert.
             $billingTables = [
                 'customer_billing',
@@ -1005,12 +1006,12 @@ class DataFetchController extends Controller
 
             foreach ($billingTables as $table) {
                 if (!Schema::hasTable($table)) {
-                    \Log::warning(“Local table {$table} does not exist, skipping.”);
+                    \Log::warning('Local table ' . $table . ' does not exist, skipping.');
                     continue;
                 }
 
                 if (!$adminDB->getSchemaBuilder()->hasTable($table)) {
-                    \Log::warning(“Admin table {$table} does not exist, skipping.”);
+                    \Log::warning('Admin table ' . $table . ' does not exist, skipping.');
                     continue;
                 }
 
@@ -1031,10 +1032,11 @@ class DataFetchController extends Controller
                         $missingParents = DB::table('stock_transfer')
                             ->whereIn('id', $missingParentIds)
                             ->get()
-                            ->map(fn($r) => array_intersect_key((array) $r, array_flip($parentColumns)))
+                            ->map(function ($r) use ($parentColumns) { return array_intersect_key((array) $r, array_flip($parentColumns)); })
                             ->toArray();
                         if (!empty($missingParents)) {
-                            $adminDB->table('stock_transfer')->upsert($missingParents, ['id'], array_keys($missingParents[0]));
+                            $parentUpdateCols = array_values(array_filter(array_keys($missingParents[0]), fn($k) => $k !== 'id'));
+                            $adminDB->table('stock_transfer')->upsert($missingParents, ['id'], $parentUpdateCols);
                         }
                     }
                 }
@@ -1057,16 +1059,18 @@ class DataFetchController extends Controller
                     return array_intersect_key((array) $row, array_flip($adminColumns));
                 })->toArray();
 
+                $updateColumns = array_values(array_filter(array_keys($dataArray[0]), fn($k) => $k !== 'id'));
                 $adminDB->table($table)->upsert(
                     $dataArray,
                     ['id'],
-                    array_keys($dataArray[0])
+                    $updateColumns
                 );
 
                 $summary[$table] = count($dataArray);
-                \Log::info(“Sync out: pushed {$table} — {$summary[$table]} record(s).”);
+                \Log::info('Sync out: pushed ' . $table . ' - ' . $summary[$table] . ' record(s).');
             }
 
+            $adminDB->statement('SET FOREIGN_KEY_CHECKS=1');
             $this->writeSyncHistory('Succeed', null, 'Sync Out');
             DB::commit();
 
@@ -1076,6 +1080,7 @@ class DataFetchController extends Controller
                 'summary' => $summary,
             ]);
         } catch (\Exception $e) {
+            try { DB::connection('remote_mysql')->statement('SET FOREIGN_KEY_CHECKS=1'); } catch (\Throwable $ignored) {}
             DB::rollBack();
             $this->writeSyncHistory('Failed', $e->getMessage(), 'Sync Out');
             \Log::error('Sync out failed: ' . $e->getMessage());
