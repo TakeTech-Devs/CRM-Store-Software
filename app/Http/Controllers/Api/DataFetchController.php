@@ -1005,46 +1005,12 @@ class DataFetchController extends Controller
             $summary = [];
 
             foreach ($billingTables as $table) {
-                if (!Schema::hasTable($table)) {
-                    \Log::warning('Local table ' . $table . ' does not exist, skipping.');
-                    continue;
-                }
-
-                if (!$adminDB->getSchemaBuilder()->hasTable($table)) {
-                    \Log::warning('Admin table ' . $table . ' does not exist, skipping.');
-                    continue;
-                }
+                if (!Schema::hasTable($table)) continue;
+                if (!$adminDB->getSchemaBuilder()->hasTable($table)) continue;
 
                 $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing($table);
-
-                // For stock_transfer_items: also include rows whose parent transfer
-                // is missing on admin (prevents FK violation when items are newer than the header).
-                if ($table === 'stock_transfer_items') {
-                    $adminTransferIds = $adminDB->table('stock_transfer')->pluck('id')->toArray();
-                    $missingParentIds = DB::table('stock_transfer_items')
-                        ->whereNotIn('transfer_id', $adminTransferIds)
-                        ->pluck('transfer_id')
-                        ->unique()
-                        ->toArray();
-
-                    if (!empty($missingParentIds)) {
-                        $parentColumns = $adminDB->getSchemaBuilder()->getColumnListing('stock_transfer');
-                        $missingParents = DB::table('stock_transfer')
-                            ->whereIn('id', $missingParentIds)
-                            ->get()
-                            ->map(function ($r) use ($parentColumns) { return array_intersect_key((array) $r, array_flip($parentColumns)); })
-                            ->toArray();
-                        if (!empty($missingParents)) {
-                            $parentUpdateCols = array_values(array_filter(array_keys($missingParents[0]), fn($k) => $k !== 'id'));
-                            $adminDB->table('stock_transfer')->upsert($missingParents, ['id'], $parentUpdateCols);
-                        }
-                    }
-                }
-
                 $lastSyncedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
-
-                // Also include rows whose ID doesn't exist on admin yet (avoids missing rows
-                // whose updated_at is older than admin's max due to clock skew or re-runs).
+                $adminTransferNos = $adminDB->table('stock_transfer')->pluck('transfer_no')->toArray();
                 $adminIds    = $adminDB->table($table)->pluck('id')->toArray();
                 $updatedRows = DB::table($table)->where('updated_at', '>', $lastSyncedAt)->get();
                 $missingRows = DB::table($table)->whereNotIn('id', $adminIds)->get();
@@ -1055,18 +1021,58 @@ class DataFetchController extends Controller
                     continue;
                 }
 
-                $dataArray = $newRows->map(function ($row) use ($adminColumns) {
-                    return array_intersect_key((array) $row, array_flip($adminColumns));
-                })->toArray();
+                if ($table === 'stock_transfer') {
+                    // Use transfer_no as the business key — local id and admin id diverge.
+                    foreach ($newRows as $row) {
+                        $data = array_intersect_key((array) $row, array_flip($adminColumns));
+                        unset($data['id']);
+                        $adminDB->table('stock_transfer')->updateOrInsert(
+                            ['transfer_no' => $row->transfer_no],
+                            $data
+                        );
+                    }
+                    $summary[$table] = $newRows->count();
 
-                $updateColumns = array_values(array_filter(array_keys($dataArray[0]), fn($k) => $k !== 'id'));
-                $adminDB->table($table)->upsert(
-                    $dataArray,
-                    ['id'],
-                    $updateColumns
-                );
+                } elseif ($table === 'stock_transfer_items') {
+                    // Build local_id -> admin_id map via transfer_no
+                    $localTransfers = DB::table('stock_transfer')->get()->keyBy('id');
+                    $transferIdMap  = [];
+                    foreach ($localTransfers as $localId => $lt) {
+                        $adminTransfer = $adminDB->table('stock_transfer')
+                            ->where('transfer_no', $lt->transfer_no)
+                            ->first();
+                        if ($adminTransfer) {
+                            $transferIdMap[$localId] = $adminTransfer->id;
+                        }
+                    }
 
-                $summary[$table] = count($dataArray);
+                    $pushed = 0;
+                    foreach ($newRows as $item) {
+                        $adminTransferId = $transferIdMap[$item->transfer_id] ?? null;
+                        if (!$adminTransferId) continue;
+
+                        $data = array_intersect_key((array) $item, array_flip($adminColumns));
+                        unset($data['id']);
+                        $data['transfer_id'] = $adminTransferId;
+
+                        $adminDB->table('stock_transfer_items')->updateOrInsert(
+                            ['transfer_id' => $adminTransferId, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
+                            $data
+                        );
+                        $pushed++;
+                    }
+                    $summary[$table] = $pushed;
+
+                } else {
+                    $dataArray = $newRows->map(function ($row) use ($adminColumns) {
+                        return array_intersect_key((array) $row, array_flip($adminColumns));
+                    })->toArray();
+
+                    $updateColumns = array_values(array_filter(array_keys($dataArray[0]), function ($k) { return $k !== 'id'; }));
+                    $adminDB->table($table)->upsert($dataArray, ['id'], $updateColumns);
+                    $summary[$table] = count($dataArray);
+                }
+
                 \Log::info('Sync out: pushed ' . $table . ' - ' . $summary[$table] . ' record(s).');
             }
 
