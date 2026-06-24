@@ -1005,19 +1005,48 @@ class DataFetchController extends Controller
 
             foreach ($billingTables as $table) {
                 if (!Schema::hasTable($table)) {
-                    \Log::warning("Local table {$table} does not exist, skipping.");
+                    \Log::warning(“Local table {$table} does not exist, skipping.”);
                     continue;
                 }
 
                 if (!$adminDB->getSchemaBuilder()->hasTable($table)) {
-                    \Log::warning("Admin table {$table} does not exist, skipping.");
+                    \Log::warning(“Admin table {$table} does not exist, skipping.”);
                     continue;
                 }
 
                 $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing($table);
+
+                // For stock_transfer_items: also include rows whose parent transfer
+                // is missing on admin (prevents FK violation when items are newer than the header).
+                if ($table === 'stock_transfer_items') {
+                    $adminTransferIds = $adminDB->table('stock_transfer')->pluck('id')->toArray();
+                    $missingParentIds = DB::table('stock_transfer_items')
+                        ->whereNotIn('transfer_id', $adminTransferIds)
+                        ->pluck('transfer_id')
+                        ->unique()
+                        ->toArray();
+
+                    if (!empty($missingParentIds)) {
+                        $parentColumns = $adminDB->getSchemaBuilder()->getColumnListing('stock_transfer');
+                        $missingParents = DB::table('stock_transfer')
+                            ->whereIn('id', $missingParentIds)
+                            ->get()
+                            ->map(fn($r) => array_intersect_key((array) $r, array_flip($parentColumns)))
+                            ->toArray();
+                        if (!empty($missingParents)) {
+                            $adminDB->table('stock_transfer')->upsert($missingParents, ['id'], array_keys($missingParents[0]));
+                        }
+                    }
+                }
+
                 $lastSyncedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
 
-                $newRows = DB::table($table)->where('updated_at', '>', $lastSyncedAt)->get();
+                // Also include rows whose ID doesn't exist on admin yet (avoids missing rows
+                // whose updated_at is older than admin's max due to clock skew or re-runs).
+                $adminIds    = $adminDB->table($table)->pluck('id')->toArray();
+                $updatedRows = DB::table($table)->where('updated_at', '>', $lastSyncedAt)->get();
+                $missingRows = DB::table($table)->whereNotIn('id', $adminIds)->get();
+                $newRows     = $updatedRows->merge($missingRows)->unique('id');
 
                 if ($newRows->isEmpty()) {
                     $summary[$table] = 0;
@@ -1035,7 +1064,7 @@ class DataFetchController extends Controller
                 );
 
                 $summary[$table] = count($dataArray);
-                \Log::info("Sync out: pushed {$table} â€” {$summary[$table]} record(s).");
+                \Log::info(“Sync out: pushed {$table} — {$summary[$table]} record(s).”);
             }
 
             $this->writeSyncHistory('Succeed', null, 'Sync Out');
