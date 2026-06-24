@@ -43,6 +43,7 @@ Route::get('/packs/{productId}', [DataController::class, 'packs_by_product']);
 // Stock Transfer, Stores, and BillingProductOptions are in web.php (need session)
 
 Route::get('/doctor', [ReportController::class, 'getDoctors']);
+Route::post('/doctor', [DoctorController::class, 'create']);
 Route::get('/doctor-report', [ReportController::class, 'doctorWiseReport'])->name('doctor.report');
 Route::get('/cumulative-report', [ReportController::class, 'getCumulativeSalesReport'])->name('cumulative.report');
 Route::get('/gst-report', [ReportController::class, 'gstReport'])->name('gst.report');

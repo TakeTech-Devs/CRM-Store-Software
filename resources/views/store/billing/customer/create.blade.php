@@ -431,18 +431,19 @@
                 });
             });
 
-            // ADD DOCTOR 
+            // ADD DOCTOR
             $('#addDoctorForm').on('submit', function(event) {
                 event.preventDefault();
+                const $form = $(this);
 
                 $.ajax({
-                    url: '/api/doctor', 
+                    url: '/api/doctor',
                     type: 'POST',
                     data: {
-                        name: $('#name').val(),
-                        mail: $('#mail').val(),
-                        phone: $('#phone').val(),
-                        degree: $('#degree').val(),
+                        name: $form.find('[name="name"]').val(),
+                        mail: $form.find('[name="mail"]').val(),
+                        phone: $form.find('[name="phone"]').val(),
+                        degree: $form.find('[name="degree"]').val(),
                         status: $('input[name="status"]:checked').val(),
                     },
                     headers: {
