@@ -6,17 +6,20 @@ color 0A
 set "PROJECT_DIR=%~dp0"
 cd /d "%PROJECT_DIR%"
 
-:: XAMPP paths
-set "PHP=C:\xampp\php\php.exe"
+:: XAMPP paths (for starting services)
 set "MYSQL=C:\xampp\mysql\bin\mysql.exe"
 set "MYSQLD=C:\xampp\mysql\bin\mysqld.exe"
 set "MYSQLADMIN=C:\xampp\mysql\bin\mysqladmin.exe"
 set "XAMPP_DIR=C:\xampp"
 
+:: Use php from system PATH (same as running manually in cmd)
+set "PHP=php"
+
 :: Check PHP exists
-if not exist "%PHP%" (
-    echo [ERROR] PHP not found at %PHP%
-    echo Please make sure XAMPP is installed.
+where php >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] PHP not found in PATH.
+    echo Please make sure XAMPP is installed and PHP is in your system PATH.
     pause
     exit /b 1
 )
