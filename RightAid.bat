@@ -29,18 +29,12 @@ if errorlevel 1 (
 )
 
 :: ─── FIRST RUN SETUP ───────────────────────────────────────────────
-if not exist "%PROJECT_DIR%.installed" (
+if not exist "%PROJECT_DIR%rightaid.installed" (
     echo [SETUP] First run detected. Setting up RightAid...
     echo.
 
     echo [1/5] Installing dependencies...
-    "%PHP%" -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" >nul 2>&1
-    if not exist "%PROJECT_DIR%composer.phar" (
-        echo [INFO] Downloading Composer...
-        "%PHP%" composer-setup.php --quiet
-        del composer-setup.php >nul 2>&1
-    )
-    "%PHP%" composer.phar install --no-interaction --prefer-dist --optimize-autoloader
+    composer install --no-interaction --prefer-dist --optimize-autoloader
     echo.
 
     echo [2/5] Setting up environment...
@@ -64,7 +58,7 @@ if not exist "%PROJECT_DIR%.installed" (
     echo.
 
     :: Write installed flag
-    echo installed > "%PROJECT_DIR%.installed"
+    type nul > "%PROJECT_DIR%rightaid.installed"
 
     echo [SETUP] Setup complete!
     echo.
