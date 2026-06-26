@@ -31,6 +31,16 @@
         <li class="nav-item">
             <a class="nav-link" href="#" data-type="received">Received</a>
         </li>
+        <li class="nav-item ml-auto">
+            <button class="btn btn-warning btn-sm" id="syncOutBtn" style="display:none;">
+                <span class="sync-label">Sync Out</span>
+                <span class="sync-spinner spinner-border spinner-border-sm ml-1" style="display:none;" role="status"></span>
+            </button>
+            <button class="btn btn-success btn-sm" id="syncInBtn" style="display:none;">
+                <span class="sync-label">Sync In</span>
+                <span class="sync-spinner spinner-border spinner-border-sm ml-1" style="display:none;" role="status"></span>
+            </button>
+        </li>
     </ul>
 
     {{-- Filters --}}
@@ -158,12 +168,58 @@ $(document).ready(function () {
         });
     }
 
+    const storeId = '{{ session('storeId') }}';
+
+    function setSyncButton(type) {
+        if (type === 'sent') {
+            $('#syncOutBtn').show();
+            $('#syncInBtn').hide();
+        } else {
+            $('#syncInBtn').show();
+            $('#syncOutBtn').hide();
+        }
+    }
+
+    function runSync(btn, url, label) {
+        btn.find('.sync-label').text('Syncing…');
+        btn.find('.sync-spinner').show();
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            success: function (res) {
+                const ok = res.success === true || res.resStatus === true;
+                Swal.fire(ok ? 'Success' : 'Warning', res.message || (ok ? label + ' completed.' : label + ' completed with issues.'), ok ? 'success' : 'warning');
+                loadTransfers(currentType, $('#start_date').val(), $('#end_date').val());
+            },
+            error: function (xhr) {
+                const msg = xhr.responseJSON?.message || 'Sync failed. Please try again.';
+                Swal.fire('Error', msg, 'error');
+            },
+            complete: function () {
+                btn.find('.sync-label').text(label);
+                btn.find('.sync-spinner').hide();
+                btn.prop('disabled', false);
+            }
+        });
+    }
+
+    $('#syncOutBtn').on('click', function () {
+        runSync($(this), '/sync/out/data/' + storeId, 'Sync Out');
+    });
+
+    $('#syncInBtn').on('click', function () {
+        runSync($(this), '/sync-data/' + storeId, 'Sync In');
+    });
+
     // Tab switching
     $('#transferTabs a').on('click', function (e) {
         e.preventDefault();
         $('#transferTabs a').removeClass('active');
         $(this).addClass('active');
         currentType = $(this).data('type');
+        setSyncButton(currentType);
         loadTransfers(currentType, $('#start_date').val(), $('#end_date').val());
     });
 
@@ -219,6 +275,7 @@ $(document).ready(function () {
     });
 
     // Initial load
+    setSyncButton(currentType);
     loadTransfers(currentType, '', '');
 });
 </script>
