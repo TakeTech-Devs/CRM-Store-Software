@@ -11,6 +11,7 @@ set "PHP=C:\xampp\php\php.exe"
 set "MYSQL=C:\xampp\mysql\bin\mysql.exe"
 set "MYSQLD=C:\xampp\mysql\bin\mysqld.exe"
 set "MYSQLADMIN=C:\xampp\mysql\bin\mysqladmin.exe"
+set "XAMPP_DIR=C:\xampp"
 
 :: Check PHP exists
 if not exist "%PHP%" (
@@ -18,6 +19,14 @@ if not exist "%PHP%" (
     echo Please make sure XAMPP is installed.
     pause
     exit /b 1
+)
+
+:: Start Apache if not already running
+tasklist /FI "IMAGENAME eq httpd.exe" 2>nul | find /I "httpd.exe" >nul
+if errorlevel 1 (
+    echo [INFO] Starting Apache...
+    start "" "%XAMPP_DIR%\apache\bin\httpd.exe"
+    timeout /t 2 >nul
 )
 
 :: Start MySQL if not already running
