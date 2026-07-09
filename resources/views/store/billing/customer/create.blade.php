@@ -4,8 +4,28 @@
 
 @section('content')
 <style>
-    .inhouse-row td { background: #f0fdf4 !important; }
-    .inhouse-row .avail-label { color: #16a34a !important; font-weight: 600; }
+    .inhouse-row .avail-label { color: #16a34a; font-weight: 600; }
+    .billing-header-section {
+        background: #fff8f5;
+        border: 1px solid #f0d5c8;
+        border-radius: 10px;
+        padding: 1.2rem 1.4rem 0.4rem;
+        margin-bottom: 1.2rem;
+    }
+    #dynamicForm { display: flex; flex-direction: column; gap: 6px; }
+    .product-tbody { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid #e5e5e5; }
+    .product-tbody:nth-child(odd)  { background-color: #ffffff; }
+    .product-tbody:nth-child(even) { background-color: #fdf4f0; }
+    .product-field { display: flex; flex-direction: column; min-width: 0; }
+    .product-field small { white-space: nowrap; }
+    .pf-brand    { flex: 0.8; }
+    .pf-product  { flex: 1.2; }
+    .pf-pack     { flex: 0.8; }
+    .pf-price    { flex: 0.7; }
+    .pf-unit     { flex: 0.4; }
+    .pf-qty      { flex: 0.5; }
+    .pf-discount { flex: 0.5; }
+    .pf-total    { flex: 0.6; }
     @media print {
         body * {
             border: none !important;
@@ -37,6 +57,7 @@
     <div class="mt-4 position-relative">
         <form id="customerBillingCreate">
             @csrf
+            <div class="billing-header-section">
             <div class="form-row mb-2">
                 <div class="col-md-6">
                     <div class="form-group">
@@ -102,12 +123,9 @@
                     </div>
                 </div>
             </div>
+            </div>{{-- end billing-header-section --}}
 
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dynamicForm">
-                    <!-- Head removed to save space and use inline labels -->
-                </table>
-            </div>
+            <div id="dynamicForm"></div>
 
             <button type="button" name="add_row" id="add_row"
                 class="btn btn-sm btn-secondary mb-3  mt-3 float-right ml-3">
@@ -275,51 +293,6 @@
             customerData()
             doctorData()
 
-            $(document).on('change', '.product-pack-price', function () {
-                const count = $(this).data('count');
-                const sel = $(this).find('option:selected');
-                const val = $(this).val();
-
-                if (!val) {
-                    $(`#product_name${count}`).val('');
-                    $(`#pr_id${count}`).val('');
-                    $(`#inhouse_id${count}`).val('');
-                    $(`#pack${count}`).val('');
-                    $(`#unit_value${count}`).val('');
-                    $(`#gstRate${count}`).val('');
-                    $(`#qty${count}`).val('');
-                    $(`#category${count}`).val('');
-                    $(`#subCategory${count}`).val('');
-                    $(`#avail_qty_text_${count}`).text('Available: -');
-                    $(`#assignQty${count}`).css('border-color', '');
-                    $(`#row_block_${count}`).removeClass('inhouse-row');
-                    return;
-                }
-
-                const isInhouse = sel.data('type') === 'inhouse';
-                $(`#pack${count}`).val(sel.data('pack-name'));
-                $(`#unit_value${count}`).val(sel.data('price'));
-                $(`#gstRate${count}`).val(sel.data('gst') || 0);
-                $(`#category${count}`).val(sel.data('category'));
-                $(`#subCategory${count}`).val(sel.data('sub-category'));
-                $(`#assignQty${count}`).css('border-color', '');
-
-                if (isInhouse) {
-                    $(`#product_name${count}`).val('');
-                    $(`#pr_id${count}`).val('');
-                    $(`#inhouse_id${count}`).val(sel.data('inhouse-id'));
-                    $(`#qty${count}`).val('');
-                    $(`#avail_qty_text_${count}`).text('Inhouse — no stock limit');
-                    $(`#row_block_${count}`).addClass('inhouse-row');
-                } else {
-                    $(`#product_name${count}`).val(sel.data('product-id'));
-                    $(`#pr_id${count}`).val(sel.data('pr-id'));
-                    $(`#inhouse_id${count}`).val('');
-                    $(`#qty${count}`).val(sel.data('qty'));
-                    $(`#avail_qty_text_${count}`).text('Available: ' + sel.data('qty'));
-                    $(`#row_block_${count}`).removeClass('inhouse-row');
-                }
-            });
 
 
 
@@ -512,49 +485,192 @@
             });
         }
 
-        function productData(count) {
+        // Brand options cache
+        let billingBrands = [];
+        function loadBrands(callback) {
+            if (billingBrands.length > 0) { callback(billingBrands); return; }
+            ajaxGetData('/billing/brands', (res) => {
+                billingBrands = res?.data || [];
+                callback(billingBrands);
+            });
+        }
+
+        function resetCascadeFrom(id, field) {
+            const fields = ['product', 'pack', 'price'];
+            fields.slice(fields.indexOf(field)).forEach(f => {
+                const sel = $(`#${f}_select${id}`);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.empty().append(`<option value="">Choose ${f.charAt(0).toUpperCase()+f.slice(1)}</option>`).prop('disabled', true);
+                sel.off('select2:select select2:clear');
+            });
+            $(`#unit_value${id}`).val('');
+            $(`#totalAmount${id}`).val('');
+            $(`#avail_qty_text_${id}`).text('-');
+            $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}`).val('');
+            $(`#assignQty${id}`).val('').css('border-color', '');
+            $(`#row_block_${id}`).removeClass('inhouse-row');
+        }
+
+        function populateBrandSelect(id) {
+            loadBrands((brands) => {
+                const sel = $(`#brand_select${id}`);
+                sel.empty().append('<option value="">Choose Brand</option>');
+                brands.forEach(b => sel.append(`<option value="${b.id}">${b.name}</option>`));
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Brand' });
+
+                sel.on('select2:select select2:clear', function () {
+                    const brandId = $(this).val();
+                    resetCascadeFrom(id, 'product');
+                    if (!brandId) return;
+                    loadProductsForBrand(id, brandId);
+                });
+            });
+        }
+
+        function loadProductsForBrand(id, brandId) {
             loadBillingProductOptions((options) => {
-                const sel = $(`#product_pack_price${count}`);
+                const sel = $(`#product_select${id}`);
                 sel.empty().append('<option value="">Choose Product</option>');
-
-                const regular = options.filter(o => o.type === 'regular');
-                const inhouse = options.filter(o => o.type === 'inhouse');
-
-                if (regular.length) {
-                    const grp = $('<optgroup label="— Regular Products —">');
-                    regular.forEach(opt => {
-                        grp.append(`<option value="${opt.purchase_request_id}"
-                            data-type="regular"
-                            data-product-id="${opt.product_id}"
-                            data-pack-name="${opt.pack_name}"
-                            data-price="${opt.price_name}"
-                            data-gst="${opt.gst}"
-                            data-qty="${opt.avail_qty}"
-                            data-category="${opt.category_name}"
-                            data-sub-category="${opt.sub_category_name}"
-                            data-pr-id="${opt.purchase_request_id}"
-                        >${opt.product_name} - ${opt.pack_name} - ₹${opt.price_name}</option>`);
+                const seen = new Set();
+                if (brandId === 'inhouse') {
+                    options.filter(o => o.type === 'inhouse').forEach(o => {
+                        if (!seen.has(o.inhouse_product_id)) {
+                            seen.add(o.inhouse_product_id);
+                            sel.append(`<option value="${o.inhouse_product_id}" data-type="inhouse">${o.product_name}</option>`);
+                        }
                     });
-                    sel.append(grp);
+                } else {
+                    options.filter(o => o.type === 'regular' && String(o.brand_id) === String(brandId)).forEach(o => {
+                        if (!seen.has(o.product_id)) {
+                            seen.add(o.product_id);
+                            sel.append(`<option value="${o.product_id}" data-type="regular">${o.product_name}</option>`);
+                        }
+                    });
                 }
+                sel.prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Product' });
+                sel.on('select2:select select2:clear', function () {
+                    const productVal = $(this).val();
+                    const type = $(this).find('option:selected').data('type');
+                    resetCascadeFrom(id, 'pack');
+                    if (!productVal) return;
+                    loadPacksForProduct(id, productVal, type, brandId);
+                });
+            });
+        }
 
-                if (inhouse.length) {
-                    const grp = $('<optgroup label="— Inhouse Products —">');
-                    inhouse.forEach(opt => {
-                        grp.append(`<option value="inhouse_${opt.inhouse_product_id}"
+        function loadPacksForProduct(id, productVal, type, brandId) {
+            loadBillingProductOptions((options) => {
+                const sel = $(`#pack_select${id}`);
+                sel.empty().append('<option value="">Choose Pack</option>');
+                let rows = type === 'inhouse'
+                    ? options.filter(o => o.type === 'inhouse' && String(o.inhouse_product_id) === String(productVal))
+                    : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.brand_id) === String(brandId));
+                const seen = new Set();
+                rows.forEach(o => {
+                    if (!seen.has(o.pack_id)) {
+                        seen.add(o.pack_id);
+                        sel.append(`<option value="${o.pack_id}">${o.pack_name}</option>`);
+                    }
+                });
+                sel.prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Pack' });
+                sel.on('select2:select select2:clear', function () {
+                    const packId = $(this).val();
+                    resetCascadeFrom(id, 'price');
+                    if (!packId) return;
+                    loadPricesForPack(id, productVal, packId, type, brandId);
+                });
+            });
+        }
+
+        function loadPricesForPack(id, productVal, packId, type, brandId) {
+            loadBillingProductOptions((options) => {
+                const sel = $(`#price_select${id}`);
+                sel.empty().append('<option value="">Choose Price</option>');
+                let rows = type === 'inhouse'
+                    ? options.filter(o => o.type === 'inhouse' && String(o.inhouse_product_id) === String(productVal) && String(o.pack_id) === String(packId))
+                    : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.pack_id) === String(packId) && String(o.brand_id) === String(brandId));
+                if (type === 'inhouse') {
+                    rows.forEach(o => {
+                        sel.append(`<option value="inhouse_${o.inhouse_product_id}"
                             data-type="inhouse"
-                            data-inhouse-id="${opt.inhouse_product_id}"
-                            data-pack-name="${opt.pack_name}"
-                            data-price="${opt.price_name}"
+                            data-price="${o.price_name}"
                             data-gst="0"
-                            data-category="${opt.category_name}"
-                            data-sub-category="${opt.sub_category_name}"
-                        >[Inhouse] ${opt.product_name} - ${opt.pack_name} - ₹${opt.price_name}</option>`);
+                            data-pack-name="${o.pack_name}"
+                            data-inhouse-id="${o.inhouse_product_id}"
+                            data-category="${o.category_name}"
+                            data-sub-category="${o.sub_category_name}"
+                        >&#8377;${o.price_name}</option>`);
                     });
-                    sel.append(grp);
+                } else {
+                    // Group batches by price_name — sum qty, collect all IDs
+                    const groups = {};
+                    rows.forEach(o => {
+                        const key = String(o.price_name);
+                        if (!groups[key]) {
+                            groups[key] = { price_name: o.price_name, gst: o.gst || 0, pack_name: o.pack_name, product_id: o.product_id, total_qty: 0, pr_ids: [], category_name: o.category_name, sub_category_name: o.sub_category_name };
+                        }
+                        groups[key].total_qty += (parseFloat(o.avail_qty) || 0);
+                        groups[key].pr_ids.push(o.purchase_request_id);
+                    });
+                    Object.values(groups).forEach(g => {
+                        sel.append(`<option value="${g.pr_ids[0]}"
+                            data-type="regular"
+                            data-price="${g.price_name}"
+                            data-gst="${g.gst}"
+                            data-qty="${g.total_qty}"
+                            data-pack-name="${g.pack_name}"
+                            data-product-id="${g.product_id}"
+                            data-pr-ids='${JSON.stringify(g.pr_ids)}'
+                            data-category="${g.category_name}"
+                            data-sub-category="${g.sub_category_name}"
+                        >&#8377;${g.price_name}</option>`);
+                    });
                 }
-
-                sel.select2({ width: '100%' });
+                sel.prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Price' });
+                sel.on('select2:select select2:clear', function () {
+                    const opt = $(this).find('option:selected');
+                    const val = $(this).val();
+                    if (!val) {
+                        $(`#unit_value${id}, #totalAmount${id}`).val('');
+                        $(`#avail_qty_text_${id}`).text('-');
+                        $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}, #category${id}, #subCategory${id}`).val('');
+                        $(`#assignQty${id}`).val('').css('border-color', '');
+                        $(`#row_block_${id}`).removeClass('inhouse-row');
+                        return;
+                    }
+                    const isInhouse = opt.data('type') === 'inhouse';
+                    $(`#pack${id}`).val(opt.data('pack-name'));
+                    $(`#unit_value${id}`).val(opt.data('price'));
+                    $(`#gstRate${id}`).val(opt.data('gst') || 0);
+                    $(`#assignQty${id}`).css('border-color', '');
+                    if (isInhouse) {
+                        $(`#product_name${id}`).val('');
+                        $(`#pr_ids${id}`).val('');
+                        $(`#inhouse_id${id}`).val(opt.data('inhouse-id'));
+                        $(`#qty${id}`).val('');
+                        $(`#category${id}`).val(opt.data('category') || '');
+                        $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+                        $(`#avail_qty_text_${id}`).text('Inhouse');
+                        $(`#row_block_${id}`).addClass('inhouse-row');
+                    } else {
+                        $(`#product_name${id}`).val(opt.data('product-id'));
+                        $(`#pr_ids${id}`).val(JSON.stringify(opt.data('pr-ids') || []));
+                        $(`#inhouse_id${id}`).val('');
+                        $(`#qty${id}`).val(opt.data('qty'));
+                        $(`#category${id}`).val(opt.data('category') || '');
+                        $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+                        $(`#avail_qty_text_${id}`).text('A: ' + opt.data('qty'));
+                        $(`#row_block_${id}`).removeClass('inhouse-row');
+                    }
+                    updateTotalForRow($(`#row_block_${id}`));
+                });
             });
         }
 
@@ -568,61 +684,69 @@
 
 
 
+
         function addNewRow(id) {
             const newTbody = `
-                <tbody class="product-tbody new-row" id="row_block_${id}">
-                    <!-- ROW 1 -->
-                    <tr>
-                        <td style="width: 40%" colspan="2">
-                            <small class="text-muted font-weight-bold">Product - Pack - Price</small>
-                            <input type="hidden" class="table-row-id row_id" value="${id}">
-                            <select class="form-control product-pack-price mt-1" data-count="${id}" name="productPackPrice[]" id="product_pack_price${id}">
-                                <option value="">Choose Product</option>
-                            </select>
-                            <!-- Hidden fields populated on selection -->
-                            <input type="hidden" name="productName[]" id="product_name${id}" />
-                            <input type="hidden" name="inhouse_product_id[]" id="inhouse_id${id}" />
-                            <input type="hidden" name="pack[]" id="pack${id}" />
-                            <input type="hidden" name="purchase_request_id[]" id="pr_id${id}" />
-                            <input type="hidden" name="total_qty[]" id="qty${id}" />
-                            <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
-                            <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
-                            <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
-                            <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
-                        </td>
-                        <td style="width: 30%">
-                            <small class="text-muted font-weight-bold">Category</small>
-                            <input type="text" class="form-control mt-1" name="category[]" id="category${id}" readonly />
-                        </td>
-                        <td style="width: 30%">
-                            <small class="text-muted font-weight-bold">Sub Category</small>
-                            <input type="text" class="form-control mt-1" name="subCategory[]" id="subCategory${id}" readonly />
-                        </td>
-                    </tr>
-                    <!-- ROW 2 -->
-                    <tr>
-                        <td>
-                            <small class="text-muted font-weight-bold">Unit Value</small>
-                            <input type="text" class="form-control mt-1" name="unit_value[]" id="unit_value${id}" readonly />
-                        </td>
-                        <td>
-                            <small class="text-muted font-weight-bold avail-label">Qty (<span id="avail_qty_text_${id}" class="text-info">Available: -</span>)</small>
-                            <input type="text" class="form-control mt-1" name="assignQty[]" id="assignQty${id}" placeholder="Qty" />
-                        </td>
-                        <td>
-                            <small class="text-muted font-weight-bold">Discount (%)</small>
-                            <input type="number" class="form-control mt-1" name="discount[]" id="discount${id}" value="0" />
-                        </td>
-                        <td>
-                            <small class="text-muted font-weight-bold">Total Amount</small>
-                            <input type="text" class="form-control mt-1" name="totalAmount[]" id="totalAmount${id}" readonly />
-                        </td>
-                    </tr>
-                </tbody>
+                <div class="product-tbody new-row" id="row_block_${id}">
+                    <input type="hidden" class="table-row-id row_id" value="${id}">
+                    <input type="hidden" name="productName[]" id="product_name${id}" />
+                    <input type="hidden" name="inhouse_product_id[]" id="inhouse_id${id}" />
+                    <input type="hidden" name="pack[]" id="pack${id}" />
+                    <input type="hidden" name="purchase_request_ids[]" id="pr_ids${id}" />
+                    <input type="hidden" name="category[]" id="category${id}" />
+                    <input type="hidden" name="subCategory[]" id="subCategory${id}" />
+                    <input type="hidden" name="total_qty[]" id="qty${id}" />
+                    <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
+                    <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
+                    <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
+                    <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
+
+                    <div class="product-field pf-brand">
+                        <small class="text-muted font-weight-bold">Brand</small>
+                        <select class="form-control brand-select mt-1" data-count="${id}" id="brand_select${id}">
+                            <option value="">Choose Brand</option>
+                        </select>
+                    </div>
+                    <div class="product-field pf-product">
+                        <small class="text-muted font-weight-bold">Product</small>
+                        <select class="form-control mt-1" data-count="${id}" id="product_select${id}" disabled>
+                            <option value="">Select brand first</option>
+                        </select>
+                    </div>
+                    <div class="product-field pf-pack">
+                        <small class="text-muted font-weight-bold">Pack</small>
+                        <select class="form-control mt-1" data-count="${id}" id="pack_select${id}" disabled>
+                            <option value="">Choose Pack</option>
+                        </select>
+                    </div>
+                    <div class="product-field pf-price">
+                        <small class="text-muted font-weight-bold">Price</small>
+                        <select class="form-control mt-1" data-count="${id}" id="price_select${id}" disabled>
+                            <option value="">Choose Price</option>
+                        </select>
+                    </div>
+                    <div class="product-field pf-unit">
+                        <small class="text-muted font-weight-bold">Unit Value</small>
+                        <input type="text" class="form-control mt-1" name="unit_value[]" id="unit_value${id}" readonly />
+                    </div>
+                    <div class="product-field pf-qty">
+                        <small class="text-muted font-weight-bold avail-label">Qty (<span id="avail_qty_text_${id}" class="text-info">-</span>)</small>
+                        <input type="text" class="form-control mt-1" name="assignQty[]" id="assignQty${id}" placeholder="Qty" />
+                    </div>
+                    <div class="product-field pf-discount">
+                        <small class="text-muted font-weight-bold">Discount (%)</small>
+                        <input type="number" class="form-control mt-1" name="discount[]" id="discount${id}" value="0" />
+                    </div>
+                    <div class="product-field pf-total">
+                        <small class="text-muted font-weight-bold">Total Amount</small>
+                        <input type="text" class="form-control mt-1" name="totalAmount[]" id="totalAmount${id}" readonly />
+                    </div>
+                </div>
             `;
             $('#dynamicForm').append(newTbody);
-            productData(id);
+            populateBrandSelect(id);
         }
+
 
         function updateTotalForRow(row) {
             const qty = parseFloat(row.find('input[name="assignQty[]"]').val()) || 0;
@@ -712,8 +836,10 @@
             const row = $(this).closest('.product-tbody');
             const count = row.find('.row_id').val();
             const totalAvailVal = $(`#qty${count}`).val();
+            const isInhouse = row.hasClass('inhouse-row');
+            if (isInhouse) { $(this).css('border-color', ''); return; }
             if (totalAvailVal === "" || totalAvailVal === undefined || totalAvailVal === null) {
-                $(`#avail_qty_text_${count}`).text('Available: -');
+                $(`#avail_qty_text_${count}`).text('-');
                 $(this).css('border-color', '');
                 return;
             }
@@ -721,7 +847,7 @@
             const inputQty = parseFloat($(this).val()) || 0;
             const currentAvail = totalAvail - inputQty;
             
-            $(`#avail_qty_text_${count}`).text('Available: ' + currentAvail);
+            $(`#avail_qty_text_${count}`).text('A: ' + currentAvail);
             
             if (inputQty > totalAvail) {
                 $(this).css('border-color', 'red');
@@ -764,7 +890,8 @@
                 // Include row only if it has a product (regular) or an inhouse product
                 if (!productId && !inhouseId) return;
 
-                const purchase_request_id = row.querySelector(`[name="purchase_request_id[]"]`).value;
+                const pr_ids_raw  = row.querySelector(`[name="purchase_request_ids[]"]`).value;
+                const purchase_request_ids = (!isInhouse && pr_ids_raw) ? JSON.parse(pr_ids_raw) : [];
                 const category    = row.querySelector(`[name="category[]"]`).value;
                 const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
                 const pack        = row.querySelector(`[name="pack[]"]`).value;
@@ -778,7 +905,7 @@
                 products.push({
                     productId: isInhouse ? null : productId,
                     inhouse_product_id: isInhouse ? inhouseId : null,
-                    purchase_request_id: isInhouse ? null : purchase_request_id,
+                    purchase_request_ids: isInhouse ? [] : purchase_request_ids,
                     is_inhouse: isInhouse,
                     category,
                     subCategory,

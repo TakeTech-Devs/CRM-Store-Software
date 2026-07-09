@@ -115,6 +115,25 @@
         </div>
 
 
-
     </ul>
 </div>
+
+<div id="font-size-controls" style="position:fixed; bottom:12px; left:0; width:15%; text-align:center; z-index:9999;">
+    <button onclick="adjustFontSize(1)" class="btn btn-sm btn-light font-weight-bold mx-1" title="Increase font size">A+</button>
+    <button onclick="adjustFontSize(-1)" class="btn btn-sm btn-light font-weight-bold mx-1" title="Decrease font size">A-</button>
+</div>
+
+<script>
+    (function () {
+        const MIN = 10, MAX = 20, STEP = 1, KEY = 'globalFontSize';
+        const saved = parseInt(localStorage.getItem(KEY));
+        if (saved) document.documentElement.style.fontSize = saved + 'px';
+
+        window.adjustFontSize = function (delta) {
+            const current = parseInt(getComputedStyle(document.documentElement).fontSize) || 14;
+            const next = Math.min(MAX, Math.max(MIN, current + (delta * STEP)));
+            document.documentElement.style.fontSize = next + 'px';
+            localStorage.setItem(KEY, next);
+        };
+    })();
+</script>

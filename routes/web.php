@@ -99,6 +99,7 @@ Route::get('/staffs', [DataController:: class , 'staff_data']);
 Route::get('/doctors', [DataController:: class , 'doctor_data']);
 Route::get('/products', [DataController:: class , 'product_data']);
 Route::get('/billing/product-options', [DataController::class, 'billingProductOptions']);
+Route::get('/billing/brands', [DataController::class, 'billingBrands']);
 Route::prefix('api')->group(function () {
     Route::get('/stores', [DataController::class, 'getStores']);
     Route::get('/billing/product-options', [DataController::class, 'billingProductOptions']);

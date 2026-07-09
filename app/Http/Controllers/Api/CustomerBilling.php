@@ -49,29 +49,29 @@ class CustomerBilling extends Controller
             foreach ($product_billing as $key => $value) {
                 if (filter_var($value['is_inhouse'] ?? false, FILTER_VALIDATE_BOOLEAN)) continue;
 
-                $pr = DB::table('purchase_request')->where('id', $value['purchase_request_id'])->first();
-
-                if (!$pr) {
+                $prIds = $value['purchase_request_ids'] ?? [];
+                if (empty($prIds)) {
                     DB::rollBack();
-                    return response()->json([
-                        'status' => 400,
-                        'message' => 'Product / pack size not assigned to store.'
-                    ], 400);
+                    return response()->json(['status' => 400, 'message' => 'No stock batches found for product.'], 400);
                 }
 
-                $remainingPrQty = $pr->qty - $value['qty'];
-                if ($remainingPrQty < 0) {
-                    DB::rollBack();
-                    return response()->json([
-                        'status' => 400,
-                        'message' => 'Insufficient store-assigned stock for the product.'
-                    ], 400);
+                $remaining = (int) $value['qty'];
+                foreach ($prIds as $prId) {
+                    if ($remaining <= 0) break;
+                    $pr = DB::table('purchase_request')->where('id', $prId)->first();
+                    if (!$pr || $pr->qty <= 0) continue;
+                    $deduct = min($pr->qty, $remaining);
+                    DB::table('purchase_request')->where('id', $prId)->update([
+                        'qty' => $pr->qty - $deduct,
+                        'updated_at' => now(),
+                    ]);
+                    $remaining -= $deduct;
                 }
 
-                DB::table('purchase_request')->where('id', $pr->id)->update([
-                    'qty' => $remainingPrQty,
-                    'updated_at' => now(),
-                ]);
+                if ($remaining > 0) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'Insufficient stock for one or more products.'], 400);
+                }
             }
 
             // Insert into customer_billing table including the store_id
@@ -96,12 +96,12 @@ class CustomerBilling extends Controller
             foreach ($product_billing as $key => $value) {
                 DB::table('customer_product_billing')->insert([
                     'category' => $value['category'],
+                    'subCategory' => $value['subCategory'],
                     'discount' => $value['discount'],
                     'pack' => $value['pack'],
                     'productId' => $value['productId'] ?? null,
                     'inhouse_product_id' => $value['inhouse_product_id'] ?? null,
                     'qty' => $value['qty'],
-                    'subCategory' => $value['subCategory'],
                     'totalAmount' => $value['totalAmount'],
                     'unitValue' => $value['unitValue'],
                     'cb_id' => $insert_cb,
@@ -389,10 +389,12 @@ class CustomerBilling extends Controller
             $billItems = DB::table('customer_product_billing')
                 ->leftJoin('product', 'customer_product_billing.productId', '=', 'product.id')
                 ->leftJoin('inhouse_product', 'customer_product_billing.inhouse_product_id', '=', 'inhouse_product.id')
+                ->leftJoin('brand', 'product.brand_id', '=', 'brand.id')
                 ->where('customer_product_billing.cb_id', '=', $billId)
                 ->select(
                     'customer_product_billing.*',
-                    DB::raw('COALESCE(product.product_name, CONCAT("[Inhouse] ", inhouse_product.product_name)) as product_name')
+                    DB::raw('COALESCE(product.product_name, inhouse_product.product_name) as product_name'),
+                    DB::raw('COALESCE(brand.brand_name, "Inhouse") as brand_name')
                 )
                 ->get();
 

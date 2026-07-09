@@ -216,6 +216,7 @@
                                         style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important; font-size: 16px; font-weight: 800;">
                                         <tr>
                                             <th>SNo.</th>
+                                            <th>Brand</th>
                                             <th>Medicine</th>
                                             <th>Qty</th>
                                             <th>Pack</th>
@@ -518,6 +519,7 @@
                         $('#invoice_table tbody').append(`
                             <tr>
                                 <td>${index + 1}</td>
+                                <td>${item.brand_name || 'N/A'}</td>
                                 <td>${item.product_name || 'N/A'}</td>
                                 <td>${item.qty || '0'}</td>
                                 <td>${item.pack || 'N/A'}</td>

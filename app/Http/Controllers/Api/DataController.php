@@ -221,6 +221,16 @@ class DataController extends Controller
                 }
             }
 
+    public function billingBrands() {
+        try {
+            $brands = DB::table('brand')->select('id', 'brand_name as name')->orderBy('brand_name')->get()->toArray();
+            array_unshift($brands, (object)['id' => 'inhouse', 'name' => 'Inhouse']);
+            return response()->json(['status' => 200, 'data' => $brands], 200);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
     public function billingProductOptions() {
         try {
             // Regular store-assigned products
@@ -231,6 +241,10 @@ class DataController extends Controller
                 ->join('category', 'product.category_id', '=', 'category.id')
                 ->join('sub_category', 'product.sub_category_id', '=', 'sub_category.id')
                 ->where('purchase_request.qty', '>', 0)
+                ->where(function($q) {
+                    $q->whereNull('purchase_request.exp_date')
+                      ->orWhere('purchase_request.exp_date', '>', now()->toDateString());
+                })
                 ->select(
                     DB::raw("'regular' as type"),
                     'purchase_request.id as purchase_request_id',

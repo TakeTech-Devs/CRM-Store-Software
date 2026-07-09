@@ -9,7 +9,7 @@
 
 /* ── Top Banner ── */
 .db-banner {
-    background: linear-gradient(120deg, #1e3a5f 0%, #2563eb 60%, #3b82f6 100%);
+    background: linear-gradient(120deg, #6b2a0f 0%, #a54217 60%, #c4622e 100%);
     padding: 1.1rem 1.8rem .9rem;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
 }

@@ -84,7 +84,7 @@ body.sidebar-toggled #wrapper #content-wrapper {
 }
 
 #dynamicForm .form-control{
-    width: 175px !important;
+    width: 100%;
 }
 
 .table td, .table th {
