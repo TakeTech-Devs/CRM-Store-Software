@@ -6,11 +6,10 @@ color 0A
 set "PROJECT_DIR=%~dp0"
 cd /d "%PROJECT_DIR%"
 
-:: XAMPP paths (for starting services)
-set "MYSQL=C:\xampp\mysql\bin\mysql.exe"
-set "MYSQLD=C:\xampp\mysql\bin\mysqld.exe"
-set "MYSQLADMIN=C:\xampp\mysql\bin\mysqladmin.exe"
+:: XAMPP paths
 set "XAMPP_DIR=C:\xampp"
+set "MYSQL=C:\xampp\mysql\bin\mysql.exe"
+set "MYSQLADMIN=C:\xampp\mysql\bin\mysqladmin.exe"
 
 :: Use php from system PATH (same as running manually in cmd)
 set "PHP=php"
@@ -24,20 +23,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Start Apache if not already running
+:: Start XAMPP services (Apache + MySQL) if not already running
 tasklist /FI "IMAGENAME eq httpd.exe" 2>nul | find /I "httpd.exe" >nul
 if errorlevel 1 (
-    echo [INFO] Starting Apache...
-    start "" "%XAMPP_DIR%\apache\bin\httpd.exe"
-    timeout /t 2 >nul
-)
-
-:: Start MySQL if not already running
-"%MYSQLADMIN%" -u root ping >nul 2>&1
-if errorlevel 1 (
-    echo [INFO] Starting MySQL...
-    start "" "%MYSQLD%" --console
-    timeout /t 4 >nul
+    echo [INFO] Starting XAMPP services...
+    start "" "%XAMPP_DIR%\xampp_start.exe"
+    timeout /t 5 >nul
 )
 
 :: ─── FIRST RUN SETUP ───────────────────────────────────────────────
