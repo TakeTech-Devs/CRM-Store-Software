@@ -469,7 +469,7 @@ class DataFetchController extends Controller
                 'customer' => $this->syncCustomerTable(),
                 'staff'  => $this->syncStaffTable(),
                 'doctor' => $this->syncRemoteTable('doctor', ['id', 'name', 'mail', 'phone', 'degree', 'status', 'created_at', 'updated_at']),
-                'inhouse_product' => $this->syncRemoteTable('inhouse_product', ['id', 'product_name', 'price', 'category_id', 'sub_category_id', 'pack_id', 'status', 'created_at', 'updated_at']),
+                'inhouse_product' => $this->syncRemoteTable('inhouse_product', ['id', 'product_name', 'price', 'category_id', 'sub_category_id', 'pack_id', 'status', 'created_at', 'updated_at'], 'inhouse_product_with_price'),
             ];
 
             $summary['store_assign'] = $this->syncStoreAssignments($remoteStore, $storeMetaId);
@@ -503,9 +503,9 @@ class DataFetchController extends Controller
         }
     }
 
-    private function syncRemoteTable(string $table, array $columns): int
+    private function syncRemoteTable(string $table, array $columns, ?string $remoteSource = null): int
     {
-        $query = DB::connection('remote_mysql')->table($table)->select($columns);
+        $query = DB::connection('remote_mysql')->table($remoteSource ?? $table)->select($columns);
         $localLatestUpdate = DB::table($table)->max('updated_at');
 
         if ($localLatestUpdate && DB::table($table)->exists()) {
