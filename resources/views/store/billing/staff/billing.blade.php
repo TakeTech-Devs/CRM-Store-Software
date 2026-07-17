@@ -155,6 +155,7 @@
                                             <th>Qty</th>
                                             <th>Pack</th>
                                             <th>MRP</th>
+                                            <th>GST Rate</th>
                                             <th>GST Amount</th>
                                             <th>Amount</th>
                                         </tr>
@@ -380,6 +381,7 @@
                                     <td>${item.qty || '0'}</td>
                                     <td>${item.pack || 'N/A'}</td>
                                     <td>${item.unitValue || '0.00'}/-</td>
+                                    <td>${item.gstRate || '0'}%</td>
                                     <td>${item.gstAmount || '0.00'}/-</td>
                                     <td>${item.totalAmount || '0.00'}/-</td>
                                 </tr>

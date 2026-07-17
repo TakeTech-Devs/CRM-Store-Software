@@ -702,13 +702,13 @@ class DataFetchController extends Controller
                     ->where('brand_id', $remoteRequest->brand_id)
                     ->where('product_id', $remoteRequest->product_id)
                     ->where('pack_id', $remoteRequest->pack_id)
+                    ->where('price_id', $remoteRequest->price_id)
+                    ->where('exp_date', $remoteRequest->exp_date)
                     ->first();
 
                 if ($localRequest) {
                     DB::table('purchase_request')->where('id', $localRequest->id)->update($this->onlyExistingColumns('purchase_request', [
-                        'price_id' => $remoteRequest->price_id,
                         'qty_left' => $remoteRequest->qty_left,
-                        'exp_date' => $remoteRequest->exp_date,
                         'updated_at' => $remoteRequest->updated_at ?? now(),
                     ]));
                     $summary['purchase_request_updated']++;

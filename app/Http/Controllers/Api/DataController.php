@@ -223,8 +223,24 @@ class DataController extends Controller
 
     public function billingBrands() {
         try {
-            $brands = DB::table('brand')->select('id', 'brand_name as name')->orderBy('brand_name')->get()->toArray();
-            array_unshift($brands, (object)['id' => 'inhouse', 'name' => 'Inhouse']);
+            $brands = DB::table('brand')
+                ->join('product', 'product.brand_id', '=', 'brand.id')
+                ->join('purchase_request', 'purchase_request.product_id', '=', 'product.id')
+                ->where('purchase_request.qty', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('purchase_request.exp_date')
+                      ->orWhere('purchase_request.exp_date', '>', now()->toDateString());
+                })
+                ->select('brand.id', 'brand.brand_name as name')
+                ->distinct()
+                ->orderBy('brand.brand_name')
+                ->get()
+                ->toArray();
+
+            if (DB::table('inhouse_product')->where('status', 1)->exists()) {
+                array_unshift($brands, (object)['id' => 'inhouse', 'name' => 'Inhouse']);
+            }
+
             return response()->json(['status' => 200, 'data' => $brands], 200);
         } catch (\Throwable $th) {
             throw $th;

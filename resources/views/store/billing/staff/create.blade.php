@@ -292,6 +292,7 @@
                                 <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
                                     <tr>
                                         <th>SNo.</th>
+                                        <th>Brand</th>
                                         <th>Medicine</th>
                                         <th>Qty</th>
                                         <th>Pack</th>
@@ -572,9 +573,10 @@
         fields.slice(fields.indexOf(field)).forEach(f => {
             const sel = $(`#${f}_select${id}`);
             if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
-            sel.empty().append(`<option value="">Choose ${f.charAt(0).toUpperCase()+f.slice(1)}</option>`).prop('disabled', true);
+            sel.empty().append(`<option value="">Choose ${f.charAt(0).toUpperCase()+f.slice(1)}</option>`).prop('disabled', true).show();
             sel.off('select2:select select2:clear');
         });
+        $(`#price_display${id}`).hide().val('');
         $(`#unit_value${id}`).val('');
         $(`#totalAmount${id}`).val('');
         $(`#avail_qty_text_${id}`).text('-');
@@ -606,9 +608,9 @@
             const seen = new Set();
             if (brandId === 'inhouse') {
                 options.filter(o => o.type === 'inhouse').forEach(o => {
-                    if (!seen.has(o.inhouse_product_id)) {
-                        seen.add(o.inhouse_product_id);
-                        sel.append(`<option value="${o.inhouse_product_id}" data-type="inhouse">${o.product_name}</option>`);
+                    if (!seen.has(o.product_name)) {
+                        seen.add(o.product_name);
+                        sel.append(`<option value="${o.product_name}" data-type="inhouse">${o.product_name}</option>`);
                     }
                 });
             } else {
@@ -637,7 +639,7 @@
             const sel = $(`#pack_select${id}`);
             sel.empty().append('<option value="">Choose Pack</option>');
             let rows = type === 'inhouse'
-                ? options.filter(o => o.type === 'inhouse' && String(o.inhouse_product_id) === String(productVal))
+                ? options.filter(o => o.type === 'inhouse' && String(o.product_name) === String(productVal))
                 : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.brand_id) === String(brandId));
             const seen = new Set();
             rows.forEach(o => {
@@ -658,14 +660,54 @@
         });
     }
 
+    function applyPriceSelection(id, opt) {
+        const val = opt.val();
+        if (!val) {
+            $(`#unit_value${id}, #totalAmount${id}`).val('');
+            $(`#avail_qty_text_${id}`).text('-');
+            $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}, #category${id}, #subCategory${id}`).val('');
+            $(`#assignQty${id}`).val('').css('border-color', '');
+            $(`#row_block_${id}`).removeClass('inhouse-row');
+            return;
+        }
+        const isInhouse = opt.data('type') === 'inhouse';
+        $(`#pack${id}`).val(opt.data('pack-name'));
+        $(`#unit_value${id}`).val(opt.data('price'));
+        $(`#gstRate${id}`).val(opt.data('gst') || 0);
+        $(`#assignQty${id}`).css('border-color', '');
+        if (isInhouse) {
+            $(`#product_name${id}`).val('');
+            $(`#pr_ids${id}`).val('');
+            $(`#inhouse_id${id}`).val(opt.data('inhouse-id'));
+            $(`#qty${id}`).val('');
+            $(`#category${id}`).val(opt.data('category') || '');
+            $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+            $(`#avail_qty_text_${id}`).text('Inhouse');
+            $(`#row_block_${id}`).addClass('inhouse-row');
+        } else {
+            $(`#product_name${id}`).val(opt.data('product-id'));
+            $(`#pr_ids${id}`).val(JSON.stringify(opt.data('pr-ids') || []));
+            $(`#inhouse_id${id}`).val('');
+            $(`#qty${id}`).val(opt.data('qty'));
+            $(`#category${id}`).val(opt.data('category') || '');
+            $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+            $(`#avail_qty_text_${id}`).text('A: ' + opt.data('qty'));
+            $(`#row_block_${id}`).removeClass('inhouse-row');
+        }
+        calculateTotalAmount();
+    }
+
     function loadPricesForPack(id, productVal, packId, type, brandId) {
         loadBillingProductOptions((options) => {
             const sel = $(`#price_select${id}`);
+            const display = $(`#price_display${id}`);
             sel.empty().append('<option value="">Choose Price</option>');
             let rows = type === 'inhouse'
-                ? options.filter(o => o.type === 'inhouse' && String(o.inhouse_product_id) === String(productVal) && String(o.pack_id) === String(packId))
+                ? options.filter(o => o.type === 'inhouse' && String(o.product_name) === String(productVal) && String(o.pack_id) === String(packId))
                 : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.pack_id) === String(packId) && String(o.brand_id) === String(brandId));
+            let priceCount = 0;
             if (type === 'inhouse') {
+                priceCount = rows.length;
                 rows.forEach(o => {
                     sel.append(`<option value="inhouse_${o.inhouse_product_id}"
                         data-type="inhouse"
@@ -687,6 +729,7 @@
                     groups[key].total_qty += (parseFloat(o.avail_qty) || 0);
                     groups[key].pr_ids.push(o.purchase_request_id);
                 });
+                priceCount = Object.keys(groups).length;
                 Object.values(groups).forEach(g => {
                     sel.append(`<option value="${g.pr_ids[0]}"
                         data-type="regular"
@@ -701,46 +744,26 @@
                     >&#8377;${g.price_name}</option>`);
                 });
             }
-            sel.prop('disabled', false);
-            if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
-            sel.select2({ width: '100%', placeholder: 'Choose Price' });
-            sel.on('select2:select select2:clear', function () {
-                const opt = $(this).find('option:selected');
-                const val = $(this).val();
-                if (!val) {
-                    $(`#unit_value${id}, #totalAmount${id}`).val('');
-                    $(`#avail_qty_text_${id}`).text('-');
-                    $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}, #category${id}, #subCategory${id}`).val('');
-                    $(`#assignQty${id}`).val('').css('border-color', '');
-                    $(`#row_block_${id}`).removeClass('inhouse-row');
-                    return;
-                }
-                const isInhouse = opt.data('type') === 'inhouse';
-                $(`#pack${id}`).val(opt.data('pack-name'));
-                $(`#unit_value${id}`).val(opt.data('price'));
-                $(`#gstRate${id}`).val(opt.data('gst') || 0);
-                $(`#assignQty${id}`).css('border-color', '');
-                if (isInhouse) {
-                    $(`#product_name${id}`).val('');
-                    $(`#pr_ids${id}`).val('');
-                    $(`#inhouse_id${id}`).val(opt.data('inhouse-id'));
-                    $(`#qty${id}`).val('');
-                    $(`#category${id}`).val(opt.data('category') || '');
-                    $(`#subCategory${id}`).val(opt.data('sub-category') || '');
-                    $(`#avail_qty_text_${id}`).text('Inhouse');
-                    $(`#row_block_${id}`).addClass('inhouse-row');
-                } else {
-                    $(`#product_name${id}`).val(opt.data('product-id'));
-                    $(`#pr_ids${id}`).val(JSON.stringify(opt.data('pr-ids') || []));
-                    $(`#inhouse_id${id}`).val('');
-                    $(`#qty${id}`).val(opt.data('qty'));
-                    $(`#category${id}`).val(opt.data('category') || '');
-                    $(`#subCategory${id}`).val(opt.data('sub-category') || '');
-                    $(`#avail_qty_text_${id}`).text('A: ' + opt.data('qty'));
-                    $(`#row_block_${id}`).removeClass('inhouse-row');
-                }
-                calculateTotalAmount();
-            });
+
+            sel.off('select2:select select2:clear');
+
+            if (priceCount === 1) {
+                // Only one price available — auto-load it, no dropdown needed
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                const onlyOpt = sel.find('option').not('[value=""]').first();
+                sel.val(onlyOpt.val());
+                sel.hide();
+                display.val('₹' + onlyOpt.data('price')).show();
+                applyPriceSelection(id, onlyOpt);
+            } else {
+                display.hide().val('');
+                sel.show().prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Price' });
+                sel.on('select2:select select2:clear', function () {
+                    applyPriceSelection(id, $(this).find('option:selected'));
+                });
+            }
         });
     }
 
@@ -784,6 +807,7 @@
                     <select class="form-control mt-1" data-count="${id}" id="price_select${id}" disabled>
                         <option value="">Choose Price</option>
                     </select>
+                    <input type="text" class="form-control mt-1" id="price_display${id}" readonly style="display:none;" />
                 </div>
                 <div class="product-field pf-unit">
                     <small class="text-muted font-weight-bold">Unit Value</small>
@@ -993,6 +1017,7 @@
             $('#invoice_table tbody').append(`
                 <tr>
                     <td>${index + 1}</td>
+                    <td>${item.brand_name || 'N/A'}</td>
                     <td>${item.product_name || 'N/A'}</td>
                     <td>${item.qty || '0'}</td>
                     <td>${item.pack || 'N/A'}</td>
