@@ -105,6 +105,19 @@
         </li>
 
         <li class="nav-item">
+            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUpdates"
+                aria-expanded="true" aria-controls="collapseUpdates">
+                <i class="fas fa-download fa-folder"></i>
+                <span>Updates</span>
+            </a>
+            <div id="collapseUpdates" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item" href="{{url('store/updates')}}">Software Update</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link" href="{{url('/logout')}}">
                 <i class="fas fa-fw fa-table"></i>
                 <span>Logout</span></a>
