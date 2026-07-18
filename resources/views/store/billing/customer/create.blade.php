@@ -4,6 +4,26 @@
 
 @section('content')
 <style>
+    /* Visible keyboard focus ring — the sb-admin-2 theme suppresses this by
+       default (outline:0), which makes keyboard-only navigation unusable.
+       Scoped to this page only; the sidebar keeps its default (no ring) look. */
+    a:focus,
+    button:focus,
+    .btn:focus,
+    input:focus,
+    select:focus,
+    textarea:focus,
+    .select2-selection:focus,
+    .select2-container--default .select2-selection--single:focus,
+    .select2-search__field:focus {
+        outline: 2px solid #0d6efd !important;
+        outline-offset: 2px !important;
+    }
+    .sidebar a:focus,
+    .sidebar button:focus,
+    #sidebarToggle:focus {
+        outline: none !important;
+    }
     .inhouse-row .avail-label { color: #16a34a; font-weight: 600; }
     .billing-header-section {
         background: #f5e0d0;
@@ -283,14 +303,27 @@
                     $('#customer_name').val('');
                     $('#addCustomer').modal('show');
                     $('#phone').val(phone);
-                    $('#name').focus();
                 } else {
                     const parts = opt.text().split(' — ');
                     $('#customer_name').val(parts.length > 1 ? parts.slice(1).join(' — ') : '');
+                    openSelect2Safe('#doctor_name');
                 }
             });
 
-            customerData()
+            $('#paymentType').select2({ width: '100%', placeholder: 'Choose Payment Type...' });
+
+            $(document).on('select2:select', '#doctor_name', function () {
+                openSelect2Safe('#paymentType');
+            });
+            $(document).on('select2:select', '#paymentType', function () {
+                const firstRowId = $('#dynamicForm .product-tbody').first().find('.row_id').val();
+                if (firstRowId) openSelect2Safe(`#brand_select${firstRowId}`);
+            });
+
+            customerData(function () {
+                // Land the cursor in the phone search box only once options are loaded
+                openSelect2Safe('#customer_phone');
+            })
             doctorData()
 
 
@@ -369,6 +402,7 @@
 
 
             // ADDING CUSTOMER
+            let addCustomerJustSaved = false;
             $('#addCustomer').on('submit', function(event) {
                 event.preventDefault();
 
@@ -384,9 +418,10 @@
                         status: $('input[name="status"]:checked').val(),
                     },
                     headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') 
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
+                        addCustomerJustSaved = true;
                         const newPhone = $('#phone').val();
                         const newName  = $('#name').val() || newPhone;
                         customerData(function () {
@@ -408,6 +443,7 @@
             });
 
             // ADD DOCTOR
+            let addDoctorJustSaved = false;
             $('#addDoctorForm').on('submit', function(event) {
                 event.preventDefault();
                 const $form = $(this);
@@ -427,6 +463,7 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
+                        addDoctorJustSaved = true;
                         doctorData();
                         Swal.fire({
                             title: "Doctor !",
@@ -435,13 +472,219 @@
                         });
                         $('#addDoctor').modal('hide');
                         $form[0].reset();
+                        openSelect2Safe('#paymentType');
                     },
                     error: function(xhr) {
                         alert('An error occurred: ' + xhr.responseText);
                     }
                 });
             });
-        });  
+
+            // Any Select2 dropdown left open behind a modal doesn't close itself —
+            // close them all before any modal is shown, regardless of trigger path.
+            $(document).on('show.bs.modal', '.modal', function () {
+                closeAllSelect2();
+            });
+
+            // If a modal is dismissed WITHOUT saving (Cancel/X/Escape/backdrop),
+            // reopen the field that triggered it so the user can pick up where
+            // they left off. On a successful save the chain already continues
+            // to the next field, so skip reopening in that case.
+            $('#addCustomer').on('hidden.bs.modal', function () {
+                if (!addCustomerJustSaved) openSelect2Safe('#customer_phone');
+                addCustomerJustSaved = false;
+            });
+            $('#addDoctor').on('hidden.bs.modal', function () {
+                if (!addDoctorJustSaved) openSelect2Safe('#doctor_name');
+                addDoctorJustSaved = false;
+            });
+
+            // Focus the first field the instant a modal opens, regardless of how it was opened
+            $('#addCustomer').on('shown.bs.modal', function () {
+                document.querySelector('#addCustomerForm [name="name"]')?.focus();
+            });
+            $('#addDoctor').on('shown.bs.modal', function () {
+                document.querySelector('#addDoctorForm [name="name"]')?.focus();
+            });
+
+            // Keyboard shortcuts
+            $(document).on('keydown', function (e) {
+                // Ctrl+Enter — submit the bill (skip while any modal is open)
+                if (e.ctrlKey && e.key === 'Enter') {
+                    if ($('.modal.show').length) return;
+                    e.preventDefault();
+                    $('#submitBilling').trigger('click');
+                    return;
+                }
+
+                // Ctrl+Backspace — delete the row the cursor is currently in
+                if (e.ctrlKey && e.key === 'Backspace') {
+                    const $row = $(document.activeElement).closest('.product-tbody');
+                    if ($row.length) {
+                        e.preventDefault();
+                        deleteRow($row);
+                    }
+                    return;
+                }
+
+                // Ctrl+Up / Ctrl+Down — jump to the same field in the previous/next row
+                if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                    const info = getFocusedFieldInfo();
+                    if (!info) return;
+                    e.preventDefault();
+                    const rowIds = $('#dynamicForm .product-tbody').map(function () {
+                        return $(this).find('.row_id').val();
+                    }).get();
+                    const currentIndex = rowIds.indexOf(info.rowId);
+                    if (currentIndex === -1) return;
+                    const targetIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+                    if (targetIndex < 0 || targetIndex >= rowIds.length) return;
+                    focusSlotInRow(info.slot, rowIds[targetIndex]);
+                    return;
+                }
+
+                // Ctrl+C — open Add Customer (leave real copy alone if text is selected)
+                if (e.ctrlKey && !e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+                    if ($('.modal.show').length || window.getSelection().toString()) return;
+                    e.preventDefault();
+                    $('#addCustomer').modal('show');
+                    return;
+                }
+
+                // Ctrl+D — open Add Doctor
+                if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+                    if ($('.modal.show').length) return;
+                    e.preventDefault();
+                    $('#addDoctor').modal('show');
+                    return;
+                }
+
+                // Print modal shortcuts — only while it's open
+                if ($('#printModal').hasClass('show')) {
+                    if (e.key === 'p' || e.key === 'P') {
+                        e.preventDefault();
+                        printModalContent();
+                        return;
+                    }
+                    if (e.key === 'r' || e.key === 'R') {
+                        e.preventDefault();
+                        printModalContentTVS();
+                        return;
+                    }
+                }
+            });
+        });
+
+        // Closes every currently-open Select2 dropdown (optionally skipping one id) —
+        // Select2 doesn't always clean up a stale open dropdown on its own when
+        // something else (another field, a modal) takes over programmatically.
+        function closeAllSelect2(exceptId) {
+            $('.select2-hidden-accessible').each(function () {
+                const $s = $(this);
+                if (this.id !== exceptId && $s.data('select2') && $s.data('select2').isOpen()) {
+                    $s.select2('close');
+                }
+            });
+        }
+
+        // Opens a Select2 dropdown, but only if it has actually finished initializing —
+        // guards against chaining into a field whose options are still loading async.
+        // Select2 doesn't reliably move keyboard focus into its own search box when
+        // opened programmatically, so force it directly here every time.
+        function openSelect2Safe(selector) {
+            const $el = $(selector);
+            if (!$el.hasClass('select2-hidden-accessible')) return;
+            closeAllSelect2($el.attr('id'));
+            $el.select2('open');
+            setTimeout(function () {
+                document.querySelector('.select2-search__field')?.focus({ preventScroll: true });
+            }, 0);
+        }
+
+        function deleteRow($row) {
+            const $rows = $('#dynamicForm .product-tbody');
+            const id = $row.find('.row_id').val();
+            if ($rows.length <= 1) {
+                resetRowCompletely(id, $row);
+            } else {
+                $row.remove();
+                calculateTotalAmount();
+            }
+        }
+
+        function resetRowCompletely(id, $row) {
+            resetCascadeFrom(id, 'product');
+            $(`#discount${id}`).val('0');
+            const brandSel = $(`#brand_select${id}`);
+            if (brandSel.hasClass('select2-hidden-accessible')) brandSel.select2('destroy');
+            populateBrandSelect(id);
+            $row.removeClass('inhouse-row');
+            calculateTotalAmount();
+        }
+
+        // Field-slot id patterns — used by Ctrl+Up/Ctrl+Down row navigation
+        const ROW_FIELD_PATTERNS = {
+            brand: /^brand_select(\d+)$/,
+            product: /^product_select(\d+)$/,
+            pack: /^pack_select(\d+)$/,
+            price: /^price_(?:select|display)(\d+)$/,
+            unit: /^unit_value(\d+)$/,
+            qty: /^assignQty(\d+)$/,
+            discount: /^discount(\d+)$/,
+            total: /^totalAmount(\d+)$/,
+        };
+
+        // Figures out which row + field "slot" the cursor is currently in, whether
+        // it's a plain input or a Select2 field (searching or just tabbed-to).
+        function getFocusedFieldInfo() {
+            const active = document.activeElement;
+            let fieldId = null;
+
+            if (active.classList.contains('select2-search__field')) {
+                // Select2 stamps aria-controls="select2-<originalId>-results" on the
+                // search box — the most reliable way to trace back to its owner field.
+                const controls = active.getAttribute('aria-controls') || '';
+                const m = controls.match(/^select2-(.+)-results$/);
+                fieldId = m ? m[1] : null;
+            } else if ($(active).closest('.select2-container').length) {
+                fieldId = $(active).closest('.select2-container').prev('select, input').attr('id');
+            } else {
+                fieldId = active.id;
+            }
+
+            if (!fieldId) return null;
+
+            for (const slot in ROW_FIELD_PATTERNS) {
+                const m = fieldId.match(ROW_FIELD_PATTERNS[slot]);
+                if (m) return { slot, rowId: m[1] };
+            }
+            return null;
+        }
+
+        function focusSlotInRow(slot, rowId) {
+            if (slot === 'price') {
+                const $priceSelect = $(`#price_select${rowId}`);
+                if ($priceSelect.hasClass('select2-hidden-accessible') && $priceSelect.is(':visible')) {
+                    openSelect2Safe(`#price_select${rowId}`);
+                } else {
+                    document.getElementById(`price_display${rowId}`)?.focus({ preventScroll: true });
+                }
+                return;
+            }
+
+            const idMap = {
+                brand: 'brand_select', product: 'product_select', pack: 'pack_select',
+                unit: 'unit_value', qty: 'assignQty', discount: 'discount', total: 'totalAmount',
+            };
+            const $target = $(`#${idMap[slot]}${rowId}`);
+            if (!$target.length) return;
+
+            if ($target.hasClass('select2-hidden-accessible')) {
+                openSelect2Safe(`#${idMap[slot]}${rowId}`);
+            } else {
+                $target[0].focus({ preventScroll: true });
+            }
+        }
 
         function customerData(callback) {
             ajaxGetData('/customers', (res) => {
@@ -468,12 +711,18 @@
         }
 
         
-        function doctorData() { 
+        function doctorData(callback) {
             ajaxGetData('/doctors', (res)=>{
+                $('#doctor_name').find('option:not(:first)').remove();
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
                     $('#doctor_name').append('<option value="' + element.id + '">' + element.name + '</option>');
                 }
+                if ($('#doctor_name').hasClass('select2-hidden-accessible')) {
+                    $('#doctor_name').select2('destroy');
+                }
+                $('#doctor_name').select2({ width: '100%', placeholder: 'Choose Doctor Name...' });
+                if (typeof callback === 'function') callback();
             })
         }
 
@@ -564,6 +813,7 @@
                     if (!productVal) return;
                     loadPacksForProduct(id, productVal, type, brandId);
                 });
+                openSelect2Safe(sel);
             });
         }
 
@@ -590,6 +840,7 @@
                     if (!packId) return;
                     loadPricesForPack(id, productVal, packId, type, brandId);
                 });
+                openSelect2Safe(sel);
             });
         }
 
@@ -628,6 +879,7 @@
                 $(`#row_block_${id}`).removeClass('inhouse-row');
             }
             updateTotalForRow($(`#row_block_${id}`));
+            document.getElementById(`assignQty${id}`)?.focus({ preventScroll: true });
         }
 
         function loadPricesForPack(id, productVal, packId, type, brandId) {
@@ -697,6 +949,7 @@
                     sel.on('select2:select select2:clear', function () {
                         applyPriceSelection(id, $(this).find('option:selected'));
                     });
+                    openSelect2Safe(sel);
                 }
             });
         }
@@ -897,10 +1150,30 @@
             calculateTotalAmount();
         });
 
-        $(document).on('keyup', '.new-row [name="assignQty[]"]', function () {
-            $(this).closest('.product-tbody').removeClass('new-row');
-            count++;
-            addNewRow(count);
+        function ensureNextRow($row) {
+            let $next = $row.next('.product-tbody');
+            if ($next.length === 0) {
+                $row.removeClass('new-row');
+                count++;
+                addNewRow(count);
+                $next = $row.next('.product-tbody');
+            }
+            return $next;
+        }
+
+        $(document).on('keyup', '.new-row [name="assignQty[]"]', function (e) {
+            if (e.key === 'Enter') return; // handled on keydown below
+            ensureNextRow($(this).closest('.product-tbody'));
+        });
+
+        // Enter in Qty — jump straight to the next row's Brand field (create the row if needed)
+        $(document).on('keydown', '[name="assignQty[]"]', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const $row = $(this).closest('.product-tbody');
+            const $nextRow = ensureNextRow($row);
+            const nextId = $nextRow.find('.row_id').val();
+            openSelect2Safe(`#brand_select${nextId}`);
         });
 
 

@@ -59,6 +59,20 @@
         $(document).ready(function(){
             $("select:not(.select2-manual)").select2();
         });
+
+        // Global hotkeys — jump straight to a billing screen from anywhere in the app
+        $(document).on('keydown', function (e) {
+            if (!e.altKey || e.ctrlKey || e.shiftKey) return;
+            if ($('.modal.show').length) return;
+
+            if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                window.location.href = '{{ url('store/customer/create/billing') }}';
+            } else if (e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                window.location.href = '{{ url('store/staff/create/billing') }}';
+            }
+        });
     </script>
 
 </body>

@@ -53,6 +53,15 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
     width: 100% !important;
 }
 
+/* Select2 also appends a floating positioning wrapper (same .select2-container
+   class) directly to <body> every time a dropdown opens. The 100% width above
+   was stretching that wrapper to the full page width instead of the narrow
+   size Select2 intends, pushing it off-screen and causing a phantom
+   horizontal scrollbar. Reset just the body-level one back to shrink-to-fit. */
+body > .select2-container {
+    width: auto !important;
+}
+
 .sidebar {
     position: fixed !important;
     top: 0;
