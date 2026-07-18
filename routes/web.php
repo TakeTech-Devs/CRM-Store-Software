@@ -87,6 +87,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/updates', function () {
             return view('store/update/update');
         });
+        Route::get('/update-log', function () {
+            return view('store/updateLog');
+        });
     });
 });
 

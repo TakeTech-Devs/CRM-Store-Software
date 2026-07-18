@@ -107,12 +107,13 @@
         <li class="nav-item">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUpdates"
                 aria-expanded="true" aria-controls="collapseUpdates">
-                <i class="fas fa-download fa-folder"></i>
+                <i class="fas fa-sync-alt"></i>
                 <span>Updates</span>
             </a>
             <div id="collapseUpdates" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item" href="{{url('store/updates')}}">Software Update</a>
+                    <a class="collapse-item" href="{{url('store/update-log')}}">Update Log</a>
                 </div>
             </div>
         </li>
