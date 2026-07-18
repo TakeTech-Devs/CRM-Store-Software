@@ -10,10 +10,12 @@
     $changelog = [
         '1.0.0' => [
             'label' => 'Base Version',
+            'date'  => null,
             'notes' => ['Initial release.'],
         ],
         '1.0.1' => [
             'label' => 'Version Update',
+            'date'  => '2026-07-17',
             'notes' => [
                 'Added the self-update mechanism: Check for Update / Apply Update page under My Store > Updates.',
                 'Automatic 3-attempt retry on download/extract failure before surfacing an error.',
@@ -22,6 +24,7 @@
         ],
         '1.0.2' => [
             'label' => 'Version Update',
+            'date'  => '2026-07-17',
             'notes' => [
                 'Fixed inhouse product grouping in billing dropdowns — one product with multiple packs now shows correctly.',
                 'Price auto-loads when only one option is available for a product/pack.',
@@ -30,6 +33,7 @@
         ],
         '1.0.3' => [
             'label' => 'Version Update',
+            'date'  => '2026-07-17',
             'notes' => [
                 'Unified bill preview columns (Brand + GST Rate) across customer/staff create and billing list pages.',
                 'Customer Name/Mail and Doctor Mail are now optional in the Add modals, defaulting to the phone number when left blank.',
@@ -37,6 +41,7 @@
         ],
         '1.0.4' => [
             'label' => 'Version Update',
+            'date'  => '2026-07-18',
             'notes' => [
                 'Added the Update Log page (this page) with a per-version accordion and changelog notes.',
                 'Fixed the sidebar Updates icon.',
@@ -73,6 +78,10 @@
         font-size: 0.8rem;
         font-weight: 600;
         margin-right: 10px;
+    }
+    .version-timeline .v-date {
+        color: #6c757d;
+        font-size: 0.85rem;
     }
     .version-timeline .v-notes {
         padding: 0 18px 16px 42px;
@@ -114,6 +123,9 @@
                              aria-expanded="false" aria-controls="notes-{{ $itemId }}">
                             <span class="v-label"><i class="fas fa-code-branch mr-2 text-success"></i>{{ $entry['label'] }}: {{ $version }}</span>
                             <span>
+                                @if (!empty($entry['date']))
+                                    <span class="v-date mr-2"><i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($entry['date'])->format('d M Y') }}</span>
+                                @endif
                                 <span class="v-done">Done</span>
                                 <i class="fas fa-chevron-down"></i>
                             </span>
