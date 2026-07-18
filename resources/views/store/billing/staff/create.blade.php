@@ -7,9 +7,8 @@
 
     .inhouse-row .avail-label { color: #16a34a; font-weight: 600; }
     #dynamicForm { display: flex; flex-direction: column; gap: 6px; }
-    .product-tbody { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid #e5e5e5; }
-    .product-tbody:nth-child(odd)  { background-color: #ffffff; }
-    .product-tbody:nth-child(even) { background-color: #fdf4f0; }
+    .product-tbody { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid #e5e5e5; background-color: #ffffff; }
+    .product-tbody:nth-child(even) { background-color: #fdf4f0; border-color: #a8a8a8; }
     .product-field { display: flex; flex-direction: column; min-width: 0; }
     .product-field small { white-space: nowrap; }
     .pf-brand    { flex: 0.8; }
@@ -21,12 +20,13 @@
     .pf-discount { flex: 0.5; }
     .pf-total    { flex: 0.6; }
     .billing-header-section {
-        background: #fff8f5;
-        border: 1px solid #f0d5c8;
+        background: #f5e0d0;
+        border: 1px solid #e0b89e;
         border-radius: 10px;
         padding: 1.2rem 1.4rem 0.4rem;
         margin-bottom: 1.2rem;
     }
+    .billing-header-section label { font-weight: 700; }
     @media print {
         body * {
             border: none !important;
