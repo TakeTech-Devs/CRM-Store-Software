@@ -47,6 +47,18 @@
                 'Fixed the sidebar Updates icon.',
             ],
         ],
+        '1.0.5' => [
+            'label' => 'Version Update',
+            'date'  => '2026-07-18',
+            'notes' => [
+                'Customer/Staff Billing is now fully keyboard-operable: Phone -> Doctor -> Payment Type -> Brand -> Product -> Pack -> Price -> Qty auto-advances as you go.',
+                'New shortcuts on the billing pages: Ctrl+Backspace deletes the current row, Ctrl+C/Ctrl+D (Ctrl+S/Ctrl+D on staff) open Add Customer/Doctor/Staff, Ctrl+Up/Down jumps between rows, Ctrl+Enter submits the bill, and P/R print the receipt while the print preview is open.',
+                'Fixed a phantom horizontal scrollbar that could appear whenever a dropdown opened.',
+                'Fixed dropdowns not closing properly behind popups, which could leave the wrong field focused.',
+                'New global shortcuts: Alt+C and Alt+S jump straight to Create Customer/Staff Billing from anywhere in the app.',
+                'Create Stock Transfer now uses the same Brand -> Product -> Pack -> Price selection style as billing, only showing brands currently in stock.',
+            ],
+        ],
     ];
 @endphp
 

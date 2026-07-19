@@ -1,3 +1,21 @@
+@php
+    $isDashboard = request()->is('store/dashboard');
+    $isCreateCustomerBilling = request()->is('store/customer/create/billing');
+
+    $billingActivePaths = ['store/customer/billing', 'store/staff/billing'];
+    $isBillingGroupActive = collect($billingActivePaths)->contains(fn ($p) => request()->is($p));
+
+    $reportActivePaths = ['store/doctor/report', 'store/cumulative/report', 'store/expiry/report', 'store/gst/report', 'store/stock/report'];
+    $isReportGroupActive = collect($reportActivePaths)->contains(fn ($p) => request()->is($p));
+
+    $myStoreActivePaths = ['store/details', 'store/stock/transfer', 'store/create/stockTransfer', 'store/sync/history', 'store/analytics'];
+    $isMyStoreGroupActive = collect($myStoreActivePaths)->contains(fn ($p) => request()->is($p));
+
+    $isBackupGroupActive = request()->is('store/backup');
+
+    $updatesActivePaths = ['store/updates', 'store/update-log'];
+    $isUpdatesGroupActive = collect($updatesActivePaths)->contains(fn ($p) => request()->is($p));
+@endphp
 <style>
     .sidebar-brand-icon img {
         width: 175px;
@@ -5,6 +23,11 @@
 
     ul.navbar-nav.toggled .sidebar-brand-icon img {
         width: 90px;
+    }
+
+    .collapse-item.active-link {
+        font-weight: 700;
+        color: #a54217;
     }
 </style>
 
@@ -20,46 +43,46 @@
 
         <hr class="sidebar-divider my-0">
 
-        <li class="nav-item active">
+        <li class="nav-item {{ $isDashboard ? 'active' : '' }}">
             <a class="nav-link" href="{{url('store/dashboard')}}">
                 <i class="fas fa-fw fa-tachometer-alt"></i>
                 <span>Dashboard</span></a>
         </li>
 
-        <li class="nav-item">
+        <li class="nav-item {{ $isCreateCustomerBilling ? 'active' : '' }}">
             <a class="nav-link" href="{{url('store/customer/create/billing')}}">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Create Customer Billing</span></a>
         </li>
 
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
-                aria-expanded="true" aria-controls="collapseTwo">
+        <li class="nav-item {{ $isBillingGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isBillingGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseTwo"
+                aria-expanded="{{ $isBillingGroupActive ? 'true' : 'false' }}" aria-controls="collapseTwo">
                 <i class="fas fa-boxes"></i>
                 <span>Billing</span>
             </a>
-            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+            <div id="collapseTwo" class="collapse {{ $isBillingGroupActive ? 'show' : '' }}" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/customer/billing')}}">Customer Billing</a>
-                    <a class="collapse-item" href="{{url('store/staff/billing')}}">Staff Billing</a>
+                    <a class="collapse-item {{ request()->is('store/customer/billing') ? 'active-link' : '' }}" href="{{url('store/customer/billing')}}">Customer Billing</a>
+                    <a class="collapse-item {{ request()->is('store/staff/billing') ? 'active-link' : '' }}" href="{{url('store/staff/billing')}}">Staff Billing</a>
                 </div>
             </div>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUserPages"
-                aria-expanded="true" aria-controls="collapseUserPages">
+        <li class="nav-item {{ $isReportGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isReportGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseUserPages"
+                aria-expanded="{{ $isReportGroupActive ? 'true' : 'false' }}" aria-controls="collapseUserPages">
                 <i class="fas fa-users fa-folder"></i>
                 <span>Report</span>
             </a>
-            <div id="collapseUserPages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+            <div id="collapseUserPages" class="collapse {{ $isReportGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/doctor/report')}}">Doctor Report</a>
-                    <a class="collapse-item" href="{{url('store/cumulative/report')}}">Cumulative Sales Report</a>
-                    <a class="collapse-item" href="{{url('store/expiry/report')}}">Expired Medicine Report</a>
-                    <a class="collapse-item" href="{{url('store/gst/report')}}">GST Report</a>
-                    <a class="collapse-item" href="{{url('store/stock/report')}}">Stock Report</a>
+                    <a class="collapse-item {{ request()->is('store/doctor/report') ? 'active-link' : '' }}" href="{{url('store/doctor/report')}}">Doctor Report</a>
+                    <a class="collapse-item {{ request()->is('store/cumulative/report') ? 'active-link' : '' }}" href="{{url('store/cumulative/report')}}">Cumulative Sales Report</a>
+                    <a class="collapse-item {{ request()->is('store/expiry/report') ? 'active-link' : '' }}" href="{{url('store/expiry/report')}}">Expired Medicine Report</a>
+                    <a class="collapse-item {{ request()->is('store/gst/report') ? 'active-link' : '' }}" href="{{url('store/gst/report')}}">GST Report</a>
+                    <a class="collapse-item {{ request()->is('store/stock/report') ? 'active-link' : '' }}" href="{{url('store/stock/report')}}">Stock Report</a>
                 </div>
             </div>
         </li>
@@ -74,46 +97,46 @@
             </li> -->
 
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMyStore"
-                aria-expanded="true" aria-controls="collapseMyStore">
+        <li class="nav-item {{ $isMyStoreGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isMyStoreGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseMyStore"
+                aria-expanded="{{ $isMyStoreGroupActive ? 'true' : 'false' }}" aria-controls="collapseMyStore">
                 <i class="fas fa-home fa-folder"></i>
                 <span>My Store</span>
             </a>
-            <div id="collapseMyStore" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+            <div id="collapseMyStore" class="collapse {{ $isMyStoreGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/details')}}">Store Details</a>
-                    <a class="collapse-item" href="{{url('store/stock/transfer')}}">Store Stock Transfer</a>
-                    <a class="collapse-item" href="{{url('store/sync/history')}}">Store Sync History</a>
-                    <a class="collapse-item" href="{{url('store/analytics')}}">Store Analytics</a>
+                    <a class="collapse-item {{ request()->is('store/details') ? 'active-link' : '' }}" href="{{url('store/details')}}">Store Details</a>
+                    <a class="collapse-item {{ request()->is('store/stock/transfer') || request()->is('store/create/stockTransfer') ? 'active-link' : '' }}" href="{{url('store/stock/transfer')}}">Store Stock Transfer</a>
+                    <a class="collapse-item {{ request()->is('store/sync/history') ? 'active-link' : '' }}" href="{{url('store/sync/history')}}">Store Sync History</a>
+                    <a class="collapse-item {{ request()->is('store/analytics') ? 'active-link' : '' }}" href="{{url('store/analytics')}}">Store Analytics</a>
                 </div>
             </div>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseBackup"
-                aria-expanded="true" aria-controls="collapseBackup">
+        <li class="nav-item {{ $isBackupGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isBackupGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseBackup"
+                aria-expanded="{{ $isBackupGroupActive ? 'true' : 'false' }}" aria-controls="collapseBackup">
                 <i class="fas fa-recycle fa-folder"></i>
                 <span>Backup</span>
             </a>
-            <div id="collapseBackup" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+            <div id="collapseBackup" class="collapse {{ $isBackupGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/backup')}}">Backup</a>
+                    <a class="collapse-item {{ $isBackupGroupActive ? 'active-link' : '' }}" href="{{url('store/backup')}}">Backup</a>
                     {{-- <a class="collapse-item" href="{{url('admin/add-customer')}}">Restore</a> --}}
                 </div>
             </div>
         </li>
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUpdates"
-                aria-expanded="true" aria-controls="collapseUpdates">
+        <li class="nav-item {{ $isUpdatesGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isUpdatesGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseUpdates"
+                aria-expanded="{{ $isUpdatesGroupActive ? 'true' : 'false' }}" aria-controls="collapseUpdates">
                 <i class="fas fa-sync-alt"></i>
                 <span>Updates</span>
             </a>
-            <div id="collapseUpdates" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+            <div id="collapseUpdates" class="collapse {{ $isUpdatesGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                 <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item" href="{{url('store/updates')}}">Software Update</a>
-                    <a class="collapse-item" href="{{url('store/update-log')}}">Update Log</a>
+                    <a class="collapse-item {{ request()->is('store/updates') ? 'active-link' : '' }}" href="{{url('store/updates')}}">Software Update</a>
+                    <a class="collapse-item {{ request()->is('store/update-log') ? 'active-link' : '' }}" href="{{url('store/update-log')}}">Update Log</a>
                 </div>
             </div>
         </li>
