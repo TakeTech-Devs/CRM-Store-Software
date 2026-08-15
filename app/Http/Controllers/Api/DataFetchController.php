@@ -468,7 +468,7 @@ class DataFetchController extends Controller
                 'product' => $this->syncRemoteTable('product', ['id', 'product_name', 'brand_id', 'category_id', 'sub_category_id', 'hsn_code', 'gst', 'status', 'created_at', 'updated_at']),
                 'customer' => $this->syncCustomerTable(),
                 'staff'  => $this->syncStaffTable(),
-                'doctor' => $this->syncRemoteTable('doctor', ['id', 'name', 'mail', 'phone', 'degree', 'status', 'created_at', 'updated_at']),
+                'doctor' => $this->syncDoctorTable(),
                 'inhouse_product' => $this->syncRemoteTable('inhouse_product', ['id', 'product_name', 'price', 'category_id', 'sub_category_id', 'pack_id', 'status', 'created_at', 'updated_at'], 'inhouse_product_with_price'),
             ];
 
@@ -601,6 +601,37 @@ class DataFetchController extends Controller
                     'name'       => $row->name,
                     'mail'       => $row->mail,
                     'phone'      => $row->phone,
+                    'status'     => $row->status,
+                    'created_at' => $row->created_at ?? now(),
+                    'updated_at' => $row->updated_at ?? now(),
+                ])
+            );
+        }
+
+        return $remoteRows->count();
+    }
+
+    // Doctor is a hybrid: some rows are admin-authoritative global reference data
+    // (store_id null), others originate at a store via the Add Doctor modal. Pulled
+    // in keyed on (store_id, phone) rather than raw id — same reasoning as
+    // syncCustomerTable — so a locally store-created doctor's auto-increment id can
+    // never collide with an unrelated admin doctor's id and get silently overwritten.
+    private function syncDoctorTable(): int
+    {
+        $remoteRows = DB::connection('remote_mysql')
+            ->table('doctor')
+            ->select(['store_id', 'name', 'mail', 'phone', 'degree', 'status', 'created_at', 'updated_at'])
+            ->get();
+
+        foreach ($remoteRows as $row) {
+            DB::table('doctor')->updateOrInsert(
+                ['store_id' => $row->store_id, 'phone' => $row->phone],
+                $this->onlyExistingColumns('doctor', [
+                    'store_id'   => $row->store_id,
+                    'name'       => $row->name,
+                    'mail'       => $row->mail,
+                    'phone'      => $row->phone,
+                    'degree'     => $row->degree,
                     'status'     => $row->status,
                     'created_at' => $row->created_at ?? now(),
                     'updated_at' => $row->updated_at ?? now(),
@@ -980,6 +1011,27 @@ class DataFetchController extends Controller
         return $localCustomers->count();
     }
 
+    private function pushDoctorsToAdmin($adminDB): int
+    {
+        if (!$adminDB->getSchemaBuilder()->hasTable('doctor')) return 0;
+
+        $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing('doctor');
+        // Only doctors created at this store (via the Add Doctor modal) get pushed —
+        // rows with no store_id are admin-authoritative/global and never originated here.
+        $localDoctors = DB::table('doctor')->whereNotNull('store_id')->get();
+
+        foreach ($localDoctors as $doctor) {
+            $payload = array_intersect_key((array) $doctor, array_flip($adminColumns));
+            unset($payload['id']); // never overwrite admin's PK
+            $adminDB->table('doctor')->updateOrInsert(
+                ['store_id' => $doctor->store_id, 'phone' => $doctor->phone],
+                $payload
+            );
+        }
+
+        return $localDoctors->count();
+    }
+
     public function sendDataToAdminDatabase(Request $request, $storeId)
     {
         DB::beginTransaction();
@@ -987,9 +1039,10 @@ class DataFetchController extends Controller
             $adminDB = DB::connection('remote_mysql');
             $adminDB->statement('SET FOREIGN_KEY_CHECKS=0');
 
-            // Push customers and staff first - billing references them on admin.
+            // Push customers, staff, and doctors first - billing references them on admin.
             $summary['customer'] = $this->pushCustomersToAdmin($adminDB);
             $summary['staff']    = $this->pushStaffToAdmin($adminDB);
+            $summary['doctor']   = $this->pushDoctorsToAdmin($adminDB);
 
             // Only billing tables are sent to admin - everything else is admin's source of truth.
             // Parent must come before child to satisfy foreign key constraints on upsert.

@@ -574,7 +574,8 @@
         printWindow.document.write('<html><head><title>Print</title>');
         printWindow.document.write(`
             <style>
-                body { font-family: 'Courier New', Courier, monospace; font-size: 8px; width: 4in; }
+                @page { size: 4in 7in; margin: 0.1in; }
+                body { font-family: 'Courier New', Courier, monospace; font-size: 8px; width: 4in; margin: 0; }
                 table { width: 100%; border-collapse: collapse; }
                 th, td { padding: 2px; text-align: left; }
                 .text-center { text-align: center; }

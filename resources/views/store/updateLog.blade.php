@@ -59,6 +59,20 @@
                 'Create Stock Transfer now uses the same Brand -> Product -> Pack -> Price selection style as billing, only showing brands currently in stock.',
             ],
         ],
+        '1.0.6' => [
+            'label' => 'Version Update',
+            'date'  => '2026-08-15',
+            'notes' => [
+                'New Return system: customers and staff can return items from any of their last 3 bills within 30 days, generating a credit note that can later be applied toward a new bill of equal or greater value.',
+                'New same-day bill correction: staff can reduce or remove items from a bill on the day it was created, which automatically restores the stock and adjusts the bill total. A bill that has been returned can no longer be edited this way, and a bill that has been edited this way can no longer be returned, to keep stock accurate.',
+                'Fixed: doctors added at the store were not reaching the admin database during Sync Out — this now works correctly.',
+                'Doctor Wise Report: selecting a doctor and generating the report now also shows a Patient Count card, a Bill Amount card, and a 6-month trend chart.',
+                'Bills that were fully corrected down to zero no longer appear in the Sales Report, GST Report, Doctor Report, Analytics page, or the Dashboard\'s recent bills.',
+                'Bill printing now correctly fits the 4x7 inch thermal receipt paper.',
+                'The sidebar now highlights whichever section you are currently viewing.',
+                'Self-update now also applies changes to the app\'s stylesheets, scripts, and images, not just backend code — and fails immediately with a clear message if the server is missing required zip support, instead of retrying silently.',
+            ],
+        ],
     ];
 @endphp
 

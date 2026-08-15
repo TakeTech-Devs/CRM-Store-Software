@@ -67,7 +67,8 @@ class ReportController extends Controller
         $doctorBillingData = [];
     
         $staffBilling = DB::table('staff_billing')
-            ->where('doctor_name', $doctorId) 
+            ->where('doctor_name', $doctorId)
+            ->where('total_amt', '>', 0)
             ->get();
     
         foreach ($staffBilling as $billing) {
@@ -98,6 +99,7 @@ class ReportController extends Controller
     
         $customerBilling = DB::table('customer_billing')
             ->where('doctor_name', $doctorId)
+            ->where('total_amt', '>', 0)
             ->get();
     
         foreach ($customerBilling as $billing) {
@@ -126,17 +128,71 @@ class ReportController extends Controller
             ];
         }
     
+        // Summary + monthly trend for the cards/chart — computed straight from the
+        // billing header tables (not the line-item loops above), since a bill with
+        // several product lines would otherwise get its total_amt counted once per
+        // line item instead of once per bill.
+        $storeMetaId = session('storeId');
+        $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
+        $storeId = $store?->id;
+
+        $billStats = function ($from = null, $to = null) use ($doctorId, $storeId) {
+            $customerQuery = DB::table('customer_billing')->where('doctor_name', $doctorId)->where('total_amt', '>', 0);
+            $staffQuery = DB::table('staff_billing')->where('doctor_name', $doctorId)->where('total_amt', '>', 0);
+            if ($storeId) {
+                $customerQuery->where('store_id', $storeId);
+                $staffQuery->where('store_id', $storeId);
+            }
+            if ($from && $to) {
+                $customerQuery->whereBetween('billing_date', [$from, $to]);
+                $staffQuery->whereBetween('billing_date', [$from, $to]);
+            }
+            $customerRows = $customerQuery->get(['customer_phone', 'total_amt']);
+            $staffRows = $staffQuery->get(['staff_phone', 'total_amt']);
+
+            $patientCount = $customerRows->pluck('customer_phone')
+                ->merge($staffRows->pluck('staff_phone'))
+                ->filter()
+                ->unique()
+                ->count();
+
+            return [
+                'patient_count' => $patientCount,
+                'bill_amount' => round($customerRows->sum('total_amt') + $staffRows->sum('total_amt'), 2),
+            ];
+        };
+
+        $summary = $billStats();
+
+        $monthlyTrend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $m = now()->subMonths($i);
+            $label = $m->format('M Y');
+            $mStart = $m->startOfMonth()->toDateString();
+            $mEnd   = $m->endOfMonth()->toDateString();
+            $stats = $billStats($mStart, $mEnd);
+            $monthlyTrend[] = [
+                'month' => $label,
+                'patient_count' => $stats['patient_count'],
+                'bill_amount' => $stats['bill_amount'],
+            ];
+        }
+
         if (empty($doctorBillingData)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'No billing data found for the selected doctor.',
-                'data' => []
+                'data' => [],
+                'summary' => $summary,
+                'trend' => $monthlyTrend,
             ]);
         }
-    
+
         return response()->json([
             'status' => 'success',
             'data' => $doctorBillingData,
+            'summary' => $summary,
+            'trend' => $monthlyTrend,
         ]);
     }
 
@@ -152,12 +208,15 @@ class ReportController extends Controller
             'transactions'       => []
         ];
 
-        $staffQuery = DB::table('staff_billing');
+        // A bill fully reduced to nothing via a same-day edit still exists as a
+        // record (rewrite-in-place, not deleted) but represents no real sale —
+        // exclude it from reporting, same as every other report below.
+        $staffQuery = DB::table('staff_billing')->where('total_amt', '>', 0);
         if ($startDate) $staffQuery->where('billing_date', '>=', $startDate);
         if ($endDate)   $staffQuery->where('billing_date', '<=', $endDate);
         $staffBillingData = $staffQuery->get();
 
-        $customerQuery = DB::table('customer_billing');
+        $customerQuery = DB::table('customer_billing')->where('total_amt', '>', 0);
         if ($startDate) $customerQuery->where('billing_date', '>=', $startDate);
         if ($endDate)   $customerQuery->where('billing_date', '<=', $endDate);
         $customerBillingData = $customerQuery->get();
@@ -245,13 +304,15 @@ class ReportController extends Controller
         $customerBills = DB::table('customer_product_billing as cpb')
             ->join('customer_billing as cb', 'cpb.cb_id', '=', 'cb.id')
             ->join('product as p', 'cpb.productId', '=', 'p.id')
+            ->where('cb.total_amt', '>', 0)
             ->select('cb.billing_date', 'p.hsn_code', 'p.gst', DB::raw('SUM(cb.total_amt) as total_amount'))
             ->groupBy('cb.billing_date', 'p.hsn_code', 'p.gst');
-    
+
         // Fetch the billing data from staff_product_billing
         $staffBills = DB::table('staff_product_billing as cpb')
             ->join('staff_billing as cb', 'cpb.cb_id', '=', 'cb.id')
             ->join('product as p', 'cpb.productId', '=', 'p.id')
+            ->where('cb.total_amt', '>', 0)
             ->select('cb.billing_date', 'p.hsn_code', 'p.gst', DB::raw('SUM(cb.total_amt) as total_amount'))
             ->groupBy('cb.billing_date', 'p.hsn_code', 'p.gst');
     
@@ -495,6 +556,7 @@ class ReportController extends Controller
         // Payment breakdown
         $paymentBreakdown = DB::table('customer_billing')
             ->where('store_id', $storeId)
+            ->where('total_amt', '>', 0)
             ->selectRaw('paymentType, COUNT(*) as count, SUM(total_amt) as total')
             ->groupBy('paymentType')
             ->get();
@@ -503,6 +565,7 @@ class ReportController extends Controller
         $doctorSales = DB::table('customer_billing as cb')
             ->join('doctor', 'cb.doctor_name', '=', 'doctor.id')
             ->where('cb.store_id', $storeId)
+            ->where('cb.total_amt', '>', 0)
             ->whereNotNull('cb.doctor_name')
             ->selectRaw('doctor.name as doctor_name, COUNT(*) as bill_count, SUM(cb.total_amt) as total_amt')
             ->groupBy('doctor.name')

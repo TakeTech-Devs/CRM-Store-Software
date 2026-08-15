@@ -5,12 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
+use DB;
 
 class DoctorController extends Controller
 {
     public function create(Request $request){
         try {
+            // Single-store local DB — always exactly one row in store table
+            // (matches CustomerBilling::create_customer's convention).
+            $store = DB::table('store')->first();
+
             $payload = [
+                'store_id'=>$store->id ?? null,
                 'name'=>$request->name,
                 'mail'=>$request->mail,
                 'phone'=>$request->phone,

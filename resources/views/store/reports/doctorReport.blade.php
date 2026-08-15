@@ -49,6 +49,33 @@
                 </div>
             </form>
 
+            <div class="col-md-12 mt-4" id="chartSection" style="display:none;">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card shadow mb-3" style="border-left: 4px solid #A54217;">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#A54217;">Patient Count</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="patientCountCard">0</div>
+                            </div>
+                        </div>
+                        <div class="card shadow mb-3" style="border-left: 4px solid #059669;">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#059669;">Bill Amount</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="billAmountCard">₹0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <h6 class="text-dark mb-3">Monthly Trend (Last 6 Months)</h6>
+                                <canvas id="doctorTrendChart" height="90"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-md-12 mt-4" id="reportSection">
                 <div class="table-responsive">
                     <div id="printArea">
@@ -122,11 +149,17 @@
                 method: 'GET',
                 data: { doctor_name: doctorId },
                 success: function (response) {
+                    renderDoctorSummaryCards(response.summary);
+                    renderDoctorTrendChart(response.trend);
+                    $('#chartSection').show();
+
                     if (response.status === 'success') {
-                        allData = response.data; 
-                        currentPage = 1; 
+                        allData = response.data;
+                        currentPage = 1;
                         renderPage();
                     } else {
+                        allData = [];
+                        renderPage();
                         alert('No data found for the selected doctor.');
                     }
                 },
@@ -196,6 +229,10 @@
         // Fetch report on button click
         $('#generateReport').click(function (e) {
             e.preventDefault();
+            if (!$('#doctor_id').val()) {
+                alert('Please select a doctor first.');
+                return;
+            }
             fetchAndDisplayData();
         });
 
@@ -272,5 +309,72 @@
         });
     });
 </script>
-@endsection
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let doctorTrendChartObj = null;
+
+    function fmtCurrency(val) {
+        return '₹' + parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    }
+
+    function renderDoctorSummaryCards(summary) {
+        $('#patientCountCard').text(summary?.patient_count ?? 0);
+        $('#billAmountCard').text(fmtCurrency(summary?.bill_amount ?? 0));
+    }
+
+    function renderDoctorTrendChart(trend) {
+        const labels = (trend || []).map(t => t.month);
+        const billAmounts = (trend || []).map(t => t.bill_amount);
+        const patientCounts = (trend || []).map(t => t.patient_count);
+
+        if (doctorTrendChartObj) {
+            doctorTrendChartObj.destroy();
+        }
+        const ctx = document.getElementById('doctorTrendChart').getContext('2d');
+        doctorTrendChartObj = new Chart(ctx, {
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Bill Amount (₹)',
+                        data: billAmounts,
+                        backgroundColor: '#A54217',
+                        yAxisID: 'y',
+                    },
+                    {
+                        type: 'line',
+                        label: 'Patient Count',
+                        data: patientCounts,
+                        borderColor: '#2563eb',
+                        backgroundColor: '#2563eb',
+                        yAxisID: 'y1',
+                        tension: 0.3,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        beginAtZero: true,
+                        title: { display: true, text: 'Bill Amount (₹)' },
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        ticks: { precision: 0 },
+                        title: { display: true, text: 'Patient Count' },
+                    },
+                },
+            },
+        });
+    }
+</script>
+@endsection
