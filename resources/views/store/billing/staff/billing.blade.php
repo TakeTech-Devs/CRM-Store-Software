@@ -183,6 +183,9 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                    <p class="creditBreakdown" style="display:none; font-size:14px; font-weight:700;">
+                                        Credit Applied: <span class="creditApplied"></span>/- &nbsp;|&nbsp; Amount Paid: <span class="amountPaid"></span>/-
+                                    </p>
                                 </div>
                                 <div class="address text-center" style="font-size: 14px !important; font-weight: 600; margin-top:15px; color: #000000 !important;">
                                     <span>Address : <span class="storeAddress"></span></span><br>
@@ -199,6 +202,38 @@
                         <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
                         <button class="btn btn-sm shadow btn-info" id="printButtonTVS">Print TVS RP 45</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT BILL MODAL (same-day, decrease-only) -->
+    <div class="modal fade" id="editBillModal" tabindex="-1" role="dialog" aria-labelledby="editBillModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBillModalLabel">Edit Bill (Same Day Only)</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Quantity can only be reduced or removed. Inhouse products cannot be edited.</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Pack</th>
+                                    <th>Current Qty</th>
+                                    <th>New Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editBillItemsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="submitEditBill">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -253,6 +288,14 @@
     const PAGE_SIZE = 10;
     let currentPage = 1;
 
+    function getTodayStr() {
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        return `${year}-${month}-${day}`;
+    }
+
     function showNoRecords() {
         $('#purchase-entry-table tbody').html('<tr><td colspan="7" class="text-center">No records found</td></tr>');
         $('.grandTotalAmount').html('<strong>Total Amount: 0.00/-</strong>');
@@ -268,6 +311,11 @@
 
         pageItems.forEach((brand, i) => {
             let totalAmount = parseFloat(brand?.total_amt) || 0;
+            const isToday = brand?.billing_date === getTodayStr();
+            // MySQL EXISTS(...) comes back as the string "0"/"1" — !! alone would
+            // treat "0" as truthy, so compare against the string explicitly.
+            const hasReturn = String(brand?.has_return) === '1';
+            const canEdit = isToday && !hasReturn;
             tbody.append(`
                 <tr class="bill-row" style="cursor:pointer;" data-id="${brand?.id}">
                     <td>${start + i + 1}</td>
@@ -278,6 +326,7 @@
                     <td>${totalAmount.toFixed(2)}</td>
                     <td>
                         <button class="bg-info px-2 py-1 viewBill text-white" data-toggle="modal" data-target="#printModal" data-store-id="${brand.id}">View</button>
+                        ${canEdit ? `<button class="bg-warning px-2 py-1 editBill text-white" data-bill-id="${brand.id}">Edit</button>` : ''}
                     </td>
                 </tr>
             `);
@@ -367,6 +416,14 @@
                         $('.totalGST').text(parseFloat(bill.gst || 0).toFixed(2));
                         $('.totalCGST').text(parseFloat(bill.cgst || 0).toFixed(2));
                         $('.totalSGST').text(parseFloat(bill.sgst || 0).toFixed(2));
+                        if (bill.credit_applied_amt) {
+                            const paid = (parseFloat(bill.total_amt) - parseFloat(bill.credit_applied_amt)).toFixed(2);
+                            $('.creditApplied').text(parseFloat(bill.credit_applied_amt).toFixed(2));
+                            $('.amountPaid').text(paid);
+                            $('.creditBreakdown').show();
+                        } else {
+                            $('.creditBreakdown').hide();
+                        }
                         $('.storeAddress').text(store?.store_address || 'Not Provided');
                         $('.dlNumber').text(store?.dl_number || 'Not Provided');
                         $('.helplineNumber').text(store?.helpline_number || 'Not Provided');
@@ -404,6 +461,92 @@
                 showNoRecords();
             });
         }
+
+        // EDIT BILL (same-day, decrease-only)
+        let editingBillId = null;
+
+        $(document).on('click', '.editBill', function () {
+            if ($(this).is(':disabled')) return;
+            editingBillId = $(this).data('bill-id');
+
+            $.ajax({
+                url: `/api/staff/bill/${editingBillId}`,
+                method: 'GET',
+                success: function (response) {
+                    if (response.status !== 200) return;
+                    const items = response.data.items || [];
+                    const tbody = $('#editBillItemsBody').empty();
+                    items.forEach(item => {
+                        const isInhouse = !!item.inhouse_product_id;
+                        tbody.append(`
+                            <tr data-item-id="${item.id}">
+                                <td>${item.product_name || 'N/A'}${isInhouse ? ' <span class="badge badge-secondary">Inhouse</span>' : ''}</td>
+                                <td>${item.pack}</td>
+                                <td>${item.qty}</td>
+                                <td>
+                                    ${isInhouse
+                                        ? `<input type="text" class="form-control" value="${item.qty}" readonly disabled />`
+                                        : `<input type="number" class="form-control edit-qty-input" min="0" max="${item.qty}" value="${item.qty}" data-original-qty="${item.qty}" />`
+                                    }
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    $('#editBillModal').modal('show');
+                },
+                error: function () {
+                    Swal.fire({ title: 'Error', icon: 'error', text: 'Failed to load bill details.' });
+                }
+            });
+        });
+
+        $(document).on('input', '.edit-qty-input', function () {
+            const max = parseFloat($(this).data('original-qty')) || 0;
+            const val = parseFloat($(this).val());
+            $(this).css('border-color', (isNaN(val) || val < 0 || val > max) ? 'red' : '');
+        });
+
+        $(document).on('click', '#submitEditBill', function () {
+            let hasError = false;
+            const items = [];
+
+            $('#editBillItemsBody tr').each(function () {
+                const itemId = $(this).data('item-id');
+                const $input = $(this).find('.edit-qty-input');
+                if (!$input.length) return; // inhouse row — not editable, skip
+
+                const originalQty = parseFloat($input.data('original-qty'));
+                const newQty = parseFloat($input.val());
+
+                if (isNaN(newQty) || newQty < 0 || newQty > originalQty) {
+                    hasError = true;
+                    return;
+                }
+                if (newQty !== originalQty) {
+                    items.push({ item_id: itemId, new_qty: newQty });
+                }
+            });
+
+            if (hasError) {
+                Swal.fire({ title: 'Validation Error', icon: 'error', text: 'Quantity can only be decreased, not increased.' });
+                return;
+            }
+            if (!items.length) {
+                Swal.fire({ title: 'No Changes', icon: 'info', text: 'Change a quantity before saving.' });
+                return;
+            }
+
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+            ajaxPostData(`/staff/billing/${editingBillId}/same-day-edit`, { items: items }, csrfToken, () => {
+                Swal.fire({ title: 'Updated!', icon: 'success', text: 'Bill updated successfully.', timer: 1500, showConfirmButton: false }).then(() => {
+                    $('#editBillModal').modal('hide');
+                    api_for_bill();
+                });
+            }, (error) => {
+                const msg = error?.responseJSON?.message || 'Failed to update bill.';
+                Swal.fire({ title: 'Error', icon: 'error', text: msg });
+            });
+        });
 
         function printModalContent() {
             var printContent = document.getElementById("printArea").innerHTML;

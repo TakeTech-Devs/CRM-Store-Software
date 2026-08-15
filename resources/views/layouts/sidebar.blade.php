@@ -5,6 +5,9 @@
     $billingActivePaths = ['store/customer/billing', 'store/staff/billing'];
     $isBillingGroupActive = collect($billingActivePaths)->contains(fn ($p) => request()->is($p));
 
+    $returnActivePaths = ['store/return/create', 'store/return/list'];
+    $isReturnGroupActive = collect($returnActivePaths)->contains(fn ($p) => request()->is($p));
+
     $reportActivePaths = ['store/doctor/report', 'store/cumulative/report', 'store/expiry/report', 'store/gst/report', 'store/stock/report'];
     $isReportGroupActive = collect($reportActivePaths)->contains(fn ($p) => request()->is($p));
 
@@ -66,6 +69,20 @@
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item {{ request()->is('store/customer/billing') ? 'active-link' : '' }}" href="{{url('store/customer/billing')}}">Customer Billing</a>
                     <a class="collapse-item {{ request()->is('store/staff/billing') ? 'active-link' : '' }}" href="{{url('store/staff/billing')}}">Staff Billing</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="nav-item {{ $isReturnGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isReturnGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseReturns"
+                aria-expanded="{{ $isReturnGroupActive ? 'true' : 'false' }}" aria-controls="collapseReturns">
+                <i class="fas fa-undo-alt"></i>
+                <span>Returns</span>
+            </a>
+            <div id="collapseReturns" class="collapse {{ $isReturnGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item {{ request()->is('store/return/create') ? 'active-link' : '' }}" href="{{url('store/return/create')}}">Create Return</a>
+                    <a class="collapse-item {{ request()->is('store/return/list') ? 'active-link' : '' }}" href="{{url('store/return/list')}}">Credit Notes</a>
                 </div>
             </div>
         </li>

@@ -17,7 +17,6 @@ use App\Http\Controllers\Api\ReportController;
 // })->middleware('auth:sanctum');
 Route::post('/verify-store', [DataFetchController::class, 'verifyStore']);
 Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
-Route::post('/customer/billing/update/{billId}', [CustomerBilling::class, 'updateBilling']);
 Route::get('/customer/billing/list', [CustomerBilling:: class , 'listBilling']);
 route::get('/customer/bill/{billId}', [CustomerBilling::class, 'getBillDetails']);
 Route::post('/customer', [CustomerBilling:: class , 'create_customer']);

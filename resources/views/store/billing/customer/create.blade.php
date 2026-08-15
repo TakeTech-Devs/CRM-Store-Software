@@ -131,6 +131,10 @@
                                 <option value="card">Card</option>
                             </select>
                         </div>
+                        <div class="form-check mt-1">
+                            <input type="checkbox" class="form-check-input" id="hasCreditNote">
+                            <label class="form-check-label font-weight-normal" for="hasCreditNote">Is Credit Note Available</label>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -141,6 +145,20 @@
                                 value="Auto-generated on submit" disabled>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div id="creditNoteSection" class="form-row mb-2" style="display:none;">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="credit_note_no">Credit Note</label>
+                        <select id="credit_note_no" class="form-control">
+                            <option value="">No active credit note</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div id="creditNoteBadge" class="text-success font-weight-bold" style="display:none; margin-top:2.2rem;"></div>
                 </div>
             </div>
             </div>{{-- end billing-header-section --}}
@@ -169,6 +187,21 @@
                     <label for="totalSGST">SGST: </label>
                     <span id="totalSGST">0</span>
                 </div>
+            </div>
+
+            <div id="creditDiscountRow" class="form-group text-right mx-4 row justify-content-end" style="display:none;">
+                <div class="col-md-3 text-danger font-weight-bold">
+                    <label>Credit Note Discount: </label>
+                    <span id="creditDiscountAmt">0</span>
+                </div>
+                <div class="col-md-3 text-success font-weight-bold">
+                    <label>Payable Amount: </label>
+                    <span id="payableAmount">0</span>
+                </div>
+            </div>
+
+            <div id="creditNoteWarning" class="form-group text-right mx-4" style="display:none;">
+                <span class="text-danger font-weight-bold"></span>
             </div>
 
             <div class="form-group text-right">
@@ -278,9 +311,77 @@
 </div>
 
 <script>
+    let appliedCreditAmt = 0;
+    let appliedCreditNoteNo = '';
+
+    // Populates the Credit Note dropdown with whatever's active for this phone.
+    // A customer usually redeems a credit note before another one is issued, so
+    // there's normally just one — auto-select it. But nothing stops a customer
+    // from having several active at once, so the dropdown supports picking any
+    // of them; it just doesn't auto-pick when there's more than one to choose from.
+    function loadActiveCreditNote(phone) {
+        $('#credit_note_no').empty().append('<option value="">No active credit note</option>');
+        appliedCreditAmt = 0;
+        appliedCreditNoteNo = '';
+        $('#creditNoteBadge').hide();
+        calculateTotalAmount();
+        if (!phone) return;
+
+        $.ajax({
+            url: `/return/active-for-phone?phone=${encodeURIComponent(phone)}`,
+            method: 'GET',
+            success: function (response) {
+                const notes = response?.data || [];
+                notes.forEach(n => {
+                    $('#credit_note_no').append(`<option value="${n.credit_note_no}" data-amt="${n.total_credit_amt}">${n.credit_note_no} — ₹${parseFloat(n.total_credit_amt).toFixed(2)}</option>`);
+                });
+                if (notes.length === 1) {
+                    $('#credit_note_no').val(notes[0].credit_note_no);
+                    applyCreditNoteSelection(notes[0].credit_note_no, notes[0].total_credit_amt);
+                } else if (notes.length > 1) {
+                    $('#credit_note_no option[value=""]').text(`Select one of ${notes.length} active credit notes`);
+                }
+            }
+        });
+    }
+
+    function applyCreditNoteSelection(creditNoteNo, amt) {
+        if (!creditNoteNo) {
+            appliedCreditAmt = 0;
+            appliedCreditNoteNo = '';
+            $('#creditNoteBadge').hide();
+        } else {
+            appliedCreditAmt = parseFloat(amt) || 0;
+            appliedCreditNoteNo = creditNoteNo;
+            $('#creditNoteBadge').text(`Credit Applied: ₹${appliedCreditAmt.toFixed(2)} (${appliedCreditNoteNo})`).show();
+        }
+        calculateTotalAmount();
+    }
+
     $(document).ready(function () {
             count = 1
             addNewRow(count)
+
+            // Bound directly on their elements (not delegated via document) — these
+            // are static fields present from page load, so delegation buys nothing
+            // here and this page loads two different jQuery builds (one in <head>,
+            // one lower in the layout), which makes document-delegated handlers
+            // registered before the second load unreliable.
+            $('#credit_note_no').on('change', function () {
+                const opt = $(this).find('option:selected');
+                applyCreditNoteSelection($(this).val(), opt.data('amt'));
+            });
+
+            $('#hasCreditNote').on('change', function () {
+                if ($(this).is(':checked')) {
+                    $('#creditNoteSection').show();
+                    loadActiveCreditNote($('#customer_phone').val());
+                } else {
+                    $('#creditNoteSection').hide();
+                    $('#credit_note_no').val('');
+                    applyCreditNoteSelection('', 0);
+                }
+            });
 
             // Initialize select2 once — options are filled by customerData() separately
             $('#customer_phone').select2({
@@ -296,7 +397,7 @@
             });
             $('#customer_phone').on('change', function () {
                 const phone = $(this).val();
-                if (!phone) { $('#customer_name').val(''); return; }
+                if (!phone) { $('#customer_name').val(''); if ($('#hasCreditNote').is(':checked')) loadActiveCreditNote(''); return; }
                 const opt = $(this).find('option:selected');
                 const isNew = opt.data('select2-tag') === true;
                 if (isNew) {
@@ -308,6 +409,7 @@
                     $('#customer_name').val(parts.length > 1 ? parts.slice(1).join(' — ') : '');
                     openSelect2Safe('#doctor_name');
                 }
+                if ($('#hasCreditNote').is(':checked')) loadActiveCreditNote(phone);
             });
 
             $('#paymentType').select2({ width: '100%', placeholder: 'Choose Payment Type...' });
@@ -374,7 +476,16 @@
                     return;
                 }
 
-                const payload = gatherFormData(); 
+                if (appliedCreditAmt > 0 && (parseFloat($('#totalAmount').text()) || 0) < appliedCreditAmt) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        icon: "error",
+                        text: `Bill total must be at least the applied credit note value (₹${appliedCreditAmt.toFixed(2)}).`,
+                    });
+                    return;
+                }
+
+                const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
 
                 ajaxPostData('/customer/billing/create', payload, csrfToken, (response) => {
@@ -1111,6 +1222,36 @@
             $('#totalGST').text(totalGST.toFixed(2));
             $('#totalCGST').text(totalCGST.toFixed(2));
             $('#totalSGST').text(totalSGST.toFixed(2));
+            updateCreditDiscountDisplay(totalAmount);
+        }
+
+        // Credit note is a payment offset, not a change to the goods' price/GST —
+        // so it's shown as a discount off the payable amount, not folded into totalAmount.
+        // A credit note can only be used in full against a bill of equal or greater
+        // value, so submission is blocked (not just warned) until the total catches up.
+        function updateCreditDiscountDisplay(totalAmount) {
+            if (appliedCreditAmt > 0) {
+                const payable = Math.max(0, totalAmount - appliedCreditAmt);
+                $('#creditDiscountAmt').text(appliedCreditAmt.toFixed(2));
+                $('#payableAmount').text(payable.toFixed(2));
+                $('#creditDiscountRow').show();
+
+                if (totalAmount < appliedCreditAmt) {
+                    const shortfall = appliedCreditAmt - totalAmount;
+                    $('#creditNoteWarning span').text(
+                        `Bill total must be at least ₹${appliedCreditAmt.toFixed(2)} to use this credit note — add ₹${shortfall.toFixed(2)} more.`
+                    );
+                    $('#creditNoteWarning').show();
+                    $('#submitBilling').prop('disabled', true);
+                } else {
+                    $('#creditNoteWarning').hide();
+                    $('#submitBilling').prop('disabled', false);
+                }
+            } else {
+                $('#creditDiscountRow').hide();
+                $('#creditNoteWarning').hide();
+                $('#submitBilling').prop('disabled', false);
+            }
         }
 
         $(document).on('input keyup', '[name="assignQty[]"]', function () {
@@ -1237,6 +1378,7 @@
                 sgst: $('#totalSGST').text(),
                 billing_date:formattedDate,
                 billingType:"Customer Billing",
+                credit_note_no: appliedCreditNoteNo || null,
                 product_billings: products
             };
 
@@ -1289,6 +1431,15 @@
             $('.totalCGST').text(bill.cgst || 0);
             $('.totalSGST').text(bill.sgst || 0);
             $('.taxableValue').text((bill.total_amt - bill.gst).toFixed(2)); // Add taxable value
+
+            if (bill.credit_applied_amt) {
+                const paid = (parseFloat(bill.total_amt) - parseFloat(bill.credit_applied_amt)).toFixed(2);
+                $('.creditApplied').text(parseFloat(bill.credit_applied_amt).toFixed(2));
+                $('.amountPaid').text(paid);
+                $('.creditBreakdown').show();
+            } else {
+                $('.creditBreakdown').hide();
+            }
 
             // Update store information
             if (store) {
@@ -1415,6 +1566,9 @@
                                                             </tr>
                                                         </tbody>
                                                     </table>
+                                                    <p class="creditBreakdown" style="display:none; font-size:14px; font-weight:700;">
+                                                        Credit Applied: <span class="creditApplied"></span>/- &nbsp;|&nbsp; Amount Paid: <span class="amountPaid"></span>/-
+                                                    </p>
                                                 </div>
                                                 <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
                                                     <span>Address : <Span class="storeAddress"></Span></span><br>

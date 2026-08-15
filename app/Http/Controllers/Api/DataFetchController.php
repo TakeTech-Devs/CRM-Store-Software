@@ -998,6 +998,10 @@ class DataFetchController extends Controller
                 'customer_product_billing',
                 'staff_billing',
                 'staff_product_billing',
+                'credit_note_customer',
+                'credit_note_customer_items',
+                'credit_note_staff',
+                'credit_note_staff_items',
                 'stock_transfer',
                 'stock_transfer_items',
             ];
@@ -1032,6 +1036,49 @@ class DataFetchController extends Controller
                         );
                     }
                     $summary[$table] = $newRows->count();
+
+                } elseif ($table === 'credit_note_customer' || $table === 'credit_note_staff') {
+                    // Use credit_note_no as the business key — local id and admin id diverge.
+                    foreach ($newRows as $row) {
+                        $data = array_intersect_key((array) $row, array_flip($adminColumns));
+                        unset($data['id']);
+                        $adminDB->table($table)->updateOrInsert(
+                            ['credit_note_no' => $row->credit_note_no],
+                            $data
+                        );
+                    }
+                    $summary[$table] = $newRows->count();
+
+                } elseif ($table === 'credit_note_customer_items' || $table === 'credit_note_staff_items') {
+                    // Build local_id -> admin_id map via the parent's credit_note_no
+                    $headerTable = $table === 'credit_note_customer_items' ? 'credit_note_customer' : 'credit_note_staff';
+                    $localCreditNotes = DB::table($headerTable)->get()->keyBy('id');
+                    $creditNoteIdMap  = [];
+                    foreach ($localCreditNotes as $localId => $cn) {
+                        $adminCreditNote = $adminDB->table($headerTable)
+                            ->where('credit_note_no', $cn->credit_note_no)
+                            ->first();
+                        if ($adminCreditNote) {
+                            $creditNoteIdMap[$localId] = $adminCreditNote->id;
+                        }
+                    }
+
+                    $pushed = 0;
+                    foreach ($newRows as $item) {
+                        $adminCreditNoteId = $creditNoteIdMap[$item->credit_note_id] ?? null;
+                        if (!$adminCreditNoteId) continue;
+
+                        $data = array_intersect_key((array) $item, array_flip($adminColumns));
+                        unset($data['id']);
+                        $data['credit_note_id'] = $adminCreditNoteId;
+
+                        $adminDB->table($table)->updateOrInsert(
+                            ['credit_note_id' => $adminCreditNoteId, 'source_item_id' => $item->source_item_id],
+                            $data
+                        );
+                        $pushed++;
+                    }
+                    $summary[$table] = $pushed;
 
                 } elseif ($table === 'stock_transfer_items') {
                     // Build local_id -> admin_id map via transfer_no

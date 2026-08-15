@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\StockTransferController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\UpdateController;
+use App\Http\Controllers\Api\ReturnController;
 
 
 
@@ -39,14 +40,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/customer/create/billing', function () {
             return view('store/billing/customer/create');
         });
-        Route::get('/customer/billing/{id}/edit', function ($id) {
-            return view('store/billing/customer/edit', ['billId' => $id]);
-        });
         Route::get('/staff/billing', function () {
             return view('store/billing/staff/billing');
         });
         Route::get('/staff/create/billing', function () {
             return view('store/billing/staff/create');
+        });
+        Route::get('/return/create', function () {
+            return view('store/return/create');
+        });
+        Route::get('/return/list', function () {
+            return view('store/return/list');
         });
         Route::get('/details', function () {
             return view('store/storeSync/storeDetails');
@@ -125,8 +129,21 @@ Route::get('/sub-category', [DataController:: class , 'sub_category_data']);
 Route::get('/pack', [DataController:: class , 'pack_data']);
 Route::get('/price', [DataController:: class , 'price_data']);
 Route::post('/customer/billing/create', [CustomerBilling:: class , 'createBilling']);
-Route::post('/customer/billing/update/{billId}', [CustomerBilling::class, 'updateBilling']);
 Route::post('/staff/billing/create', [StaffBilling::class , 'createBilling']);
+
+// Same-day, decrease-only bill correction — session-dependent, web.php only
+// (same reasoning as the Return routes above).
+Route::post('/customer/billing/{billId}/same-day-edit', [CustomerBilling::class, 'editSameDayBilling']);
+Route::post('/staff/billing/{billId}/same-day-edit', [StaffBilling::class, 'editSameDayBilling']);
+
+// Return / Credit Note — session-dependent, kept in web.php only (see api.php's
+// customer/billing/create for why a stateless-api.php copy would silently 403).
+Route::get('/return/active-for-phone', [ReturnController::class, 'getActiveCreditNoteForPhone']);
+Route::get('/return/eligible-bills', [ReturnController::class, 'getEligibleBills']);
+Route::post('/return/create', [ReturnController::class, 'createReturn']);
+Route::get('/return/list', [ReturnController::class, 'listCreditNotes']);
+Route::get('/return/{id}', [ReturnController::class, 'getCreditNoteDetails']);
+Route::get('/return/validate', [ReturnController::class, 'validateCreditNote']);
 
 
 

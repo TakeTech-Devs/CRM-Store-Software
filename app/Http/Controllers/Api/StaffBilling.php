@@ -36,8 +36,42 @@ class StaffBilling extends Controller
             $gstAmount = $request->gstAmount;
             $cgst = $request->cgst;
             $sgst = $request->sgst;
+            $creditNoteNo = $request->credit_note_no ?: null;
 
             DB::beginTransaction();
+
+            // If a credit note is being redeemed on this bill, validate and lock it now
+            // (lockForUpdate here, unlike the rest of this codebase, since a double-redeem
+            // is a real money leak, not a cosmetic duplicate invoice number).
+            $creditNoteRecord = null;
+            $creditNoteTable = null;
+            $creditAppliedAmt = null;
+            if ($creditNoteNo) {
+                $creditNoteRecord = DB::table('credit_note_customer')->where('credit_note_no', $creditNoteNo)->lockForUpdate()->first();
+                $creditNoteTable = 'credit_note_customer';
+                if (!$creditNoteRecord) {
+                    $creditNoteRecord = DB::table('credit_note_staff')->where('credit_note_no', $creditNoteNo)->lockForUpdate()->first();
+                    $creditNoteTable = 'credit_note_staff';
+                }
+
+                if (!$creditNoteRecord || $creditNoteRecord->status !== 'active') {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'Invalid or already-redeemed credit note.'], 400);
+                }
+
+                $creditNotePhone = $creditNoteRecord->customer_phone ?? $creditNoteRecord->staff_phone;
+                if ($creditNotePhone !== $staff_phone) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'This credit note does not belong to this phone number.'], 400);
+                }
+
+                if ((float) $total_amt < (float) $creditNoteRecord->total_credit_amt) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'Bill total must be at least the credit note value.'], 400);
+                }
+
+                $creditAppliedAmt = $creditNoteRecord->total_credit_amt;
+            }
 
             foreach ($product_billing as $key => $value) {
                 if (filter_var($value['is_inhouse'] ?? false, FILTER_VALIDATE_BOOLEAN)) continue;
@@ -77,12 +111,24 @@ class StaffBilling extends Controller
                 'billing_date' => $billing_date,
                 'billingType' => $billingType,
                 'total_amt' => $total_amt,
+                'credit_note_no' => $creditNoteNo,
+                'credit_applied_amt' => $creditAppliedAmt,
                 'gst' => $gstAmount,
                 'cgst' => $cgst,
                 'sgst' => $sgst,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if ($creditNoteRecord) {
+                DB::table($creditNoteTable)->where('id', $creditNoteRecord->id)->update([
+                    'status' => 'redeemed',
+                    'redeemed_bill_type' => 'staff',
+                    'redeemed_bill_id' => $insert_cb,
+                    'redeemed_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             foreach ($product_billing as $key => $value) {
                 DB::table('staff_product_billing')->insert([
@@ -142,7 +188,10 @@ class StaffBilling extends Controller
             $page = $request->query('page') ;
             $limit = $request->query('limit');
             $billingType = $request->billingType;
-            $query = DB::table('staff_billing');
+            $query = DB::table('staff_billing')->select(
+                'staff_billing.*',
+                DB::raw('EXISTS(SELECT 1 FROM credit_note_staff WHERE credit_note_staff.source_bill_id = staff_billing.id) as has_return')
+            );
 
             if ($billingType) {
                 $query->where('billingType', '=', $billingType);
@@ -341,6 +390,120 @@ class StaffBilling extends Controller
             'status' => 200,
             'data' => $filteredEntries,
         ]);
+    }
+
+    // Same-day, decrease-only correction — not a general bill editor. Sealed
+    // (non-inhouse) line items only; quantity can only go down or be removed,
+    // and only on the calendar day the bill was created. Restores stock to the
+    // exact price-matched batch it was deducted from, same as ReturnController.
+    public function editSameDayBilling(Request $request, $billId)
+    {
+        try {
+            $storeMetaId = session('storeId');
+            if (!$storeMetaId) {
+                return response()->json(['status' => 403, 'message' => 'Store not logged in.'], 403);
+            }
+            $store = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
+            $storeId = $store?->id;
+
+            $bill = DB::table('staff_billing')->where('id', $billId)->where('store_id', $storeId)->first();
+            if (!$bill) {
+                return response()->json(['status' => 404, 'message' => 'Bill not found.'], 404);
+            }
+            if ($bill->billing_date !== now()->format('Y-m-d')) {
+                return response()->json(['status' => 400, 'message' => 'This bill can only be edited on the day it was created.'], 400);
+            }
+            $alreadyReturned = DB::table('credit_note_staff')->where('source_bill_id', $billId)->exists();
+            if ($alreadyReturned) {
+                return response()->json(['status' => 400, 'message' => 'This bill has already been returned and cannot be edited.'], 400);
+            }
+
+            $items = $request->items ?? [];
+            if (empty($items)) {
+                return response()->json(['status' => 400, 'message' => 'No items to update.'], 400);
+            }
+
+            DB::beginTransaction();
+
+            foreach ($items as $entry) {
+                $original = DB::table('staff_product_billing')
+                    ->where('id', $entry['item_id'] ?? null)
+                    ->where('cb_id', $billId)
+                    ->first();
+                if (!$original) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'One of the items was not found on this bill.'], 400);
+                }
+                if (!empty($original->inhouse_product_id)) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => "Inhouse products ({$original->pack}) cannot be edited."], 400);
+                }
+
+                $newQty = (float) ($entry['new_qty'] ?? -1);
+                $originalQty = (float) $original->qty;
+                if ($newQty < 0 || $newQty > $originalQty) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => "Quantity can only be decreased for {$original->pack}."], 400);
+                }
+
+                $delta = $originalQty - $newQty;
+                if ($delta > 0) {
+                    $pack = DB::table('pack')->where('pack_name', $original->pack)->first();
+                    if ($pack) {
+                        $prQuery = DB::table('purchase_request')
+                            ->where('product_id', $original->productId)
+                            ->where('pack_id', $pack->id);
+
+                        $priceRow = DB::table('price')->where('price_name', $original->unitValue)->first();
+                        if ($priceRow) {
+                            $prQuery->where('price_id', $priceRow->id);
+                        }
+
+                        $pr = $prQuery->orderBy('id')->first();
+                        if ($pr) {
+                            DB::table('purchase_request')->where('id', $pr->id)->increment('qty', $delta);
+                        }
+                    }
+                }
+
+                if ($newQty == 0) {
+                    DB::table('staff_product_billing')->where('id', $original->id)->delete();
+                } else {
+                    $ratio = $newQty / $originalQty;
+                    DB::table('staff_product_billing')->where('id', $original->id)->update([
+                        'qty' => $newQty,
+                        'totalAmount' => round((float) $original->totalAmount * $ratio, 2),
+                        'gstAmount' => $original->gstAmount !== null ? round((float) $original->gstAmount * $ratio, 2) : null,
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            $remaining = DB::table('staff_product_billing')->where('cb_id', $billId)->get();
+            $totalAmt = $remaining->sum(fn ($r) => (float) $r->totalAmount);
+            $gst = $remaining->sum(fn ($r) => (float) ($r->gstAmount ?? 0));
+
+            DB::table('staff_billing')->where('id', $billId)->update([
+                'total_amt' => round($totalAmt, 2),
+                'gst' => round($gst, 2),
+                'cgst' => round($gst / 2, 2),
+                'sgst' => round($gst / 2, 2),
+                'edited_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Bill updated successfully.',
+                'total_amt' => round($totalAmt, 2),
+                'gst' => round($gst, 2),
+            ], 200);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json(['status' => 500, 'message' => $th->getMessage()], 500);
+        }
     }
 
     public function getBillDetails($billId)
