@@ -13,7 +13,19 @@ use ZipArchive;
 
 class UpdateController extends Controller
 {
-    private const UPDATED_FOLDERS = ['app', 'resources', 'routes', 'database'];
+    // Only these specific asset subfolders are updated — not all of public/,
+    // so index.php, .htaccess, and the public/storage symlink (backup
+    // downloads) are never touched by an update.
+    private const UPDATED_FOLDERS = [
+        'app',
+        'resources',
+        'routes',
+        'database',
+        'public/assets/css',
+        'public/assets/js',
+        'public/assets/img',
+        'public/assets/scss',
+    ];
     private const MAX_ATTEMPTS = 3;
 
     public function checkForUpdate()
@@ -57,6 +69,20 @@ class UpdateController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        
+        // Missing PHP extensions won't fix themselves on retry — fail fast
+        // instead of burning all 3 attempts on something that can't succeed.
+        if (!class_exists('ZipArchive')) {
+            $message = "This server's PHP is missing the 'zip' extension, required to apply updates. "
+                . "Enable it in php.ini (uncomment extension=zip) and restart the server, then try again.";
+            DB::table('update_log')->where('id', $logId)->update([
+                'status' => 'failed',
+                'error_message' => $message,
+                'completed_at' => now(),
+                'updated_at' => now(),
+            ]);
+            return response()->json(['status' => 500, 'message' => $message], 500);
+        }
 
         $tempZip = storage_path('app' . DIRECTORY_SEPARATOR . 'update-' . $manifest['version'] . '.zip');
         $tempExtractDir = storage_path('app' . DIRECTORY_SEPARATOR . 'update-extract-' . $manifest['version']);
@@ -175,7 +201,7 @@ class UpdateController extends Controller
         $zip->close();
     }
 
-    // Only ever copies the four allowed folders — anything else present in the
+    // Only ever copies the allowed folders — anything else present in the
     // zip is ignored, even if the uploaded package contained it by mistake.
     private function applyExtractedFolders(string $extractDir): array
     {
