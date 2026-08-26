@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('curtomer_product_billing', function (Blueprint $table) {
+        Schema::create('customer_product_billing', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cb_id');
             $table->string('category');
             $table->string('discount');
-            $table->string('mrp');
             $table->string('pack');
             $table->string('productId');
             $table->string('qty');
@@ -25,7 +24,7 @@ return new class extends Migration
             $table->string('unitValue');
             $table->foreign('cb_id')
             ->references('id')
-            ->on('curtomer_billing')
+            ->on('customer_billing')
             ->onDelete('cascade');
             $table->timestamps();
         });
@@ -36,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('curtomer_product_billing');
+        Schema::dropIfExists('customer_product_billing');
     }
 };

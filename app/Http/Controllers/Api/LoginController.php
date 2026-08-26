@@ -18,7 +18,6 @@ class LoginController extends Controller
                 'store_meta_id' => $storeId,
                 'store_pass_key' => $password 
             ])->first();
-            // dd($checkCreds);
             if ($checkCreds) {
                 $request->session()->put('storeId', $storeId);
                 return redirect('/store/dashboard');
@@ -29,9 +28,12 @@ class LoginController extends Controller
             throw $th;
         }
     }
+
+
+
+
     public function logout(Request $request)
     {
-        // dd($request->session()->flush());
         $request->session()->flush();
 
         return redirect('/login-page')->with('status', 'You have been logged out.');

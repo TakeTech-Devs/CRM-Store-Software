@@ -1,0 +1,80 @@
+@echo off
+title RightAid Store
+color 0A
+
+:: Resolve the project directory relative to this bat file's location
+set "PROJECT_DIR=%~dp0"
+cd /d "%PROJECT_DIR%"
+
+:: XAMPP paths
+set "XAMPP_DIR=C:\xampp"
+set "MYSQL=C:\xampp\mysql\bin\mysql.exe"
+set "MYSQLADMIN=C:\xampp\mysql\bin\mysqladmin.exe"
+
+:: Use php from system PATH (same as running manually in cmd)
+set "PHP=php"
+
+:: Check PHP exists
+where php >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] PHP not found in PATH.
+    echo Please make sure XAMPP is installed and PHP is in your system PATH.
+    pause
+    exit /b 1
+)
+
+:: Start XAMPP services (Apache + MySQL) if not already running
+tasklist /FI "IMAGENAME eq httpd.exe" 2>nul | find /I "httpd.exe" >nul
+if errorlevel 1 (
+    echo [INFO] Starting XAMPP services...
+    start "" "%XAMPP_DIR%\xampp_start.exe"
+    timeout /t 5 >nul
+)
+
+:: ─── FIRST RUN SETUP ───────────────────────────────────────────────
+if not exist "%PROJECT_DIR%rightaid.installed" (
+    echo [SETUP] First run detected. Setting up RightAid...
+    echo.
+
+    echo [1/5] Installing dependencies...
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+    echo.
+
+    echo [2/5] Setting up environment...
+    if not exist "%PROJECT_DIR%.env" (
+        copy "%PROJECT_DIR%.env.example" "%PROJECT_DIR%.env" >nul
+    )
+    "%PHP%" artisan key:generate --force
+    echo.
+
+    echo [3/5] Creating database...
+    "%MYSQL%" -u root -e "CREATE DATABASE IF NOT EXISTS rightaid_store CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>nul
+    echo.
+
+    echo [4/5] Running migrations...
+    "%PHP%" artisan migrate --force
+    echo.
+
+    echo [5/5] Finalising...
+    "%PHP%" artisan storage:link >nul 2>&1
+    "%PHP%" artisan config:cache >nul 2>&1
+    echo.
+
+    :: Write installed flag
+    type nul > "%PROJECT_DIR%rightaid.installed"
+
+    echo [SETUP] Setup complete!
+    echo.
+)
+
+:: ─── LAUNCH ────────────────────────────────────────────────────────
+echo [INFO] Starting RightAid Store...
+echo [INFO] Opening http://127.0.0.1:8000
+echo [INFO] Close this window to stop the server.
+echo.
+
+:: Open browser after 2 seconds
+start /b cmd /c "timeout /t 2 >nul && start http://127.0.0.1:8000"
+
+:: Start Laravel server (keeps window open)
+"%PHP%" artisan serve

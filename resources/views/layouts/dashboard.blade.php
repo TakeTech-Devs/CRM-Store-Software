@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,6 +22,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/app.css')}}">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+
 </head>
 
 <body>
@@ -37,7 +39,7 @@
             <div id="content">
                 @include('layouts.header')
 
-                <div class="container-fluid">
+                <div class="container-fluid pt-4">
 
                     @yield('content')
                 </div>
@@ -55,7 +57,21 @@
 
     <script>
         $(document).ready(function(){
-            $("select").select2();
+            $("select:not(.select2-manual)").select2();
+        });
+
+        // Global hotkeys — jump straight to a billing screen from anywhere in the app
+        $(document).on('keydown', function (e) {
+            if (!e.altKey || e.ctrlKey || e.shiftKey) return;
+            if ($('.modal.show').length) return;
+
+            if (e.key === 'c' || e.key === 'C') {
+                e.preventDefault();
+                window.location.href = '{{ url('store/customer/create/billing') }}';
+            } else if (e.key === 's' || e.key === 'S') {
+                e.preventDefault();
+                window.location.href = '{{ url('store/staff/create/billing') }}';
+            }
         });
     </script>
 

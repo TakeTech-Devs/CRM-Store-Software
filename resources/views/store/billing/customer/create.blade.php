@@ -3,507 +3,1367 @@
 @section('title', 'Create Customer Billing')
 
 @section('content')
-    <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="text-dark">Create Customer Billing</h2>
-            <div class="text-right">
-                <a href="{{ url('store/customer/billing') }}" class="btn btn-secondary btn-sm">View Customer Billing List</a>
-            </div>
+<style>
+    /* Visible keyboard focus ring — the sb-admin-2 theme suppresses this by
+       default (outline:0), which makes keyboard-only navigation unusable.
+       Scoped to this page only; the sidebar keeps its default (no ring) look. */
+    a:focus,
+    button:focus,
+    .btn:focus,
+    input:focus,
+    select:focus,
+    textarea:focus,
+    .select2-selection:focus,
+    .select2-container--default .select2-selection--single:focus,
+    .select2-search__field:focus {
+        outline: 2px solid #0d6efd !important;
+        outline-offset: 2px !important;
+    }
+    .sidebar a:focus,
+    .sidebar button:focus,
+    #sidebarToggle:focus {
+        outline: none !important;
+    }
+    .inhouse-row .avail-label { color: #16a34a; font-weight: 600; }
+    .billing-header-section {
+        background: #f5e0d0;
+        border: 1px solid #e0b89e;
+        border-radius: 10px;
+        padding: 1.2rem 1.4rem 0.4rem;
+        margin-bottom: 1.2rem;
+    }
+    .billing-header-section label { font-weight: 700; }
+    #dynamicForm { display: flex; flex-direction: column; gap: 6px; }
+    .product-tbody { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid #e5e5e5; background-color: #ffffff; }
+    .product-tbody:nth-child(even) { background-color: #fdf4f0; border-color: #a8a8a8; }
+    .product-field { display: flex; flex-direction: column; min-width: 0; }
+    .product-field small { white-space: nowrap; }
+    .pf-brand    { flex: 0.8; }
+    .pf-product  { flex: 1.2; }
+    .pf-pack     { flex: 0.8; }
+    .pf-price    { flex: 0.7; }
+    .pf-unit     { flex: 0.4; }
+    .pf-qty      { flex: 0.5; }
+    .pf-discount { flex: 0.5; }
+    .pf-total    { flex: 0.6; }
+    @media print {
+        body * {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .table tbody+tbody {
+            border-top: none !important;
+        }
+
+        #printButton {
+            display: none;
+        }
+
+        @page {
+            size: A4 landscape;
+        }
+    }
+</style>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-dark">Create Customer Billing</h2>
+        <div class="text-right">
+            <a href="{{ url('store/customer/billing') }}" class="btn btn-secondary btn-sm">View Customer Billing
+                List</a>
         </div>
+    </div>
 
-        <div class="mt-4 position-relative">
-            <form action="{{ url('') }}" method="POST" id="customerBillingCreate">
-                @csrf
-                <div class="form-row mb-2">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="customer_phone">Customer Phone Number</label>
-                            <div class="form-group d-flex align-items-center">
-                                <select data-enable-search="true" name="customer_phone[]" id="customer_phone" class="form-control">
-                                    <option value="">Choose Customer Phone Number...</option>
-                                </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addStaffNumber">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="doctor_name">Doctor Name</label>
-                            <div class="form-group d-flex align-items-center">
-                                <select data-enable-search="true" name="doctor_name[]" id="doctor_name" class="form-control">
-                                    <option value="">Choose Doctor Name...</option>
-                                </select>
-                                <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal" data-target="#addDoctor">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
+    <div class="mt-4 position-relative">
+        <form id="customerBillingCreate">
+            @csrf
+            <div class="billing-header-section">
+            <div class="form-row mb-2">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="customer_phone">Customer Phone Number</label>
+                        <div class="form-group d-flex align-items-center">
+                            <select name="customer_phone" id="customer_phone" class="form-control select2-manual" style="width:100%">
+                                <option value="">Enter or choose customer phone number...</option>
+                            </select>
+                            <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal"
+                                data-target="#addCustomer">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                <div class="form-row mb-2">
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="customer_name">Customer Name</label>
-                            <div class="form-group d-flex align-items-center">
-                                <select data-enable-search="true" name="customer_name[]" id="customer_name" class="form-control" disabled>
-                                    <option value="">Choose Customer Name...</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="paymentType">Payment Type</label>
-                            <div class="form-group d-flex align-items-center">
-                                <select data-enable-search="true" name="paymentType[]" id="paymentType" class="form-control">
-                                    <option value="">Choose Payment Type...</option>
-                                    <option value="online">Online</option>
-                                    <option value="offline">Offline</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="invoiceNo">Invoice No</label>
-                            <div class="form-group d-flex align-items-center">
-                                <input type="text" name="invoiceNo" id="invoiceNo" class="form-control" value="{{ uniqid() }}">
-                            </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="doctor_name">Doctor Name</label>
+                        <div class="form-group d-flex align-items-center">
+                            <select data-enable-search="true" name="doctor_name[]" id="doctor_name"
+                                class="form-control">
+                                <option value="">Choose Doctor Name...</option>
+                            </select>
+                            <button type="button" class="btn btn-sm btn-primary mx-3" data-toggle="modal"
+                                data-target="#addDoctor">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="dynamicForm">
-                        <thead>
-                            <tr class="table">
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Sub Category</th>
-                                <th>Pack</th>
-                                <th>Qty</th>
-                                <th>MRP</th>
-                                <th>Discount</th>
-                                <th>Total Amount</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="formBody">
-                            {{-- <tr>
-                                <td id="row" class="row_id d-none">1</td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name1">
-                                        <option value="">Choose Product</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="category" id="category1" disabled />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="subCategory" id="subCategory1" disabled />
-                                    </div>
-                                </td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control" name="pack[]" id="pack1">
-                                        <option value="">Choose Pack</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="qty" id="qty1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp1">
-                                        <option value="">Choose MRP</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="number" class="form-control" name="unit_value[]" id="unit_value1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control" name="discount[]" id="discount1" />
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="form-group d-flex align-items-center">
-                                        <input type="text" class="form-control totalAmount" value="0" name="totalAmount[]" id="totalAmount1" readonly />
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="delete-icon btn btn-danger text-white p-2 px-1" onclick="deleteRow(this)">
-                                        <i class="fas fa-trash"></i>
-                                    </span>
-                                </td>
-                            </tr> --}}
-                        </tbody>
-                    </table>
+            <div class="form-row mb-2">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="customer_name">Customer Name</label>
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" name="customer_name" id="customer_name" class="form-control" disabled>
+                        </div>
+                    </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="paymentType">Payment Type</label>
+                        <div class="form-group d-flex align-items-center">
+                            <select data-enable-search="true" name="paymentType[]" id="paymentType"
+                                class="form-control">
+                                <option value="">Choose Payment Type...</option>
+                                <option value="online">Online</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                            </select>
+                        </div>
+                        <div class="form-check mt-1">
+                            <input type="checkbox" class="form-check-input" id="hasCreditNote">
+                            <label class="form-check-label font-weight-normal" for="hasCreditNote">Is Credit Note Available</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="invoiceNo">Invoice No</label>
+                        <div class="form-group d-flex align-items-center">
+                            <input type="text" name="invoiceNo" id="invoiceNo" class="form-control"
+                                value="Auto-generated on submit" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <button type="button" name="add_row" id="add_row" class="btn btn-sm btn-info mb-3">
-                    Add More
-                </button>
+            <div id="creditNoteSection" class="form-row mb-2" style="display:none;">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="credit_note_no">Credit Note</label>
+                        <select id="credit_note_no" class="form-control">
+                            <option value="">No active credit note</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div id="creditNoteBadge" class="text-success font-weight-bold" style="display:none; margin-top:2.2rem;"></div>
+                </div>
+            </div>
+            </div>{{-- end billing-header-section --}}
 
-                <div class="form-group text-right">
+            <div id="dynamicForm"></div>
+
+            <button type="button" name="add_row" id="add_row"
+                class="btn btn-sm btn-secondary mb-3  mt-3 float-right ml-3">
+                Add New Row
+            </button>
+
+            <div class="form-group text-right mt-3 mx-4 row d-flex justify-content-end">
+                <div class="col-md-2">
                     <label for="totalAmount">Total Amount: </label>
                     <span id="totalAmount">0</span>
                 </div>
-
-                <div class="form-group text-right">
-                    <button type="button" name="submitBilling" id="submitBilling" class="btn btn-primary">Submit</button>
+                <div class="col-md-2">
+                    <label for="totalGST">GST: </label>
+                    <span id="totalGST">0</span>
                 </div>
-            </form>
-        </div>
+                <div class="col-md-2">
+                    <label for="totalCGST">CGST: </label>
+                    <span id="totalCGST">0</span>
+                </div>
+                <div class="col-md-2">
+                    <label for="totalSGST">SGST: </label>
+                    <span id="totalSGST">0</span>
+                </div>
+            </div>
+
+            <div id="creditDiscountRow" class="form-group text-right mx-4 row justify-content-end" style="display:none;">
+                <div class="col-md-3 text-danger font-weight-bold">
+                    <label>Credit Note Discount: </label>
+                    <span id="creditDiscountAmt">0</span>
+                </div>
+                <div class="col-md-3 text-success font-weight-bold">
+                    <label>Payable Amount: </label>
+                    <span id="payableAmount">0</span>
+                </div>
+            </div>
+
+            <div id="creditNoteWarning" class="form-group text-right mx-4" style="display:none;">
+                <span class="text-danger font-weight-bold"></span>
+            </div>
+
+            <div class="form-group text-right">
+                <button type="button" name="submitBilling" id="submitBilling" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
     </div>
-    
-    <!-- ADD STAFF PHONE NUMBER  -->
-    <div class="modal fade" id="addStaffNumber" tabindex="-1" role="dialog" aria-labelledby="addStaffNumberLabel"
-        aria-hidden="true">
-        <div class="modal-dialog container modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                    <h5 class="modal-title" id="addStaffNumberLabel">Add Customer Number</h5>
+</div>
 
-                </div>
-                <div class="modal-body">
-                    <form id="addCustomer" class="container d-flex align-items-center justify-content-between flex-wrap">
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Name</label>
-                            <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter Customer Name" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Email</label>
-                            <input type="email" class="form-control" id="customer_mail" name="customer_mail" placeholder="Enter Customer Email" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="newCustomer">Customer Phone Number</label>
-                            <input type="mobile" class="form-control" id="customer_phone" name="customer_phone" placeholder="Enter Customer Number" required>
-                        </div>
-                        <div class="form-group d-none">
-                            <label>Status:</label>
-                            <div class="form-group d-flex justify-content-start align-items-center">
-
-                                <div class="form-check mx-3">
-                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
-                                    <label class="form-check-label" for="statusActive">Active</label>
-                                </div>
-                                <div class="form-check">
-                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
-                                    <label class="form-check-label" for="statusInactive">Deactive</label>
-                                </div>
+<!-- ADD CUSTOMER PHONE NUMBER  -->
+<div class="modal fade" id="addCustomer" tabindex="-1" role="dialog" aria-labelledby="addCustomerLabel"
+    aria-hidden="true">
+    <div class="modal-dialog container" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                <h5 class="modal-title" id="addCustomerLabel">Add Customer</h5>
+            </div>
+            <div class="modal-body">
+                <form id="addCustomerForm" class="container">
+                    <div class="form-group">
+                        <label for="name">Customer Name (optional)</label>
+                        <input type="text" class="form-control" id="name" name="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="mail">Customer Mail (optional)</label>
+                        <input type="email" class="form-control" id="mail" name="mail">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Customer Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group d-none">
+                        <label>Status:</label>
+                        <div class="form-group d-flex justify-content-start align-items-center">
+                            <div class="form-check mx-3">
+                                <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"
+                                    checked>
+                                <label class="form-check-label" for="statusActive">Active</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input" id="statusInactive" name="status"
+                                    value="0">
+                                <label class="form-check-label" for="statusInactive">Deactive</label>
                             </div>
                         </div>
-                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
-                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="save-button d-flex align-items-center justify-content-center">
+                        <button type="submit" id="addCustomerFormBtn" class="btn btn-success mx-2">Save</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            aria-label="Close">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- ADD DOCTOR NUMBER  -->
-    <div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel"
-        aria-hidden="true">
-        <div class="modal-dialog container modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
-                    <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
-
-                </div>
-                <div class="modal-body">
-                    <form id="addDoctor" action="{{url('/brands')}}" method="POST" class="container d-flex align-items-center justify-content-between flex-wrap">
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Name</label>
-                            <input type="text" class="form-control" id="doctor_name" name="doctor_name" placeholder="Enter Doctor Name" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Email</label>
-                            <input type="email" class="form-control" id="doctor_mail" name="doctor_mail" placeholder="Enter Doctor Name" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Phone Number</label>
-                            <input type="mobile" class="form-control" id="doctor_phone" name="doctor_phone" placeholder="Enter Doctor Name" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="newDoctor">Doctor Degree</label>
-                            <input type="text" class="form-control" id="doctor_degree" name="doctor_degree" placeholder="Enter Doctor Name" required>
-                        </div>
-                        <div class="form-group d-none">
-                            <label>Status:</label>
-                            <div class="form-group d-flex justify-content-start align-items-center">
-
-                                <div class="form-check mx-3">
-                                    <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"checked>
-                                    <label class="form-check-label" for="statusActive">Active</label>
-                                </div>
-                                <div class="form-check">
-                                    <input type="radio" class="form-check-input" id="statusInactive" name="status" value="0">
-                                    <label class="form-check-label" for="statusInactive">Deactive</label>
-                                </div>
+<!-- ADD DOCTOR MODAL -->
+<div class="modal fade" id="addDoctor" tabindex="-1" role="dialog" aria-labelledby="addDoctorLabel" aria-hidden="true">
+    <div class="modal-dialog container" role="document">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-center align-items-center text-uppercase">
+                <h5 class="modal-title" id="addDoctorLabel">Add Doctor</h5>
+            </div>
+            <div class="modal-body">
+                <form id="addDoctorForm" class="container">
+                    <div class="form-group">
+                        <label for="name">Doctor Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mail">Doctor Mail (optional)</label>
+                        <input type="email" class="form-control" id="mail" name="mail">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Doctor Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="degree">Doctor Degree</label>
+                        <input type="text" class="form-control" id="degree" name="degree" required>
+                    </div>
+                    <div class="form-group d-none">
+                        <label>Status:</label>
+                        <div class="form-group d-flex justify-content-start align-items-center">
+                            <div class="form-check mx-3">
+                                <input type="radio" class="form-check-input" id="statusActive" name="status" value="1"
+                                    checked>
+                                <label class="form-check-label" for="statusActive">Active</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input" id="statusInactive" name="status"
+                                    value="0">
+                                <label class="form-check-label" for="statusInactive">Deactive</label>
                             </div>
                         </div>
-                        <div class="col-md-12 save-button d-flex align-items-end justify-content-end">
-                            <button type="submit" id="addBrandFormBtn" class="btn btn-success mx-2">Save</button>
-                            <button type="button" id="" class="btn btn-secondary" data-dismiss="modal" aria-label="Close">Cancel</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                    <div class="save-button d-flex align-items-center justify-content-center">
+                        <button type="submit" id="addDoctorFormBtn" class="btn btn-success mx-2">Save</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            aria-label="Close">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        $(document).ready(function () {
-            count = 0
-            customerData(null)
-            doctorData()
-            $(document).on('change', '#customer_phone', function () {
-                customerData(this.value)
+<script>
+    let appliedCreditAmt = 0;
+    let appliedCreditNoteNo = '';
+
+    // Populates the Credit Note dropdown with whatever's active for this phone.
+    // A customer usually redeems a credit note before another one is issued, so
+    // there's normally just one — auto-select it. But nothing stops a customer
+    // from having several active at once, so the dropdown supports picking any
+    // of them; it just doesn't auto-pick when there's more than one to choose from.
+    function loadActiveCreditNote(phone) {
+        $('#credit_note_no').empty().append('<option value="">No active credit note</option>');
+        appliedCreditAmt = 0;
+        appliedCreditNoteNo = '';
+        $('#creditNoteBadge').hide();
+        calculateTotalAmount();
+        if (!phone) return;
+
+        $.ajax({
+            url: `/return/active-for-phone?phone=${encodeURIComponent(phone)}`,
+            method: 'GET',
+            success: function (response) {
+                const notes = response?.data || [];
+                notes.forEach(n => {
+                    $('#credit_note_no').append(`<option value="${n.credit_note_no}" data-amt="${n.total_credit_amt}">${n.credit_note_no} — ₹${parseFloat(n.total_credit_amt).toFixed(2)}</option>`);
+                });
+                if (notes.length === 1) {
+                    $('#credit_note_no').val(notes[0].credit_note_no);
+                    applyCreditNoteSelection(notes[0].credit_note_no, notes[0].total_credit_amt);
+                } else if (notes.length > 1) {
+                    $('#credit_note_no option[value=""]').text(`Select one of ${notes.length} active credit notes`);
+                }
+            }
+        });
+    }
+
+    function applyCreditNoteSelection(creditNoteNo, amt) {
+        if (!creditNoteNo) {
+            appliedCreditAmt = 0;
+            appliedCreditNoteNo = '';
+            $('#creditNoteBadge').hide();
+        } else {
+            appliedCreditAmt = parseFloat(amt) || 0;
+            appliedCreditNoteNo = creditNoteNo;
+            $('#creditNoteBadge').text(`Credit Applied: ₹${appliedCreditAmt.toFixed(2)} (${appliedCreditNoteNo})`).show();
+        }
+        calculateTotalAmount();
+    }
+
+    $(document).ready(function () {
+            count = 1
+            addNewRow(count)
+
+            // Bound directly on their elements (not delegated via document) — these
+            // are static fields present from page load, so delegation buys nothing
+            // here and this page loads two different jQuery builds (one in <head>,
+            // one lower in the layout), which makes document-delegated handlers
+            // registered before the second load unreliable.
+            $('#credit_note_no').on('change', function () {
+                const opt = $(this).find('option:selected');
+                applyCreditNoteSelection($(this).val(), opt.data('amt'));
             });
 
-            
+            $('#hasCreditNote').on('change', function () {
+                if ($(this).is(':checked')) {
+                    $('#creditNoteSection').show();
+                    loadActiveCreditNote($('#customer_phone').val());
+                } else {
+                    $('#creditNoteSection').hide();
+                    $('#credit_note_no').val('');
+                    applyCreditNoteSelection('', 0);
+                }
+            });
 
-            $(document).on('change', '.product', function () {
-                ajaxGetData(`/products?id=${this.value}`, (res)=>{
-                    categoryData(res?.data[0].category_id, count)
-                    subCategoryData(res?.data[0].sub_category_id, count)
-                })
-                ajaxGetData(`/purchase/request?id=${this.value}`, (res)=>{
-                    packData(res?.data[0]?.pack_id, count)
-                    priceData(res?.data[0]?.price_id, count)
-                    $(`#qty${count}`).val(res?.data[0]?.qty)
-                })
+            // Initialize select2 once — options are filled by customerData() separately
+            $('#customer_phone').select2({
+                placeholder: 'Enter or choose customer phone number...',
+                allowClear: true,
+                width: '100%',
+                tags: true,
+                createTag: function (params) {
+                    const term = $.trim(params.term);
+                    if (!term) return null;
+                    return { id: term, text: term, newTag: true };
+                },
+            });
+            $('#customer_phone').on('change', function () {
+                const phone = $(this).val();
+                if (!phone) { $('#customer_name').val(''); if ($('#hasCreditNote').is(':checked')) loadActiveCreditNote(''); return; }
+                const opt = $(this).find('option:selected');
+                const isNew = opt.data('select2-tag') === true;
+                if (isNew) {
+                    $('#customer_name').val('');
+                    $('#addCustomer').modal('show');
+                    $('#phone').val(phone);
+                } else {
+                    const parts = opt.text().split(' — ');
+                    $('#customer_name').val(parts.length > 1 ? parts.slice(1).join(' — ') : '');
+                    openSelect2Safe('#doctor_name');
+                }
+                if ($('#hasCreditNote').is(':checked')) loadActiveCreditNote(phone);
+            });
+
+            $('#paymentType').select2({ width: '100%', placeholder: 'Choose Payment Type...' });
+
+            $(document).on('select2:select', '#doctor_name', function () {
+                openSelect2Safe('#paymentType');
+            });
+            $(document).on('select2:select', '#paymentType', function () {
+                const firstRowId = $('#dynamicForm .product-tbody').first().find('.row_id').val();
+                if (firstRowId) openSelect2Safe(`#brand_select${firstRowId}`);
+            });
+
+            customerData(function () {
+                // Land the cursor in the phone search box only once options are loaded
+                openSelect2Safe('#customer_phone');
             })
+            doctorData()
+
+
+
+
+
+            
 
             $(document).on('click', '#add_row', function () {
                 count = count + 1;
                 addNewRow(count)
             })
 
+            // CREATING BILL
             $(document).on('click', '#submitBilling', function () {
+                // Validation check
+                let hasError = false;
+                $('#dynamicForm .product-tbody').each(function () {
+                    const assignQtyInput = $(this).find('[name="assignQty[]"]');
+                    const discountInput = $(this).find('[name="discount[]"]');
+                    
+                    const isInhouse = $(this).hasClass('inhouse-row');
+                    const totalAvailVal = $(this).find('[name="total_qty[]"]').val();
+                    const inputQty = parseFloat(assignQtyInput.val()) || 0;
+                    const discountVal = parseFloat(discountInput.val()) || 0;
+
+                    // Skip stock check for inhouse products
+                    if (!isInhouse && totalAvailVal !== "" && totalAvailVal !== undefined && totalAvailVal !== null) {
+                        const totalAvail = parseFloat(totalAvailVal) || 0;
+                        if (inputQty > totalAvail) {
+                            assignQtyInput.css('border-color', 'red');
+                            hasError = true;
+                        }
+                    }
+
+                    if (discountVal > 100) {
+                        discountInput.css('border-color', 'red');
+                        hasError = true;
+                    }
+                });
+
+                if (hasError) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        icon: "error",
+                        text: "Please fix the highlighted errors before submitting.",
+                    });
+                    return;
+                }
+
+                if (appliedCreditAmt > 0 && (parseFloat($('#totalAmount').text()) || 0) < appliedCreditAmt) {
+                    Swal.fire({
+                        title: "Validation Error",
+                        icon: "error",
+                        text: `Bill total must be at least the applied credit note value (₹${appliedCreditAmt.toFixed(2)}).`,
+                    });
+                    return;
+                }
+
                 const payload = gatherFormData();
                 let csrfToken = $('meta[name="csrf-token"]').attr('content');
-                ajaxPostData('/customer/billing/create', payload, csrfToken, (response)=>{
-                    window.location.href = '/customer/billing';
-                    console.log("Response: ", response);
-                })
-            })
-           
+
+                ajaxPostData('/customer/billing/create', payload, csrfToken, (response) => {
+                    const billId = response.bill_id;
+                    // Show success message briefly, then automatically show the bill
+                    Swal.fire({
+                        title: "Success!",
+                        icon: "success",
+                        text: "Customer Billing Added Successfully.",
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Automatically view and print the bill
+                        viewAndPrintBill(billId);
+                    });
+                }, (error) => {
+                    Swal.fire({
+                        title: "Error!",
+                        icon: "error",
+                        text: "Failed to create billing. Please try again.",
+                    });
+                });
+            });
+
+
+
+            // ADDING CUSTOMER
+            let addCustomerJustSaved = false;
+            $('#addCustomer').on('submit', function(event) {
+                event.preventDefault();
+
+                const customerPhone = $('#phone').val();
+
+                $.ajax({
+                    url: '/api/customer',
+                    type: 'POST',
+                    data: {
+                        name: $('#name').val() || customerPhone,
+                        mail: $('#mail').val() || customerPhone,
+                        phone: customerPhone,
+                        status: $('input[name="status"]:checked').val(),
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        addCustomerJustSaved = true;
+                        const newPhone = $('#phone').val();
+                        const newName  = $('#name').val() || newPhone;
+                        customerData(function () {
+                            $('#customer_phone').val(newPhone).trigger('change.select2');
+                            $('#customer_name').val(newName);
+                        });
+                        Swal.fire({
+                            title: "Customer !",
+                            icon: "success",
+                            text: "Customer Added Successfully.",
+                        });
+                        $('#addCustomer').modal('hide');
+                        $('#addCustomerForm')[0].reset();
+                    },
+                    error: function(xhr) {
+                        alert('An error occurred: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // ADD DOCTOR
+            let addDoctorJustSaved = false;
+            $('#addDoctorForm').on('submit', function(event) {
+                event.preventDefault();
+                const $form = $(this);
+                const doctorPhone = $form.find('[name="phone"]').val();
+
+                $.ajax({
+                    url: '/api/doctor',
+                    type: 'POST',
+                    data: {
+                        name: $form.find('[name="name"]').val(),
+                        mail: $form.find('[name="mail"]').val() || doctorPhone,
+                        phone: doctorPhone,
+                        degree: $form.find('[name="degree"]').val(),
+                        status: $('input[name="status"]:checked').val(),
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        addDoctorJustSaved = true;
+                        doctorData();
+                        Swal.fire({
+                            title: "Doctor !",
+                            icon: "success",
+                            text: "Doctor Added Successfully.",
+                        });
+                        $('#addDoctor').modal('hide');
+                        $form[0].reset();
+                        openSelect2Safe('#paymentType');
+                    },
+                    error: function(xhr) {
+                        alert('An error occurred: ' + xhr.responseText);
+                    }
+                });
+            });
+
+            // Any Select2 dropdown left open behind a modal doesn't close itself —
+            // close them all before any modal is shown, regardless of trigger path.
+            $(document).on('show.bs.modal', '.modal', function () {
+                closeAllSelect2();
+            });
+
+            // If a modal is dismissed WITHOUT saving (Cancel/X/Escape/backdrop),
+            // reopen the field that triggered it so the user can pick up where
+            // they left off. On a successful save the chain already continues
+            // to the next field, so skip reopening in that case.
+            $('#addCustomer').on('hidden.bs.modal', function () {
+                if (!addCustomerJustSaved) openSelect2Safe('#customer_phone');
+                addCustomerJustSaved = false;
+            });
+            $('#addDoctor').on('hidden.bs.modal', function () {
+                if (!addDoctorJustSaved) openSelect2Safe('#doctor_name');
+                addDoctorJustSaved = false;
+            });
+
+            // Focus the first field the instant a modal opens, regardless of how it was opened
+            $('#addCustomer').on('shown.bs.modal', function () {
+                document.querySelector('#addCustomerForm [name="name"]')?.focus();
+            });
+            $('#addDoctor').on('shown.bs.modal', function () {
+                document.querySelector('#addDoctorForm [name="name"]')?.focus();
+            });
+
+            // Keyboard shortcuts
+            $(document).on('keydown', function (e) {
+                // Ctrl+Enter — submit the bill (skip while any modal is open)
+                if (e.ctrlKey && e.key === 'Enter') {
+                    if ($('.modal.show').length) return;
+                    e.preventDefault();
+                    $('#submitBilling').trigger('click');
+                    return;
+                }
+
+                // Ctrl+Backspace — delete the row the cursor is currently in
+                if (e.ctrlKey && e.key === 'Backspace') {
+                    const $row = $(document.activeElement).closest('.product-tbody');
+                    if ($row.length) {
+                        e.preventDefault();
+                        deleteRow($row);
+                    }
+                    return;
+                }
+
+                // Ctrl+Up / Ctrl+Down — jump to the same field in the previous/next row
+                if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                    const info = getFocusedFieldInfo();
+                    if (!info) return;
+                    e.preventDefault();
+                    const rowIds = $('#dynamicForm .product-tbody').map(function () {
+                        return $(this).find('.row_id').val();
+                    }).get();
+                    const currentIndex = rowIds.indexOf(info.rowId);
+                    if (currentIndex === -1) return;
+                    const targetIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+                    if (targetIndex < 0 || targetIndex >= rowIds.length) return;
+                    focusSlotInRow(info.slot, rowIds[targetIndex]);
+                    return;
+                }
+
+                // Ctrl+C — open Add Customer (leave real copy alone if text is selected)
+                if (e.ctrlKey && !e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+                    if ($('.modal.show').length || window.getSelection().toString()) return;
+                    e.preventDefault();
+                    $('#addCustomer').modal('show');
+                    return;
+                }
+
+                // Ctrl+D — open Add Doctor
+                if (e.ctrlKey && !e.shiftKey && (e.key === 'd' || e.key === 'D')) {
+                    if ($('.modal.show').length) return;
+                    e.preventDefault();
+                    $('#addDoctor').modal('show');
+                    return;
+                }
+
+                // Print modal shortcuts — only while it's open
+                if ($('#printModal').hasClass('show')) {
+                    if (e.key === 'p' || e.key === 'P') {
+                        e.preventDefault();
+                        printModalContent();
+                        return;
+                    }
+                    if (e.key === 'r' || e.key === 'R') {
+                        e.preventDefault();
+                        printModalContentTVS();
+                        return;
+                    }
+                }
+            });
         });
 
-        function customerData(id) { 
-            if (id) {
-                ajaxGetData(`/customers?id=${id}`, (res)=>{
-                    $('#customer_name').html("")
-                    for (let index = 0; index < res?.data?.length; index++) {
-                        const element = res?.data[index];
-                        $('#customer_name').append('<option selected value="' + element.id + '">' + element.name + '</option>');
-                    }
-                })
-            }else{
-                ajaxGetData('/customers', (res)=>{
-                    for (let index = 0; index < res?.data?.length; index++) {
-                        const element = res?.data[index];
-                        $('#customer_phone').append('<option value="' + element.id + '">' + element.phone + '</option>');
-                    }
-                })
-            }
-          
+        // Closes every currently-open Select2 dropdown (optionally skipping one id) —
+        // Select2 doesn't always clean up a stale open dropdown on its own when
+        // something else (another field, a modal) takes over programmatically.
+        function closeAllSelect2(exceptId) {
+            $('.select2-hidden-accessible').each(function () {
+                const $s = $(this);
+                if (this.id !== exceptId && $s.data('select2') && $s.data('select2').isOpen()) {
+                    $s.select2('close');
+                }
+            });
         }
+
+        // Opens a Select2 dropdown, but only if it has actually finished initializing —
+        // guards against chaining into a field whose options are still loading async.
+        // Select2 doesn't reliably move keyboard focus into its own search box when
+        // opened programmatically, so force it directly here every time.
+        function openSelect2Safe(selector) {
+            const $el = $(selector);
+            if (!$el.hasClass('select2-hidden-accessible')) return;
+            closeAllSelect2($el.attr('id'));
+            $el.select2('open');
+            setTimeout(function () {
+                document.querySelector('.select2-search__field')?.focus({ preventScroll: true });
+            }, 0);
+        }
+
+        function deleteRow($row) {
+            const $rows = $('#dynamicForm .product-tbody');
+            const id = $row.find('.row_id').val();
+            if ($rows.length <= 1) {
+                resetRowCompletely(id, $row);
+            } else {
+                $row.remove();
+                calculateTotalAmount();
+            }
+        }
+
+        function resetRowCompletely(id, $row) {
+            resetCascadeFrom(id, 'product');
+            $(`#discount${id}`).val('0');
+            const brandSel = $(`#brand_select${id}`);
+            if (brandSel.hasClass('select2-hidden-accessible')) brandSel.select2('destroy');
+            populateBrandSelect(id);
+            $row.removeClass('inhouse-row');
+            calculateTotalAmount();
+        }
+
+        // Field-slot id patterns — used by Ctrl+Up/Ctrl+Down row navigation
+        const ROW_FIELD_PATTERNS = {
+            brand: /^brand_select(\d+)$/,
+            product: /^product_select(\d+)$/,
+            pack: /^pack_select(\d+)$/,
+            price: /^price_(?:select|display)(\d+)$/,
+            unit: /^unit_value(\d+)$/,
+            qty: /^assignQty(\d+)$/,
+            discount: /^discount(\d+)$/,
+            total: /^totalAmount(\d+)$/,
+        };
+
+        // Figures out which row + field "slot" the cursor is currently in, whether
+        // it's a plain input or a Select2 field (searching or just tabbed-to).
+        function getFocusedFieldInfo() {
+            const active = document.activeElement;
+            let fieldId = null;
+
+            if (active.classList.contains('select2-search__field')) {
+                // Select2 stamps aria-controls="select2-<originalId>-results" on the
+                // search box — the most reliable way to trace back to its owner field.
+                const controls = active.getAttribute('aria-controls') || '';
+                const m = controls.match(/^select2-(.+)-results$/);
+                fieldId = m ? m[1] : null;
+            } else if ($(active).closest('.select2-container').length) {
+                fieldId = $(active).closest('.select2-container').prev('select, input').attr('id');
+            } else {
+                fieldId = active.id;
+            }
+
+            if (!fieldId) return null;
+
+            for (const slot in ROW_FIELD_PATTERNS) {
+                const m = fieldId.match(ROW_FIELD_PATTERNS[slot]);
+                if (m) return { slot, rowId: m[1] };
+            }
+            return null;
+        }
+
+        function focusSlotInRow(slot, rowId) {
+            if (slot === 'price') {
+                const $priceSelect = $(`#price_select${rowId}`);
+                if ($priceSelect.hasClass('select2-hidden-accessible') && $priceSelect.is(':visible')) {
+                    openSelect2Safe(`#price_select${rowId}`);
+                } else {
+                    document.getElementById(`price_display${rowId}`)?.focus({ preventScroll: true });
+                }
+                return;
+            }
+
+            const idMap = {
+                brand: 'brand_select', product: 'product_select', pack: 'pack_select',
+                unit: 'unit_value', qty: 'assignQty', discount: 'discount', total: 'totalAmount',
+            };
+            const $target = $(`#${idMap[slot]}${rowId}`);
+            if (!$target.length) return;
+
+            if ($target.hasClass('select2-hidden-accessible')) {
+                openSelect2Safe(`#${idMap[slot]}${rowId}`);
+            } else {
+                $target[0].focus({ preventScroll: true });
+            }
+        }
+
+        function customerData(callback) {
+            ajaxGetData('/customers', (res) => {
+                const customers = res?.data || [];
+                $('#customer_phone').find('option:not(:first)').remove();
+                customers.forEach(c => {
+                    $('#customer_phone').append(`<option value="${c.phone}">${c.phone} — ${c.name}</option>`);
+                });
+                if (typeof callback === 'function') callback();
+            });
+        }
+
+        function updateProductQuantity(product_id, assigned_qty) {
+            ajaxPostData('/api/update_product_qty', { 
+                product_id: product_id, 
+                assigned_qty: assigned_qty 
+            }, $('meta[name="csrf-token"]').attr('content'), (response) => {
+                if (response.success) {
+                    console.log(`Product ID ${product_id} quantity updated successfully`);
+                } else {
+                    console.error(`Failed to update quantity for Product ID ${product_id}`);
+                }
+            });
+        }
+
         
-        function doctorData() { 
+        function doctorData(callback) {
             ajaxGetData('/doctors', (res)=>{
+                $('#doctor_name').find('option:not(:first)').remove();
                 for (let index = 0; index < res?.data?.length; index++) {
                     const element = res?.data[index];
                     $('#doctor_name').append('<option value="' + element.id + '">' + element.name + '</option>');
                 }
+                if ($('#doctor_name').hasClass('select2-hidden-accessible')) {
+                    $('#doctor_name').select2('destroy');
+                }
+                $('#doctor_name').select2({ width: '100%', placeholder: 'Choose Doctor Name...' });
+                if (typeof callback === 'function') callback();
             })
         }
 
-        function productData() { 
-            ajaxGetData(`/api/purchase_request`, (res) =>{
-                for (let index = 0; index < res?.purchase_request?.length; index++) {
-                    const element = res?.purchase_request[index];
-                    productData_fetch(element?.product_id, element?.pack_id,  count)
-                   
-                }
-            })
-        }
-        function productData_fetch(id, pack_id, count) {
-            let pack_name;
-            ajaxGetData(`/pack?id=${pack_id}`, (res) =>{
-                pack_name = res?.data[0].pack_name
-            })
-            ajaxGetData(`/products?id=${id}`, (res)=>{
-                // $('.product').append('<option value="' + res?.data[0].id + '">' + res?.data[0].product_name '-' pack_name + '</option>');
-                $('.product').append(`<option value="${res?.data[0].id}" > ${res?.data[0].product_name}-${pack_name} </option>`);
-            })
-        }
-        function categoryData(id, count) {
-            ajaxGetData(`/category?id=${id}`, (res)=>{
-                $(`#category${count}`).val(res?.data[0].category_name)
-            })
+        let billingProductOptions = [];
+
+        function loadBillingProductOptions(callback) {
+            if (billingProductOptions.length > 0) {
+                callback(billingProductOptions);
+                return;
+            }
+            ajaxGetData('/billing/product-options', (res) => {
+                billingProductOptions = res?.data || [];
+                callback(billingProductOptions);
+            });
         }
 
-        function subCategoryData(id, count) {
-            ajaxGetData(`/sub-category?id=${id}`, (res)=>{
-                $(`#subCategory${count}`).val(res?.data[0].sub_category_name)
-            })
+        // Brand options cache
+        let billingBrands = [];
+        function loadBrands(callback) {
+            if (billingBrands.length > 0) { callback(billingBrands); return; }
+            ajaxGetData('/billing/brands', (res) => {
+                billingBrands = res?.data || [];
+                callback(billingBrands);
+            });
         }
 
-        function packData(id, count) {
-            ajaxGetData(`/pack?id=${id}`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $(`#pack${count}`).append('<option value="' + element.id + ' " selected>' + element.pack_name + '</option>');
-                }
-            })
+        function resetCascadeFrom(id, field) {
+            const fields = ['product', 'pack', 'price'];
+            fields.slice(fields.indexOf(field)).forEach(f => {
+                const sel = $(`#${f}_select${id}`);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.empty().append(`<option value="">Choose ${f.charAt(0).toUpperCase()+f.slice(1)}</option>`).prop('disabled', true).show();
+                sel.off('select2:select select2:clear');
+            });
+            $(`#price_display${id}`).hide().val('');
+            $(`#unit_value${id}`).val('');
+            $(`#totalAmount${id}`).val('');
+            $(`#avail_qty_text_${id}`).text('-');
+            $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}`).val('');
+            $(`#assignQty${id}`).val('').css('border-color', '');
+            $(`#row_block_${id}`).removeClass('inhouse-row');
         }
-        function priceData(id, count) {
-            ajaxGetData(`/price?id=${id}`, (res) =>{
-                for (let index = 0; index < res?.data?.length; index++) {
-                    const element = res?.data[index];
-                    $(`#mrp${count}`).append('<option value="' + element.id + '" selected>' + element?.price_name + '</option>');
-                }
-            })
+
+        function populateBrandSelect(id) {
+            loadBrands((brands) => {
+                const sel = $(`#brand_select${id}`);
+                sel.empty().append('<option value="">Choose Brand</option>');
+                brands.forEach(b => sel.append(`<option value="${b.id}">${b.name}</option>`));
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Brand' });
+
+                sel.on('select2:select select2:clear', function () {
+                    const brandId = $(this).val();
+                    resetCascadeFrom(id, 'product');
+                    if (!brandId) return;
+                    loadProductsForBrand(id, brandId);
+                });
+            });
         }
+
+        function loadProductsForBrand(id, brandId) {
+            loadBillingProductOptions((options) => {
+                const sel = $(`#product_select${id}`);
+                sel.empty().append('<option value="">Choose Product</option>');
+                const seen = new Set();
+                if (brandId === 'inhouse') {
+                    options.filter(o => o.type === 'inhouse').forEach(o => {
+                        if (!seen.has(o.product_name)) {
+                            seen.add(o.product_name);
+                            sel.append(`<option value="${o.product_name}" data-type="inhouse">${o.product_name}</option>`);
+                        }
+                    });
+                } else {
+                    options.filter(o => o.type === 'regular' && String(o.brand_id) === String(brandId)).forEach(o => {
+                        if (!seen.has(o.product_id)) {
+                            seen.add(o.product_id);
+                            sel.append(`<option value="${o.product_id}" data-type="regular">${o.product_name}</option>`);
+                        }
+                    });
+                }
+                sel.prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Product' });
+                sel.on('select2:select select2:clear', function () {
+                    const productVal = $(this).val();
+                    const type = $(this).find('option:selected').data('type');
+                    resetCascadeFrom(id, 'pack');
+                    if (!productVal) return;
+                    loadPacksForProduct(id, productVal, type, brandId);
+                });
+                openSelect2Safe(sel);
+            });
+        }
+
+        function loadPacksForProduct(id, productVal, type, brandId) {
+            loadBillingProductOptions((options) => {
+                const sel = $(`#pack_select${id}`);
+                sel.empty().append('<option value="">Choose Pack</option>');
+                let rows = type === 'inhouse'
+                    ? options.filter(o => o.type === 'inhouse' && String(o.product_name) === String(productVal))
+                    : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.brand_id) === String(brandId));
+                const seen = new Set();
+                rows.forEach(o => {
+                    if (!seen.has(o.pack_id)) {
+                        seen.add(o.pack_id);
+                        sel.append(`<option value="${o.pack_id}">${o.pack_name}</option>`);
+                    }
+                });
+                sel.prop('disabled', false);
+                if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                sel.select2({ width: '100%', placeholder: 'Choose Pack' });
+                sel.on('select2:select select2:clear', function () {
+                    const packId = $(this).val();
+                    resetCascadeFrom(id, 'price');
+                    if (!packId) return;
+                    loadPricesForPack(id, productVal, packId, type, brandId);
+                });
+                openSelect2Safe(sel);
+            });
+        }
+
+        function applyPriceSelection(id, opt) {
+            const val = opt.val();
+            if (!val) {
+                $(`#unit_value${id}, #totalAmount${id}`).val('');
+                $(`#avail_qty_text_${id}`).text('-');
+                $(`#product_name${id}, #inhouse_id${id}, #pack${id}, #pr_ids${id}, #qty${id}, #gstRate${id}, #category${id}, #subCategory${id}`).val('');
+                $(`#assignQty${id}`).val('').css('border-color', '');
+                $(`#row_block_${id}`).removeClass('inhouse-row');
+                return;
+            }
+            const isInhouse = opt.data('type') === 'inhouse';
+            $(`#pack${id}`).val(opt.data('pack-name'));
+            $(`#unit_value${id}`).val(opt.data('price'));
+            $(`#gstRate${id}`).val(opt.data('gst') || 0);
+            $(`#assignQty${id}`).css('border-color', '');
+            if (isInhouse) {
+                $(`#product_name${id}`).val('');
+                $(`#pr_ids${id}`).val('');
+                $(`#inhouse_id${id}`).val(opt.data('inhouse-id'));
+                $(`#qty${id}`).val('');
+                $(`#category${id}`).val(opt.data('category') || '');
+                $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+                $(`#avail_qty_text_${id}`).text('Inhouse');
+                $(`#row_block_${id}`).addClass('inhouse-row');
+            } else {
+                $(`#product_name${id}`).val(opt.data('product-id'));
+                $(`#pr_ids${id}`).val(JSON.stringify(opt.data('pr-ids') || []));
+                $(`#inhouse_id${id}`).val('');
+                $(`#qty${id}`).val(opt.data('qty'));
+                $(`#category${id}`).val(opt.data('category') || '');
+                $(`#subCategory${id}`).val(opt.data('sub-category') || '');
+                $(`#avail_qty_text_${id}`).text('A: ' + opt.data('qty'));
+                $(`#row_block_${id}`).removeClass('inhouse-row');
+            }
+            updateTotalForRow($(`#row_block_${id}`));
+            document.getElementById(`assignQty${id}`)?.focus({ preventScroll: true });
+        }
+
+        function loadPricesForPack(id, productVal, packId, type, brandId) {
+            loadBillingProductOptions((options) => {
+                const sel = $(`#price_select${id}`);
+                const display = $(`#price_display${id}`);
+                sel.empty().append('<option value="">Choose Price</option>');
+                let rows = type === 'inhouse'
+                    ? options.filter(o => o.type === 'inhouse' && String(o.product_name) === String(productVal) && String(o.pack_id) === String(packId))
+                    : options.filter(o => o.type === 'regular' && String(o.product_id) === String(productVal) && String(o.pack_id) === String(packId) && String(o.brand_id) === String(brandId));
+                let priceCount = 0;
+                if (type === 'inhouse') {
+                    priceCount = rows.length;
+                    rows.forEach(o => {
+                        sel.append(`<option value="inhouse_${o.inhouse_product_id}"
+                            data-type="inhouse"
+                            data-price="${o.price_name}"
+                            data-gst="0"
+                            data-pack-name="${o.pack_name}"
+                            data-inhouse-id="${o.inhouse_product_id}"
+                            data-category="${o.category_name}"
+                            data-sub-category="${o.sub_category_name}"
+                        >&#8377;${o.price_name}</option>`);
+                    });
+                } else {
+                    // Group batches by price_name — sum qty, collect all IDs
+                    const groups = {};
+                    rows.forEach(o => {
+                        const key = String(o.price_name);
+                        if (!groups[key]) {
+                            groups[key] = { price_name: o.price_name, gst: o.gst || 0, pack_name: o.pack_name, product_id: o.product_id, total_qty: 0, pr_ids: [], category_name: o.category_name, sub_category_name: o.sub_category_name };
+                        }
+                        groups[key].total_qty += (parseFloat(o.avail_qty) || 0);
+                        groups[key].pr_ids.push(o.purchase_request_id);
+                    });
+                    priceCount = Object.keys(groups).length;
+                    Object.values(groups).forEach(g => {
+                        sel.append(`<option value="${g.pr_ids[0]}"
+                            data-type="regular"
+                            data-price="${g.price_name}"
+                            data-gst="${g.gst}"
+                            data-qty="${g.total_qty}"
+                            data-pack-name="${g.pack_name}"
+                            data-product-id="${g.product_id}"
+                            data-pr-ids='${JSON.stringify(g.pr_ids)}'
+                            data-category="${g.category_name}"
+                            data-sub-category="${g.sub_category_name}"
+                        >&#8377;${g.price_name}</option>`);
+                    });
+                }
+
+                sel.off('select2:select select2:clear');
+
+                if (priceCount === 1) {
+                    // Only one price available — auto-load it, no dropdown needed
+                    if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                    const onlyOpt = sel.find('option').not('[value=""]').first();
+                    sel.val(onlyOpt.val());
+                    sel.hide();
+                    display.val('₹' + onlyOpt.data('price')).show();
+                    applyPriceSelection(id, onlyOpt);
+                } else {
+                    display.hide().val('');
+                    sel.show().prop('disabled', false);
+                    if (sel.hasClass('select2-hidden-accessible')) sel.select2('destroy');
+                    sel.select2({ width: '100%', placeholder: 'Choose Price' });
+                    sel.on('select2:select select2:clear', function () {
+                        applyPriceSelection(id, $(this).find('option:selected'));
+                    });
+                    openSelect2Safe(sel);
+                }
+            });
+        }
+
+
+
+
+
+
+
+
+
+
+
 
         function addNewRow(id) {
-            productData();
+            const newTbody = `
+                <div class="product-tbody new-row" id="row_block_${id}">
+                    <input type="hidden" class="table-row-id row_id" value="${id}">
+                    <input type="hidden" name="productName[]" id="product_name${id}" />
+                    <input type="hidden" name="inhouse_product_id[]" id="inhouse_id${id}" />
+                    <input type="hidden" name="pack[]" id="pack${id}" />
+                    <input type="hidden" name="purchase_request_ids[]" id="pr_ids${id}" />
+                    <input type="hidden" name="category[]" id="category${id}" />
+                    <input type="hidden" name="subCategory[]" id="subCategory${id}" />
+                    <input type="hidden" name="total_qty[]" id="qty${id}" />
+                    <input type="hidden" class="gstRate" name="gstRate[]" id="gstRate${id}" />
+                    <input type="hidden" class="gstAmount" name="gstAmount[]" id="gstAmount${id}" />
+                    <input type="hidden" class="cgst" name="cgst[]" id="cgst${id}" />
+                    <input type="hidden" class="sgst" name="sgst[]" id="sgst${id}" />
 
-            const newRow = `
-                <tr>
-                    <td id="row" class="row_id d-none product">${id}</td>
-                    <td>
-                        <select data-enable-search="true" class="form-control product" name="productName[]" id="product_name${id}">
-                            <option value="">Choose Product</option>
+                    <div class="product-field pf-brand">
+                        <small class="text-muted font-weight-bold">Brand</small>
+                        <select class="form-control brand-select mt-1" data-count="${id}" id="brand_select${id}">
+                            <option value="">Choose Brand</option>
                         </select>
-                    </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="category" id="category${id}" disabled />
-                        </div>        
-                    </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="subCategory" id="subCategory${id}" disabled />
-                        </div>        
-                    </td>
-                    <td>
-                        <select data-enable-search="true" class="form-control" name="pack[]" id="pack${id}" disabled>
+                    </div>
+                    <div class="product-field pf-product">
+                        <small class="text-muted font-weight-bold">Product</small>
+                        <select class="form-control mt-1" data-count="${id}" id="product_select${id}" disabled>
+                            <option value="">Select brand first</option>
+                        </select>
+                    </div>
+                    <div class="product-field pf-pack">
+                        <small class="text-muted font-weight-bold">Pack</small>
+                        <select class="form-control mt-1" data-count="${id}" id="pack_select${id}" disabled>
                             <option value="">Choose Pack</option>
                         </select>
-                    </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="qty" id="qty${id}" />
-                        </div>
-                    </td>
-                    <td>
-                        <select data-enable-search="true" class="form-control" name="mrp[]" id="mrp${id}" disabled>
+                    </div>
+                    <div class="product-field pf-price">
+                        <small class="text-muted font-weight-bold">Price</small>
+                        <select class="form-control mt-1" data-count="${id}" id="price_select${id}" disabled>
                             <option value="">Choose Price</option>
                         </select>
-                     
-                    </td>
-                
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control" name="discount[]" id="discount${id}" />
-                        </div>
-                    </td>
-                    <td>
-                        <div class="form-group d-flex align-items-center">
-                            <input type="text" class="form-control totalAmount" value="0" name="totalAmount[]" id="totalAmount${id}" readonly />
-                        </div>
-                    </td>
-                    <td>
-                        <span class="delete-icon btn btn-danger text-white p-2 px-1" onclick="deleteRow(this)">
-                            <i class="fas fa-trash"></i>
-                        </span>
-                    </td>
-                </tr>
+                        <input type="text" class="form-control mt-1" id="price_display${id}" readonly style="display:none;" />
+                    </div>
+                    <div class="product-field pf-unit">
+                        <small class="text-muted font-weight-bold">Unit Value</small>
+                        <input type="text" class="form-control mt-1" name="unit_value[]" id="unit_value${id}" readonly />
+                    </div>
+                    <div class="product-field pf-qty">
+                        <small class="text-muted font-weight-bold avail-label">Qty (<span id="avail_qty_text_${id}" class="text-info">-</span>)</small>
+                        <input type="text" class="form-control mt-1" name="assignQty[]" id="assignQty${id}" placeholder="Qty" />
+                    </div>
+                    <div class="product-field pf-discount">
+                        <small class="text-muted font-weight-bold">Discount (%)</small>
+                        <input type="number" class="form-control mt-1" name="discount[]" id="discount${id}" value="0" />
+                    </div>
+                    <div class="product-field pf-total">
+                        <small class="text-muted font-weight-bold">Total Amount</small>
+                        <input type="text" class="form-control mt-1" name="totalAmount[]" id="totalAmount${id}" readonly />
+                    </div>
+                </div>
             `;
+            $('#dynamicForm').append(newTbody);
+            populateBrandSelect(id);
+        }
 
-            document.getElementById("formBody").insertAdjacentHTML('beforeend', newRow);
 
-            // Add event listeners to the newly added row
-            $(document).on('keyup', `#qty${id}`, function () {
-                updateRowTotal(id);
+        function updateTotalForRow(row) {
+            const qty = parseFloat(row.find('input[name="assignQty[]"]').val()) || 0;
+            const unitValue = parseFloat(row.find('input[name="unit_value[]"]').val()) || 0;
+            const discount = parseFloat(row.find('input[name="discount[]"]').val()) || 0;
+            const gstRate = parseFloat(row.find('input[name="gstRate[]"]').val()) || 0;
+
+            // Calculate base amount (before discount)
+            const baseAmount = qty * unitValue;
+
+            // Discounted amount
+            const totalAmount = baseAmount - (baseAmount * discount / 100);
+            row.find('input[name="totalAmount[]"]').val(totalAmount.toFixed(2));
+
+            // GST Calculation
+            const gstAmount = baseAmount * (gstRate / 100);
+            const cgst = gstAmount / 2;
+            const sgst = gstAmount / 2;
+
+            // Set values in fields
+            row.find('input[name="gstAmount[]"]').val(gstAmount.toFixed(2));
+            row.find('input[name="cgst[]"]').val(cgst.toFixed(2));
+            row.find('input[name="sgst[]"]').val(sgst.toFixed(2));
+
+            console.log('amounts', {
+                qty, unitValue, discount, gstRate,
+                baseAmount, totalAmount, gstAmount, cgst, sgst
+            }); 
+        }
+
+
+
+        function updateOverallTotal() {
+            let overallTotal = 0;
+            $('input[name="totalAmount[]"]').each(function() {
+                overallTotal += parseFloat($(this).val()) || 0;
             });
-            $(document).on('change', `#mrp${id}`, function () {
-                updateRowTotal(id);
-            });
-            $(document).on('change', `#discount${id}`, function () {
-                updateRowTotal(id);
+            $('#totalAmount').text(overallTotal.toFixed(2));
+        }
+
+        $(document).ready(function() {
+             calculateTotalAmount();
+        });
+
+        function calculateTotalAmount() {
+            let totalAmount = 0;
+            let totalGST = 0;
+            let totalCGST = 0;
+            let totalSGST = 0;
+
+            $('#dynamicForm .product-tbody').each(function () {
+                const qty = parseFloat($(this).find('[name="assignQty[]"]').val()) || 0;
+                const unitValue = parseFloat($(this).find('[name="unit_value[]"]').val()) || 0;
+                const discount = parseFloat($(this).find('[name="discount[]"]').val()) || 0;
+                const gstRate = parseFloat($(this).find('[name="gstRate[]"]').val()) || 0;
+
+                // --- base amount after discount ---
+                const discountDecimal = discount / 100;
+                const discountAmount = qty * unitValue * discountDecimal;
+                const amount = (qty * unitValue) - discountAmount;
+
+                $(this).find('[name="totalAmount[]"]').val(amount.toFixed(2));
+                totalAmount += amount;
+
+                // --- GST calculations ---
+                const gstAmount = (amount * gstRate) / 100;
+                const cgst = gstAmount / 2;
+                const sgst = gstAmount / 2;
+
+                $(this).find('[name="gstAmount[]"]').val(gstAmount.toFixed(2));
+                $(this).find('[name="cgst[]"]').val(cgst.toFixed(2));
+                $(this).find('[name="sgst[]"]').val(sgst.toFixed(2));
+
+                totalGST += gstAmount;
+                totalCGST += cgst;
+                totalSGST += sgst;
             });
 
-            function updateRowTotal(id) {
-                const qty = Number($(`#qty${id}`).val());
-                const mrp = Number($(`#mrp${id} option:selected`).text());
-                const discount = Number($(`#discount${id}`).val());
-                $(`#totalAmount${id}`).val((qty * mrp) - discount);
-                updateTotalAmount();
+            // --- Update footer totals ---
+            $('#totalAmount').text(totalAmount.toFixed(2));
+            $('#totalGST').text(totalGST.toFixed(2));
+            $('#totalCGST').text(totalCGST.toFixed(2));
+            $('#totalSGST').text(totalSGST.toFixed(2));
+            updateCreditDiscountDisplay(totalAmount);
+        }
+
+        // Credit note is a payment offset, not a change to the goods' price/GST —
+        // so it's shown as a discount off the payable amount, not folded into totalAmount.
+        // A credit note can only be used in full against a bill of equal or greater
+        // value, so submission is blocked (not just warned) until the total catches up.
+        function updateCreditDiscountDisplay(totalAmount) {
+            if (appliedCreditAmt > 0) {
+                const payable = Math.max(0, totalAmount - appliedCreditAmt);
+                $('#creditDiscountAmt').text(appliedCreditAmt.toFixed(2));
+                $('#payableAmount').text(payable.toFixed(2));
+                $('#creditDiscountRow').show();
+
+                if (totalAmount < appliedCreditAmt) {
+                    const shortfall = appliedCreditAmt - totalAmount;
+                    $('#creditNoteWarning span').text(
+                        `Bill total must be at least ₹${appliedCreditAmt.toFixed(2)} to use this credit note — add ₹${shortfall.toFixed(2)} more.`
+                    );
+                    $('#creditNoteWarning').show();
+                    $('#submitBilling').prop('disabled', true);
+                } else {
+                    $('#creditNoteWarning').hide();
+                    $('#submitBilling').prop('disabled', false);
+                }
+            } else {
+                $('#creditDiscountRow').hide();
+                $('#creditNoteWarning').hide();
+                $('#submitBilling').prop('disabled', false);
             }
         }
 
-        function updateTotalAmount() {
-            let total = 0;
-            $('.totalAmount').each(function() {
-                total += parseFloat($(this).val()) || 0;
-            });
-            $('#totalAmount').text(total);
+        $(document).on('input keyup', '[name="assignQty[]"]', function () {
+            const row = $(this).closest('.product-tbody');
+            const count = row.find('.row_id').val();
+            const totalAvailVal = $(`#qty${count}`).val();
+            const isInhouse = row.hasClass('inhouse-row');
+            if (isInhouse) { $(this).css('border-color', ''); return; }
+            if (totalAvailVal === "" || totalAvailVal === undefined || totalAvailVal === null) {
+                $(`#avail_qty_text_${count}`).text('-');
+                $(this).css('border-color', '');
+                return;
+            }
+            const totalAvail = parseFloat(totalAvailVal) || 0;
+            const inputQty = parseFloat($(this).val()) || 0;
+            const currentAvail = totalAvail - inputQty;
+            
+            $(`#avail_qty_text_${count}`).text('A: ' + currentAvail);
+            
+            if (inputQty > totalAvail) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
+
+        $(document).on('input keyup', '[name="discount[]"]', function () {
+            const discountVal = parseFloat($(this).val()) || 0;
+            if (discountVal > 100) {
+                $(this).css('border-color', 'red');
+            } else {
+                $(this).css('border-color', '');
+            }
+        });
+
+        $(document).on('input keyup', '[name="assignQty[]"], [name="unit_value[]"], [name="discount[]"]', function () {
+            calculateTotalAmount();
+        });
+
+        function ensureNextRow($row) {
+            let $next = $row.next('.product-tbody');
+            if ($next.length === 0) {
+                $row.removeClass('new-row');
+                count++;
+                addNewRow(count);
+                $next = $row.next('.product-tbody');
+            }
+            return $next;
         }
 
+        $(document).on('keyup', '.new-row [name="assignQty[]"]', function (e) {
+            if (e.key === 'Enter') return; // handled on keydown below
+            ensureNextRow($(this).closest('.product-tbody'));
+        });
 
-        function deleteRow(element) {
-            const row = element.closest("tr");
-            row.remove();
-            updateTotalAmount();
-        }
+        // Enter in Qty — jump straight to the next row's Brand field (create the row if needed)
+        $(document).on('keydown', '[name="assignQty[]"]', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const $row = $(this).closest('.product-tbody');
+            const $nextRow = ensureNextRow($row);
+            const nextId = $nextRow.find('.row_id').val();
+            openSelect2Safe(`#brand_select${nextId}`);
+        });
+
+
+
+
         function gatherFormData() {
-            const rows = document.querySelectorAll('#dynamicForm tbody tr');
+            const rows = document.querySelectorAll('#dynamicForm .product-tbody');
             const products = [];
 
             rows.forEach(row => {
-                const productId = row.querySelector(`[name="productName[]"]`).value;
-                const category = row.querySelector(`[name="category"]`).value;
-                const subCategory = row.querySelector(`[name="subCategory"]`).value;
-                const pack = row.querySelector(`[name="pack[]"]`).value;
-                const qty = row.querySelector(`[name="qty"]`).value;
-                const mrp = row.querySelector(`[name="mrp[]"]`).value;
-                // const unitValue = row.querySelector(`[name="unit_value[]"]`)?.value ?? 0;
-                const discount = row.querySelector(`[name="discount[]"]`).value;
+                const productId       = row.querySelector(`[name="productName[]"]`).value;
+                const inhouseId       = row.querySelector(`[name="inhouse_product_id[]"]`).value;
+                const isInhouse       = row.classList.contains('inhouse-row');
+
+                // Include row only if it has a product (regular) or an inhouse product
+                if (!productId && !inhouseId) return;
+
+                const pr_ids_raw  = row.querySelector(`[name="purchase_request_ids[]"]`).value;
+                const purchase_request_ids = (!isInhouse && pr_ids_raw) ? JSON.parse(pr_ids_raw) : [];
+                const category    = row.querySelector(`[name="category[]"]`).value;
+                const subCategory = row.querySelector(`[name="subCategory[]"]`).value;
+                const pack        = row.querySelector(`[name="pack[]"]`).value;
+                const unitValue   = row.querySelector(`[name="unit_value[]"]`).value;
+                const qty         = row.querySelector(`[name="assignQty[]"]`).value;
+                const discount    = row.querySelector(`[name="discount[]"]`).value;
                 const totalAmount = row.querySelector(`[name="totalAmount[]"]`).value;
+                const gstRate     = row.querySelector(`[name="gstRate[]"]`).value;
+                const gstAmount   = row.querySelector(`[name="gstAmount[]"]`).value;
 
                 products.push({
-                    productId,
+                    productId: isInhouse ? null : productId,
+                    inhouse_product_id: isInhouse ? inhouseId : null,
+                    purchase_request_ids: isInhouse ? [] : purchase_request_ids,
+                    is_inhouse: isInhouse,
                     category,
                     subCategory,
                     pack,
                     qty,
-                    mrp,
-                    unitValue:0,
+                    unitValue,
                     discount,
-                    totalAmount
+                    totalAmount,
+                    gstRate,
+                    gstAmount
                 });
             });
-            // Get today's date
             let today = new Date();
 
-            // Get the day, month, and year
             let day = String(today.getDate()).padStart(2, '0');
-            let month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+            let month = String(today.getMonth() + 1).padStart(2, '0');
             let year = today.getFullYear();
             let formattedDate = `${year}-${month}-${day}`;
             const payload = {
@@ -511,15 +1371,319 @@
                 customer_phone: $('#customer_phone').val(),
                 doctor_name: $('#doctor_name').val(),
                 paymentType: $('#paymentType').val(),
-                invoiceNo: $('#invoiceNo').val(),
-                customer_name: $('#customer_name option:selected').text(),
+                customer_name: $('#customer_name').val(),
                 total_amt: $('#totalAmount').text(),
-                biilling_date:formattedDate,
+                gstAmount: $('#totalGST').text(),
+                cgst: $('#totalCGST').text(),
+                sgst: $('#totalSGST').text(),
+                billing_date:formattedDate,
+                billingType:"Customer Billing",
+                credit_note_no: appliedCreditNoteNo || null,
                 product_billings: products
             };
+
+            console.log(payload);
 
             return payload;
         }
 
-    </script>
+        // Function to view and print the bill
+        function viewAndPrintBill(billId) {
+            // Fetch bill details and show print modal
+            $.ajax({
+                url: `/api/customer/bill/${billId}`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.status === 200) {
+                        populatePrintModal(response.data);
+                        $('#printModal').modal('show');
+                    } else {
+                        Swal.fire({
+                            title: "Error!",
+                            icon: "error",
+                            text: "Failed to fetch bill details.",
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    Swal.fire({
+                        title: "Error!",
+                        icon: "error",
+                        text: "Failed to fetch bill details.",
+                    });
+                }
+            });
+        }
+
+        // Function to populate print modal with bill data
+        function populatePrintModal(data) {
+            let bill = data.bill;
+            let items = data.items;
+            let store = data.store;
+
+            // Update bill information
+            $('.invoiceNo').text(bill.invoiceNo);
+            $('.billingDate').text(bill.billing_date);
+            $('.customerName').text(bill.customer_name);
+            $('.drName').text(bill.doctor_name || 'N/A');
+            $('.grandTotal').text(bill.total_amt);
+            $('.totalGST').text(bill.gst || 0);
+            $('.totalCGST').text(bill.cgst || 0);
+            $('.totalSGST').text(bill.sgst || 0);
+            $('.taxableValue').text((bill.total_amt - bill.gst).toFixed(2)); // Add taxable value
+
+            if (bill.credit_applied_amt) {
+                const paid = (parseFloat(bill.total_amt) - parseFloat(bill.credit_applied_amt)).toFixed(2);
+                $('.creditApplied').text(parseFloat(bill.credit_applied_amt).toFixed(2));
+                $('.amountPaid').text(paid);
+                $('.creditBreakdown').show();
+            } else {
+                $('.creditBreakdown').hide();
+            }
+
+            // Update store information
+            if (store) {
+                $('.storeAddress').text(store.store_address || 'Not Provided');
+                $('.dlNumber').text(store.dl_number || 'Not Provided');
+                $('.helplineNumber').text(store.helpline_number || 'Not Provided');
+            }
+
+            // Clear and populate items table
+            $('#invoice_table tbody').empty();
+            items.forEach((item, index) => {
+                $('#invoice_table tbody').append(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.brand_name || 'N/A'}</td>
+                        <td>${item.product_name || 'N/A'}</td>
+                        <td>${item.qty || '0'}</td>
+                        <td>${item.pack || 'N/A'}</td>
+                        <td>${item.unitValue || '0.00'}/-</td>
+                        <td>${item.gstRate || '0'}%</td>
+                        <td>${item.gstAmount || '0.00'}/-</td>
+                        <td>${item.totalAmount || '0.00'}/-</td>
+                    </tr>
+                `);
+            });
+        }
+
+        // Function to reset the form
+        function resetForm() {
+            // Reset form fields
+            $('#customerBillingCreate')[0].reset();
+            $('#customer_name').val('');
+            $('#invoiceNo').val('{{ uniqid() }}');
+            
+            // Clear the dynamic table
+            $('#formBody').empty();
+            count = 0;
+            
+            // Reset totals
+            $('#totalAmount').text('0');
+            $('#totalGST').text('0');
+            $('#totalCGST').text('0');
+            $('#totalSGST').text('0');
+        }
+
+        // Add print modal to the create page
+        $(document).ready(function() {
+            // Add print modal HTML if it doesn't exist
+            if ($('#printModal').length === 0) {
+                $('body').append(`
+                    <!-- PRINT MODAL -->
+                    <div class="modal fade" id="printModal" tabindex="-1" role="dialog" aria-labelledby="printModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-md" role="document">
+                            <div class="modal-content" style="border: none;">
+                                <div class="modal-body" style="padding: 10px; width:100%;">
+                                    <div id="printArea">
+                                        <table class="border p-2">
+                                            <h1 class="text-center fw-bold" style="border-bottom:3px solid; border-top:3px solid; padding:5px 0px !important;">RIGHT AID</h1>
+                                            <div class="col-md-12">
+                                                <div class="details d-flex align-items-start justify-content-between" style="margin-bottom: 15px !important; margin-top: 15px !important;">
+                                                    <div class="left">
+                                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                                            Invoice No: <span class="invoiceNo" style="font-size: 14px !important; font-weight:400;"></span>
+                                                        </p>
+                                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">Date:
+                                                            <span class="billingDate" style="font-size: 14px !important; font-weight:400;"></span>
+                                                        </p>
+                                                        <p style="width: 150%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                                            GSTIN: <span class="gstin" style="font-size: 14px !important; font-weight:400;">GST123456</span>
+                                                        </p>
+                                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                                            Customer: <span class="customerName" style="font-size: 14px !important; font-weight:400;"></span>
+                                                        </p>
+                                                        <p style="width: 200%; font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                                            Dr Name: <span class="drName" style="font-size: 14px !important; font-weight:400;"></span>
+                                                        </p>
+                                                    </div>
+                                                    <div class="right">
+                                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">DL. No. : 
+                                                            <span class="dlNumber" style="font-size: 14px !important; font-weight:400;">HL-1046-S</span>
+                                                        </p>
+                                                        <p style="font-size: 14px !important; font-weight:700; line-height: 5px;">
+                                                            Helpline : <span class="helplineNumber" style="font-size: 14px !important; font-weight:400;">8100968101</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="product-details text-center m-0 col-md-12">
+                                                <table class="w-100" id="invoice_table">
+                                                    <thead style="border-top:3px solid; text-align: center; border-bottom:3px solid; padding-top: 10px !important;">
+                                                        <tr>
+                                                            <th>SNo.</th>
+                                                            <th>Brand</th>
+                                                            <th>Medicine</th>
+                                                            <th>Qty</th>
+                                                            <th>Pack</th>
+                                                            <th>MRP</th>
+                                                            <th>GST Rate</th>
+                                                            <th>GST Amount</th>
+                                                            <th>Amount</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody style="border-bottom:3px solid; text-align: center; padding: 15px 0px !important;">
+                                                    </tbody>
+                                                </table>
+                                                <div class="col-md-12 my-3" style="text-align:right !important">
+                                                    <table class="w-100 table table-bordered mt-3">
+                                                        <thead>
+                                                            <tr style="text-align: right;">
+                                                                <th>Taxable Value</th>
+                                                                <th>CGST</th>
+                                                                <th>SGST</th>
+                                                                <th>Total Tax Amount</th>
+                                                                <th>Grand Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody style="text-align: right;">
+                                                            <tr>
+                                                                <td><span class="taxableValue">0.00</span>/-</td>
+                                                                <td><span class="totalCGST">0.00</span>/-</td>
+                                                                <td><span class="totalSGST">0.00</span>/-</td>
+                                                                <td><span class="totalGST">0.00</span>/-</td>
+                                                                <td><span class="grandTotal">0.00</span>/-</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                    <p class="creditBreakdown" style="display:none; font-size:14px; font-weight:700;">
+                                                        Credit Applied: <span class="creditApplied"></span>/- &nbsp;|&nbsp; Amount Paid: <span class="amountPaid"></span>/-
+                                                    </p>
+                                                </div>
+                                                <div class="address text-center" style="font-size: 12px !important; margin-top:15px">
+                                                    <span>Address : <Span class="storeAddress"></Span></span><br>
+                                                    <span>Reg Address : 211. Rain Ram Monan Rov Road Shop No :10, Block-1 Ground Floor, "Merlin Grove Behala Kolkata-700008</span>
+                                                </div>
+                                                <div class="note text-center" style="font-size: 12px !important;">
+                                                    <p>Medicine once sold would not be returned or exchanged</p>
+                                                    <span>******** Thank You ********</span>
+                                                </div>
+                                            </div>
+                                        </table>
+                                    </div>
+                                    <div style="text-align:center; width: 100%; margin-bottom: 25px !important;">
+                                        <button class="btn btn-sm shadow btn-primary" id="printButton">Print</button>
+                                        <button class="btn btn-sm shadow btn-info" id="printButtonTVS">Print TVS RP 45</button>
+                                        <button class="btn btn-sm shadow btn-success" id="createNewBill" style="margin-left: 10px;">Create New Bill</button>
+                                        <button class="btn btn-sm shadow btn-secondary" id="backToList" style="margin-left: 10px;">Back to List</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                // Add print functionality
+                $(document).on('click', '#printButton', function() {
+                    printModalContent();
+                });
+
+                // Add create new bill functionality
+                $(document).on('click', '#createNewBill', function() {
+                   window.location.href = "/store/customer/create/billing";
+                });
+
+                // Add back to list functionality
+                $(document).on('click', '#backToList', function() {
+                    window.location.href = "/store/customer/billing";
+                });
+
+                // Clicking outside or closing modal refreshes the page
+                $('#printModal').on('hidden.bs.modal', function () {
+                    window.location.reload();
+                });
+            }
+        });
+
+        // Print function
+        function printModalContent() {
+            var printContent = document.getElementById("printArea").innerHTML;
+            var printWindow = window.open('', '', 'height=800,width=600');
+            printWindow.document.write('<html><head><title>Print</title>');
+            printWindow.document.write(`
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 4px 6px; text-align: left; }
+                    .text-center { text-align: center; }
+                    .fw-bold { font-weight: bold; }
+                    #printButton, #printButtonTVS, #createNewBill, #backToList { display: none; }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function printModalContentTVS() {
+            var printContent = document.getElementById("printArea").innerHTML;
+            var originalContent = document.body.innerHTML;
+
+            var printWindow = window.open('', '', 'height=600,width=400');
+            printWindow.document.write('<html><head><title>Print</title>');
+            printWindow.document.write(`
+                <style>
+                    @page {
+                        size: 4in 7in;
+                        margin: 0.1in;
+                    }
+                    body {
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 8px;
+                        width: 4in;
+                        margin: 0;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        padding: 2px;
+                        text-align: left;
+                    }
+                    .text-center {
+                        text-align: center;
+                    }
+                    .fw-bold {
+                        font-weight: bold;
+                    }
+                    #printButton, #printButtonTVS, #createNewBill, #backToList {
+                        display: none;
+                    }
+                </style>
+            `);
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(printContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        $(document).on('click', '#printButtonTVS', function() {
+            printModalContentTVS();
+        });
+
+</script>
 @endsection
