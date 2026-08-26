@@ -10,7 +10,21 @@ return new class extends Migration
 
     public function up(): void
     {
-        // Drop old incompatible tables on admin DB
+        // Every store's install shares the same admin database but tracks its own
+        // migration history independently — a store that installs/updates AFTER
+        // another store has already redesigned this table would otherwise drop
+        // and recreate it here too, silently destroying real transfer data synced
+        // in the meantime. Detect the new (transfer_no-based) schema and skip the
+        // destructive drop+recreate entirely once it's already in place.
+        $alreadyRedesigned = Schema::connection('remote_mysql')->hasTable('stock_transfer')
+            && Schema::connection('remote_mysql')->hasColumn('stock_transfer', 'transfer_no');
+
+        if ($alreadyRedesigned) {
+            return;
+        }
+
+        // Drop old incompatible tables on admin DB (only reached when the new
+        // schema isn't there yet, so there's nothing real to lose).
         Schema::connection('remote_mysql')->dropIfExists('stock_transfer_items');
         Schema::connection('remote_mysql')->dropIfExists('stock_transfer');
 
