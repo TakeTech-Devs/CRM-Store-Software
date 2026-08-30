@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\StockTransferController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\UpdateController;
 use App\Http\Controllers\Api\ReturnController;
+use App\Http\Controllers\Api\StockWriteoffController;
 
 
 
@@ -60,6 +61,12 @@ Route::middleware(['auth'])->group(function () {
         });
         Route::get('/create/stockTransfer', function () {
             return view('store/stockTransfer/stockTransferCreate');
+        });
+        Route::get('/stock/writeoff', function () {
+            return view('store/stockWriteoff/stockWriteoffList');
+        });
+        Route::get('/create/stockWriteoff', function () {
+            return view('store/stockWriteoff/stockWriteoffCreate');
         });
         Route::get('/sync/history', function () {
             return view('store/storeSync/storeSyncHist');
@@ -117,6 +124,9 @@ Route::prefix('api')->group(function () {
     Route::post('/stock-transfer/create', [StockTransferController::class, 'createTransfer']);
     Route::get('/stock-transfer/list', [StockTransferController::class, 'listTransfers']);
     Route::get('/stock-transfer/{id}', [StockTransferController::class, 'getTransferDetail']);
+    Route::post('/stock-writeoff/create', [StockWriteoffController::class, 'createWriteoff']);
+    Route::get('/stock-writeoff/list', [StockWriteoffController::class, 'listWriteoffs']);
+    Route::get('/stock-writeoff/{id}', [StockWriteoffController::class, 'getWriteoffDetail']);
     Route::get('/analytics', [ReportController::class, 'analyticsData']);
     Route::get('/monthly-earnings', [ReportController::class, 'monthlyEarnings']);
     Route::get('/update/check', [UpdateController::class, 'checkForUpdate']);

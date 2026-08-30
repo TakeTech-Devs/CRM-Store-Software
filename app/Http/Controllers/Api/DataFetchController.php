@@ -1057,6 +1057,8 @@ class DataFetchController extends Controller
                 'credit_note_staff_items',
                 'stock_transfer',
                 'stock_transfer_items',
+                'stock_writeoff',
+                'stock_writeoff_items',
             ];
 
             $summary = [];
@@ -1157,6 +1159,48 @@ class DataFetchController extends Controller
 
                         $adminDB->table('stock_transfer_items')->updateOrInsert(
                             ['transfer_id' => $adminTransferId, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
+                            $data
+                        );
+                        $pushed++;
+                    }
+                    $summary[$table] = $pushed;
+
+                } elseif ($table === 'stock_writeoff') {
+                    // Use writeoff_no as the business key — local id and admin id diverge.
+                    foreach ($newRows as $row) {
+                        $data = array_intersect_key((array) $row, array_flip($adminColumns));
+                        unset($data['id']);
+                        $adminDB->table('stock_writeoff')->updateOrInsert(
+                            ['writeoff_no' => $row->writeoff_no],
+                            $data
+                        );
+                    }
+                    $summary[$table] = $newRows->count();
+
+                } elseif ($table === 'stock_writeoff_items') {
+                    // Build local_id -> admin_id map via writeoff_no
+                    $localWriteoffs = DB::table('stock_writeoff')->get()->keyBy('id');
+                    $writeoffIdMap  = [];
+                    foreach ($localWriteoffs as $localId => $lw) {
+                        $adminWriteoff = $adminDB->table('stock_writeoff')
+                            ->where('writeoff_no', $lw->writeoff_no)
+                            ->first();
+                        if ($adminWriteoff) {
+                            $writeoffIdMap[$localId] = $adminWriteoff->id;
+                        }
+                    }
+
+                    $pushed = 0;
+                    foreach ($newRows as $item) {
+                        $adminWriteoffId = $writeoffIdMap[$item->writeoff_id] ?? null;
+                        if (!$adminWriteoffId) continue;
+
+                        $data = array_intersect_key((array) $item, array_flip($adminColumns));
+                        unset($data['id']);
+                        $data['writeoff_id'] = $adminWriteoffId;
+
+                        $adminDB->table('stock_writeoff_items')->updateOrInsert(
+                            ['writeoff_id' => $adminWriteoffId, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
                             $data
                         );
                         $pushed++;

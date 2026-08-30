@@ -8,6 +8,9 @@
     $returnActivePaths = ['store/return/create', 'store/return/list'];
     $isReturnGroupActive = collect($returnActivePaths)->contains(fn ($p) => request()->is($p));
 
+    $writeoffActivePaths = ['store/create/stockWriteoff', 'store/stock/writeoff'];
+    $isWriteoffGroupActive = collect($writeoffActivePaths)->contains(fn ($p) => request()->is($p));
+
     $reportActivePaths = ['store/doctor/report', 'store/cumulative/report', 'store/expiry/report', 'store/gst/report', 'store/stock/report'];
     $isReportGroupActive = collect($reportActivePaths)->contains(fn ($p) => request()->is($p));
 
@@ -83,6 +86,20 @@
                 <div class="bg-white py-2 collapse-inner rounded">
                     <a class="collapse-item {{ request()->is('store/return/create') ? 'active-link' : '' }}" href="{{url('store/return/create')}}">Create Return</a>
                     <a class="collapse-item {{ request()->is('store/return/list') ? 'active-link' : '' }}" href="{{url('store/return/list')}}">Credit Notes</a>
+                </div>
+            </div>
+        </li>
+
+        <li class="nav-item {{ $isWriteoffGroupActive ? 'active' : '' }}">
+            <a class="nav-link {{ $isWriteoffGroupActive ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#collapseWriteoff"
+                aria-expanded="{{ $isWriteoffGroupActive ? 'true' : 'false' }}" aria-controls="collapseWriteoff">
+                <i class="fas fa-trash-alt"></i>
+                <span>Stock Write-off</span>
+            </a>
+            <div id="collapseWriteoff" class="collapse {{ $isWriteoffGroupActive ? 'show' : '' }}" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <a class="collapse-item {{ request()->is('store/create/stockWriteoff') ? 'active-link' : '' }}" href="{{url('store/create/stockWriteoff')}}">Create Write-off</a>
+                    <a class="collapse-item {{ request()->is('store/stock/writeoff') ? 'active-link' : '' }}" href="{{url('store/stock/writeoff')}}">Write-off History</a>
                 </div>
             </div>
         </li>
