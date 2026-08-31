@@ -237,16 +237,25 @@ $(document).ready(function () {
         loadProductOptions(function (options) {
             const sel = $(`#price_select_${id}`);
             sel.empty().append('<option value="">-- Select Price --</option>');
-            // Each batch (purchase_request) is kept as its own option, never merged —
-            // a transfer always moves stock from one specific batch.
+            // Batches (purchase_request rows) sharing the same price are merged into
+            // one option — staff have no batch/expiry number to tell them apart, so
+            // showing "Qty: 3" once matches the Stock Report instead of confusing
+            // duplicate-looking "Qty: 2" / "Qty: 1" entries. The backend splits the
+            // entered qty across the underlying batches itself (oldest-expiry-first)
+            // when the transfer is submitted.
             const rows = options.filter(o =>
                 String(o.product_id) === String(productId) &&
                 String(o.pack_id) === String(packId) &&
                 String(o.brand_id) === String(brandId)
             );
+            const merged = new Map();
             rows.forEach(o => {
+                if (!merged.has(o.price_id)) merged.set(o.price_id, { ...o, avail_qty: 0 });
+                merged.get(o.price_id).avail_qty += parseFloat(o.avail_qty) || 0;
+            });
+            merged.forEach(o => {
                 const label = `₹${o.price_name} (Qty: ${o.avail_qty})`;
-                sel.append(`<option value="${o.purchase_request_id}"
+                sel.append(`<option value="${o.price_id}"
                     data-product-id="${o.product_id}"
                     data-product-name="${o.product_name}"
                     data-pack-id="${o.pack_id}"
@@ -354,7 +363,6 @@ $(document).ready(function () {
             if (qty > avail){ valid = false; Swal.fire('Validation', `Transfer qty exceeds available stock for ${opt.data('product-name')}.`, 'warning'); return false; }
 
             items.push({
-                purchase_request_id: sel.val(),
                 product_id:   opt.data('product-id'),
                 product_name: opt.data('product-name'),
                 pack_id:      opt.data('pack-id'),

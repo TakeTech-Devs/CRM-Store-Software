@@ -38,23 +38,33 @@ class StockTransferController extends Controller
 
             DB::beginTransaction();
 
+            $itemsToInsert = [];
             foreach ($items as $item) {
-                $pr = DB::table('purchase_request')->where('id', $item['purchase_request_id'])->first();
+                $deductions = $this->deductFifo(
+                    (int) $item['product_id'],
+                    (int) $item['pack_id'],
+                    (int) $item['price_id'],
+                    (float) $item['qty']
+                );
 
-                if (!$pr) {
+                if ($deductions === null) {
                     DB::rollBack();
-                    return response()->json(['status' => 400, 'message' => "Product batch not found for {$item['product_name']}."], 400);
+                    return response()->json(['status' => 400, 'message' => "Insufficient stock for {$item['product_name']}."], 400);
                 }
 
-                if ((float)$pr->qty < (float)$item['qty']) {
-                    DB::rollBack();
-                    return response()->json(['status' => 400, 'message' => "Insufficient stock for {$item['product_name']}. Available: {$pr->qty}."], 400);
+                foreach ($deductions as $d) {
+                    $itemsToInsert[] = [
+                        'purchase_request_id' => $d['purchase_request_id'],
+                        'product_id'          => $item['product_id'],
+                        'product_name'        => $item['product_name'],
+                        'pack_id'             => $item['pack_id'],
+                        'pack_name'           => $item['pack_name'],
+                        'price_id'            => $item['price_id'],
+                        'brand_id'            => $item['brand_id'] ?? null,
+                        'unit_value'          => $item['unit_value'],
+                        'qty'                 => (string) $d['qty'],
+                    ];
                 }
-
-                DB::table('purchase_request')->where('id', $pr->id)->update([
-                    'qty'        => (string)((float)$pr->qty - (float)$item['qty']),
-                    'updated_at' => now(),
-                ]);
             }
 
             $transferId = DB::table('stock_transfer')->insertGetId([
@@ -68,21 +78,12 @@ class StockTransferController extends Controller
                 'updated_at'    => now(),
             ]);
 
-            foreach ($items as $item) {
-                DB::table('stock_transfer_items')->insert([
-                    'transfer_id'         => $transferId,
-                    'purchase_request_id' => $item['purchase_request_id'],
-                    'product_id'          => $item['product_id'],
-                    'product_name'        => $item['product_name'],
-                    'pack_id'             => $item['pack_id'],
-                    'pack_name'           => $item['pack_name'],
-                    'price_id'            => $item['price_id'],
-                    'brand_id'            => $item['brand_id'] ?? null,
-                    'unit_value'          => $item['unit_value'],
-                    'qty'                 => $item['qty'],
-                    'created_at'          => now(),
-                    'updated_at'          => now(),
-                ]);
+            foreach ($itemsToInsert as $row) {
+                DB::table('stock_transfer_items')->insert(array_merge($row, [
+                    'transfer_id' => $transferId,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]));
             }
 
             DB::commit();
@@ -97,6 +98,48 @@ class StockTransferController extends Controller
             DB::rollBack();
             return response()->json(['status' => 500, 'message' => $th->getMessage()], 500);
         }
+    }
+
+    // Batches are merged in the picker UI (no batch/expiry number shown to staff), so
+    // the qty entered may span more than one purchase_request row at the same price.
+    // Deduct oldest-expiry-first across those batches, splitting into one deduction
+    // per batch actually touched. Returns null if total available stock is short.
+    private function deductFifo(int $productId, int $packId, int $priceId, float $qty): ?array
+    {
+        $batches = DB::table('purchase_request')
+            ->where('product_id', $productId)
+            ->where('pack_id', $packId)
+            ->where('price_id', $priceId)
+            ->where('qty', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('exp_date')->orWhere('exp_date', '>', now()->toDateString());
+            })
+            ->orderByRaw('exp_date IS NULL')
+            ->orderBy('exp_date')
+            ->orderBy('id')
+            ->get();
+
+        if ($batches->sum(fn ($b) => (float) $b->qty) < $qty) {
+            return null;
+        }
+
+        $remaining   = $qty;
+        $deductions  = [];
+        foreach ($batches as $batch) {
+            if ($remaining <= 0) break;
+            $take = min((float) $batch->qty, $remaining);
+            if ($take <= 0) continue;
+
+            DB::table('purchase_request')->where('id', $batch->id)->update([
+                'qty'        => (string) ((float) $batch->qty - $take),
+                'updated_at' => now(),
+            ]);
+
+            $deductions[] = ['purchase_request_id' => $batch->id, 'qty' => $take];
+            $remaining -= $take;
+        }
+
+        return $deductions;
     }
 
     private function generateTransferNumber(int $fromStoreId): string
