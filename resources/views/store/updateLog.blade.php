@@ -73,6 +73,15 @@
                 'Self-update now also applies changes to the app\'s stylesheets, scripts, and images, not just backend code — and fails immediately with a clear message if the server is missing required zip support, instead of retrying silently.',
             ],
         ],
+        '1.0.7' => [
+            'label' => 'Version Update',
+            'date'  => '2026-08-31',
+            'notes' => [
+                'New Stock Write-off panel: staff can log defective, broken, expired, or other stock loss for any product, which immediately deducts the reported quantity from stock and keeps a full record under Stock Write-off > Write-off History.',
+                'Fixed: a first-time update could fail on some stores with a "table already exists" error while setting up the credit note and stock transfer features — this now applies safely no matter which store updates first.',
+                'The Price dropdown on Stock Write-off and Stock Transfer now shows one combined quantity per price instead of confusing duplicate entries for the same price, matching how the Stock Report already displays it.',
+            ],
+        ],
     ];
 @endphp
 
