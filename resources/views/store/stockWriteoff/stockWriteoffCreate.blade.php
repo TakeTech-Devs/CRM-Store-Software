@@ -367,9 +367,9 @@ $(document).ready(function () {
             success: function (res) {
                 if (res.status === 200) {
                     Swal.fire({
-                        title: 'Write-off Recorded!',
+                        title: 'Write-off Submitted!',
                         icon: 'success',
-                        text: `Write-off No: ${res.writeoff_no}`,
+                        html: `Write-off No: <b>${res.writeoff_no}</b><br>Stock has been deducted here and the request is pending admin approval. It will be sent to admin on your next Sync Out.`,
                     }).then(() => { window.location.href = '/store/stock/writeoff'; });
                 } else {
                     Swal.fire('Error', res.message || 'Something went wrong.', 'error');

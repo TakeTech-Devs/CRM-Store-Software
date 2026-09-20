@@ -17,6 +17,9 @@
     .badge-broken    { background:#fd7e14; color:#fff; }
     .badge-expired   { background:#6c757d; color:#fff; }
     .badge-other     { background:#adb5bd; color:#000; }
+    .badge-status-pending  { background:#ffc107; color:#000; }
+    .badge-status-approved { background:#28a745; color:#fff; }
+    .badge-status-rejected { background:#dc3545; color:#fff; }
 </style>
 
 <div class="container-fluid">
@@ -35,6 +38,15 @@
             <label>End Date</label>
             <input type="date" class="form-control" id="end_date">
         </div>
+        <div class="col-auto">
+            <label>Status</label>
+            <select class="form-control" id="status_filter">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+        </div>
         <div class="col-auto" style="margin-top:1.85rem">
             <button class="btn btn-success btn-md" id="filterBtn">Find</button>
             <button class="btn btn-secondary btn-md ml-1" id="clearBtn">Clear</button>
@@ -52,12 +64,13 @@
                     <th>Date</th>
                     <th>Items</th>
                     <th>Total Qty</th>
+                    <th>Status</th>
                     <th>Notes</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody id="writeoffBody">
-                <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+                <tr><td colspan="8" class="text-muted">Loading…</td></tr>
             </tbody>
         </table>
     </div>
@@ -75,6 +88,14 @@
                 <div class="row mb-3">
                     <div class="col-md-6"><strong>Date:</strong> <span id="modal_date"></span></div>
                     <div class="col-md-6"><strong>Notes:</strong> <span id="modal_notes"></span></div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6"><strong>Status:</strong> <span id="modal_status"></span></div>
+                    <div class="col-md-6" id="modal_decided_wrap" style="display:none"><strong>Decided on:</strong> <span id="modal_decided"></span></div>
+                </div>
+                <div class="alert alert-danger" id="modal_reject_wrap" style="display:none">
+                    <strong>Rejected by admin:</strong> <span id="modal_reject_reason"></span><br>
+                    <small>The written-off quantity has been added back to your stock.</small>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm text-center">
@@ -103,18 +124,23 @@ $(document).ready(function () {
         return `<span class="badge badge-${reason}">${labels[reason] || reason}</span>`;
     }
 
-    function loadWriteoffs(startDate, endDate) {
+    function statusBadge(status) {
+        const labels = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
+        return `<span class="badge badge-status-${status}">${labels[status] || status}</span>`;
+    }
+
+    function loadWriteoffs(startDate, endDate, status) {
         $('#loader').show();
-        $('#writeoffBody').html('<tr><td colspan="7" class="text-muted">Loading…</td></tr>');
+        $('#writeoffBody').html('<tr><td colspan="8" class="text-muted">Loading…</td></tr>');
 
         $.ajax({
             url: '/api/stock-writeoff/list',
             type: 'GET',
-            data: { start_date: startDate || '', end_date: endDate || '' },
+            data: { start_date: startDate || '', end_date: endDate || '', status: status || '' },
             success: function (res) {
                 $('#loader').hide();
                 if (res.status !== 200 || !res.data.length) {
-                    $('#writeoffBody').html('<tr><td colspan="7" class="text-muted">No write-offs found.</td></tr>');
+                    $('#writeoffBody').html('<tr><td colspan="8" class="text-muted">No write-offs found.</td></tr>');
                     return;
                 }
 
@@ -127,6 +153,7 @@ $(document).ready(function () {
                             <td>${w.writeoff_date}</td>
                             <td>${w.item_count}</td>
                             <td>${w.total_qty}</td>
+                            <td>${statusBadge(w.status)}</td>
                             <td>${w.notes || '–'}</td>
                             <td>
                                 <button class="btn btn-sm btn-info view-detail" data-id="${w.id}">View</button>
@@ -137,7 +164,7 @@ $(document).ready(function () {
             },
             error: function () {
                 $('#loader').hide();
-                $('#writeoffBody').html('<tr><td colspan="7" class="text-danger">Failed to load write-offs.</td></tr>');
+                $('#writeoffBody').html('<tr><td colspan="8" class="text-danger">Failed to load write-offs.</td></tr>');
             }
         });
     }
@@ -149,13 +176,14 @@ $(document).ready(function () {
             Swal.fire('Validation', 'End date must be after start date.', 'warning');
             return;
         }
-        loadWriteoffs(s, e);
+        loadWriteoffs(s, e, $('#status_filter').val());
     });
 
     $('#clearBtn').on('click', function () {
         $('#start_date').val('');
         $('#end_date').val('');
-        loadWriteoffs('', '');
+        $('#status_filter').val('');
+        loadWriteoffs('', '', '');
     });
 
     // View detail
@@ -167,6 +195,15 @@ $(document).ready(function () {
             $('#modal_writeoff_no').text(d.writeoff.writeoff_no);
             $('#modal_date').text(d.writeoff.writeoff_date);
             $('#modal_notes').text(d.writeoff.notes || '–');
+            $('#modal_status').html(statusBadge(d.writeoff.status));
+
+            const decided = d.writeoff.status !== 'pending' && d.writeoff.decided_at;
+            $('#modal_decided').text(decided ? d.writeoff.decided_at : '');
+            $('#modal_decided_wrap').toggle(!!decided);
+
+            const rejected = d.writeoff.status === 'rejected';
+            $('#modal_reject_reason').text(d.writeoff.reject_reason || 'No reason given.');
+            $('#modal_reject_wrap').toggle(rejected);
 
             let itemsHtml = '';
             d.items.forEach(function (item, i) {

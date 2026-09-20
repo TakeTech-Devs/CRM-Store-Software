@@ -68,6 +68,7 @@ class StockWriteoffController extends Controller
                 'store_id'      => $storeId,
                 'writeoff_date' => date('Y-m-d'),
                 'notes'         => $notes,
+                'status'        => 'pending',
                 'created_at'    => now(),
                 'updated_at'    => now(),
             ]);
@@ -167,15 +168,23 @@ class StockWriteoffController extends Controller
             $startDate = $request->query('start_date');
             $endDate   = $request->query('end_date');
 
+            $status    = $request->query('status');
+
             $query = DB::table('stock_writeoff')->where('store_id', $storeId);
 
             if ($startDate) $query->where('writeoff_date', '>=', $startDate);
             if ($endDate)   $query->where('writeoff_date', '<=', $endDate);
+            if ($status)    $query->where('status', $status);
 
             $writeoffs = $query->orderByDesc('writeoff_date')->orderByDesc('id')->get();
 
             $writeoffs = $writeoffs->map(function ($w) {
-                $itemCount = DB::table('stock_writeoff_items')->where('writeoff_id', $w->id)->count();
+                // A qty taken from several batches is stored as several rows; count it as one line.
+                $itemCount = DB::table('stock_writeoff_items')
+                    ->where('writeoff_id', $w->id)
+                    ->groupBy('product_id', 'pack_id', 'price_id', 'reason')
+                    ->get(['product_id'])
+                    ->count();
                 $totalQty  = DB::table('stock_writeoff_items')->where('writeoff_id', $w->id)->sum('qty');
 
                 return [
@@ -183,6 +192,7 @@ class StockWriteoffController extends Controller
                     'writeoff_no'   => $w->writeoff_no,
                     'writeoff_date' => $w->writeoff_date,
                     'notes'         => $w->notes,
+                    'status'        => $w->status,
                     'item_count'    => $itemCount,
                     'total_qty'     => $totalQty,
                 ];
@@ -203,7 +213,22 @@ class StockWriteoffController extends Controller
                 return response()->json(['status' => 404, 'message' => 'Write-off not found.'], 404);
             }
 
-            $items = DB::table('stock_writeoff_items')->where('writeoff_id', $id)->get();
+            // Merge batch-split rows back into one line per product/pack/price/reason.
+            $items = DB::table('stock_writeoff_items')
+                ->where('writeoff_id', $id)
+                ->get()
+                ->groupBy(fn ($i) => implode('|', [$i->product_id, $i->pack_id, $i->price_id, $i->reason]))
+                ->map(function ($rows) {
+                    $first = $rows->first();
+                    return [
+                        'product_name' => $first->product_name,
+                        'pack_name'    => $first->pack_name,
+                        'unit_value'   => $first->unit_value,
+                        'reason'       => $first->reason,
+                        'qty'          => $rows->sum(fn ($r) => (float) $r->qty),
+                    ];
+                })
+                ->values();
 
             return response()->json([
                 'status' => 200,

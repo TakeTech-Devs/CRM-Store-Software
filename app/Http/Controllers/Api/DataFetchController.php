@@ -477,6 +477,7 @@ class DataFetchController extends Controller
             $localStore = DB::table('store')->where('store_meta_id', $storeMetaId)->first();
             $summary['incoming_transfers'] = $this->applyIncomingTransfers($localStore);
             $this->syncOutgoingTransferStatuses($localStore);
+            $summary['writeoff_decisions'] = $this->syncWriteoffDecisions($localStore);
 
             $this->writeSyncHistory('Succeed', null, 'Sync In');
             DB::commit();
@@ -555,6 +556,152 @@ class DataFetchController extends Controller
                     'updated_at'  => now(),
                 ]);
         }
+    }
+
+    // Write-offs are requests that admin approves or rejects. Push is insert-only,
+    // keyed on writeoff_no: an existing admin row is never updated from the store,
+    // otherwise a re-sync would overwrite admin's decision with the store's stale
+    // 'pending'. Items go up with their header inside one remote transaction so a
+    // half-pushed write-off can't be left behind (it would never be retried).
+    private function pushNewWriteoffs($adminDB): array
+    {
+        $headerCols = $adminDB->getSchemaBuilder()->getColumnListing('stock_writeoff');
+        $itemCols   = $adminDB->getSchemaBuilder()->getColumnListing('stock_writeoff_items');
+
+        $adminNos   = $adminDB->table('stock_writeoff')->pluck('writeoff_no')->all();
+        $newHeaders = DB::table('stock_writeoff')->whereNotIn('writeoff_no', $adminNos)->get();
+
+        $pushedHeaders = 0;
+        $pushedItems   = 0;
+
+        foreach ($newHeaders as $header) {
+            $items = DB::table('stock_writeoff_items')->where('writeoff_id', $header->id)->get();
+
+            $adminDB->transaction(function () use ($adminDB, $header, $items, $headerCols, $itemCols, &$pushedItems) {
+                $headerData = array_intersect_key((array) $header, array_flip($headerCols));
+                unset($headerData['id']);
+                $adminWriteoffId = $adminDB->table('stock_writeoff')->insertGetId($headerData);
+
+                foreach ($items as $item) {
+                    $itemData = array_intersect_key((array) $item, array_flip($itemCols));
+                    unset($itemData['id']);
+                    $itemData['writeoff_id'] = $adminWriteoffId;
+                    $adminDB->table('stock_writeoff_items')->insert($itemData);
+                    $pushedItems++;
+                }
+            });
+
+            $pushedHeaders++;
+        }
+
+        \Log::info("Sync out: pushed {$pushedHeaders} new write-off(s), {$pushedItems} item row(s).");
+
+        return ['stock_writeoff' => $pushedHeaders, 'stock_writeoff_items' => $pushedItems];
+    }
+
+    // Pull admin's decision on this store's pending write-offs. Approved just records
+    // the decision; Rejected also puts the deducted stock back.
+    private function syncWriteoffDecisions(?object $localStore): int
+    {
+        if (!$localStore || !Schema::hasColumn('stock_writeoff', 'status')) return 0;
+
+        $pendingNos = DB::table('stock_writeoff')
+            ->where('store_id', $localStore->id)
+            ->where('status', 'pending')
+            ->pluck('writeoff_no');
+
+        if ($pendingNos->isEmpty()) return 0;
+
+        $remote = DB::connection('remote_mysql');
+        if (!$remote->getSchemaBuilder()->hasColumn('stock_writeoff', 'status')) return 0;
+
+        $decided = $remote->table('stock_writeoff')
+            ->where('store_id', $localStore->id)
+            ->whereIn('writeoff_no', $pendingNos)
+            ->whereIn('status', ['approved', 'rejected'])
+            ->get();
+
+        $applied = 0;
+
+        foreach ($decided as $adminRow) {
+            $local = DB::table('stock_writeoff')->where('writeoff_no', $adminRow->writeoff_no)->first();
+            if (!$local || $local->status !== 'pending') continue;
+
+            $decidedAt = $adminRow->decided_at ?? now();
+
+            if ($adminRow->status === 'approved') {
+                DB::table('stock_writeoff')->where('id', $local->id)->where('status', 'pending')->update([
+                    'status'     => 'approved',
+                    'decided_at' => $decidedAt,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $this->restoreRejectedWriteoff($local, $adminRow->reject_reason ?? null, $decidedAt);
+            }
+
+            $applied++;
+        }
+
+        return $applied;
+    }
+
+    // The status flip is guarded on status='pending', and the stock is only added back
+    // if that flip actually happened, so running Sync In repeatedly can't restore twice.
+    private function restoreRejectedWriteoff(object $writeoff, ?string $reason, $decidedAt): void
+    {
+        DB::transaction(function () use ($writeoff, $reason, $decidedAt) {
+            $flipped = DB::table('stock_writeoff')
+                ->where('id', $writeoff->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status'            => 'rejected',
+                    'reject_reason'     => $reason,
+                    'decided_at'        => $decidedAt,
+                    'stock_restored_at' => now(),
+                    'updated_at'        => now(),
+                ]);
+
+            if (!$flipped) return;
+
+            $items = DB::table('stock_writeoff_items')->where('writeoff_id', $writeoff->id)->get();
+
+            foreach ($items as $item) {
+                // Each item row carries the exact batch it was deducted from.
+                $pr = $item->purchase_request_id
+                    ? DB::table('purchase_request')->where('id', $item->purchase_request_id)->first()
+                    : null;
+
+                // Fallback if that batch row is gone: any batch of the same product/pack/price.
+                if (!$pr) {
+                    $pr = DB::table('purchase_request')
+                        ->where('product_id', $item->product_id)
+                        ->where('pack_id', $item->pack_id)
+                        ->where('price_id', $item->price_id)
+                        ->orderBy('id')
+                        ->first();
+                }
+
+                if ($pr) {
+                    DB::table('purchase_request')->where('id', $pr->id)->update([
+                        'qty'        => (string) ((float) $pr->qty + (float) $item->qty),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('purchase_request')->insert($this->onlyExistingColumns('purchase_request', [
+                        'store_assign_id' => null,
+                        'brand_id'        => $item->brand_id ?? 1,
+                        'product_id'      => $item->product_id,
+                        'pack_id'         => $item->pack_id,
+                        'price_id'        => $item->price_id,
+                        'qty'             => $item->qty,
+                        'qty_left'        => $item->qty,
+                        'exp_date'        => date('Y-m-d', strtotime('+1 year')),
+                        'created_at'      => now(),
+                        'updated_at'      => now(),
+                    ]));
+                }
+            }
+        });
     }
 
     private function syncStaffTable(): int
@@ -1067,6 +1214,16 @@ class DataFetchController extends Controller
                 if (!Schema::hasTable($table)) continue;
                 if (!$adminDB->getSchemaBuilder()->hasTable($table)) continue;
 
+                // Write-offs are requests admin reviews, so they're pushed insert-only
+                // (see pushNewWriteoffs) instead of through the updated_at watermark.
+                if ($table === 'stock_writeoff') {
+                    $summary = array_merge($summary, $this->pushNewWriteoffs($adminDB));
+                    continue;
+                }
+                if ($table === 'stock_writeoff_items') {
+                    continue; // pushed together with its header
+                }
+
                 $adminColumns = $adminDB->getSchemaBuilder()->getColumnListing($table);
                 $lastSyncedAt = $adminDB->table($table)->max('updated_at') ?? '1970-01-01 00:00:00';
                 $adminTransferNos = $adminDB->table('stock_transfer')->pluck('transfer_no')->toArray();
@@ -1157,50 +1314,17 @@ class DataFetchController extends Controller
                         unset($data['id']);
                         $data['transfer_id'] = $adminTransferId;
 
+                        // purchase_request_id + price_id are part of the key because a transfer
+                        // qty can be FIFO-split across several batches of the same product/pack;
+                        // without them those rows collapse into one and admin sees a smaller qty.
                         $adminDB->table('stock_transfer_items')->updateOrInsert(
-                            ['transfer_id' => $adminTransferId, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
-                            $data
-                        );
-                        $pushed++;
-                    }
-                    $summary[$table] = $pushed;
-
-                } elseif ($table === 'stock_writeoff') {
-                    // Use writeoff_no as the business key — local id and admin id diverge.
-                    foreach ($newRows as $row) {
-                        $data = array_intersect_key((array) $row, array_flip($adminColumns));
-                        unset($data['id']);
-                        $adminDB->table('stock_writeoff')->updateOrInsert(
-                            ['writeoff_no' => $row->writeoff_no],
-                            $data
-                        );
-                    }
-                    $summary[$table] = $newRows->count();
-
-                } elseif ($table === 'stock_writeoff_items') {
-                    // Build local_id -> admin_id map via writeoff_no
-                    $localWriteoffs = DB::table('stock_writeoff')->get()->keyBy('id');
-                    $writeoffIdMap  = [];
-                    foreach ($localWriteoffs as $localId => $lw) {
-                        $adminWriteoff = $adminDB->table('stock_writeoff')
-                            ->where('writeoff_no', $lw->writeoff_no)
-                            ->first();
-                        if ($adminWriteoff) {
-                            $writeoffIdMap[$localId] = $adminWriteoff->id;
-                        }
-                    }
-
-                    $pushed = 0;
-                    foreach ($newRows as $item) {
-                        $adminWriteoffId = $writeoffIdMap[$item->writeoff_id] ?? null;
-                        if (!$adminWriteoffId) continue;
-
-                        $data = array_intersect_key((array) $item, array_flip($adminColumns));
-                        unset($data['id']);
-                        $data['writeoff_id'] = $adminWriteoffId;
-
-                        $adminDB->table('stock_writeoff_items')->updateOrInsert(
-                            ['writeoff_id' => $adminWriteoffId, 'product_id' => $item->product_id, 'pack_id' => $item->pack_id],
+                            [
+                                'transfer_id'         => $adminTransferId,
+                                'purchase_request_id' => $item->purchase_request_id,
+                                'product_id'          => $item->product_id,
+                                'pack_id'             => $item->pack_id,
+                                'price_id'            => $item->price_id,
+                            ],
                             $data
                         );
                         $pushed++;

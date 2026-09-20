@@ -82,6 +82,16 @@
                 'The Price dropdown on Stock Write-off and Stock Transfer now shows one combined quantity per price instead of confusing duplicate entries for the same price, matching how the Stock Report already displays it.',
             ],
         ],
+        '1.0.8' => [
+            'label' => 'Version Update',
+            'date'  => '2026-09-20',
+            'notes' => [
+                'Stock Write-offs now need admin approval: a new write-off shows as Pending and deducts your stock straight away, then goes to admin on your next Sync Out.',
+                'If admin rejects a write-off, the quantity is automatically added back to your stock on your next Sync In, and the write-off shows as Rejected along with the reason.',
+                'Write-off History now has a Status column and a status filter, and the detail view shows the decision date and any rejection reason. Write-offs made before this update are marked Approved.',
+                'Fixed: when a write-off or stock transfer quantity was taken from more than one batch, admin could see a smaller total quantity than what was actually written off or sent.',
+            ],
+        ],
     ];
 @endphp
 
