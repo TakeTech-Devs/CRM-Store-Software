@@ -90,6 +90,7 @@
                 'If admin rejects a write-off, the quantity is automatically added back to your stock on your next Sync In, and the write-off shows as Rejected along with the reason.',
                 'Write-off History now has a Status column and a status filter, and the detail view shows the decision date and any rejection reason. Write-offs made before this update are marked Approved.',
                 'Fixed: when a write-off or stock transfer quantity was taken from more than one batch, admin could see a smaller total quantity than what was actually written off or sent.',
+                'Customer Billing and Staff Billing: the search box now finds bills by bill number, phone number, or customer/staff name. It searches all bills, not just the page you are viewing, and the Total Amount follows the matches.',
             ],
         ],
     ];
