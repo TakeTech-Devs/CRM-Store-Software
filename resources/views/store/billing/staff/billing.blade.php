@@ -77,7 +77,7 @@
             <div class="d-flex align-items-start justify-content-around">
                 <div class="form-group mx-3">
                     <label for="searchBillingNumber">Search: </label> &nbsp;&nbsp;
-                    <input type="text" class="form-control" id="searchBillingNumber" placeholder="Search Billing No.">
+                    <input type="text" class="form-control" id="searchBillingNumber" style="min-width:340px" placeholder="Bill no., phone or staff name">
                 </div>
             </div>
         </div>
@@ -284,7 +284,8 @@
         });
     });
 
-    let allBills = [];
+    let allBills = [];       // everything the server returned for the chosen dates
+    let filteredBills = [];  // allBills narrowed by the search box; this is what gets paged and shown
     const PAGE_SIZE = 10;
     let currentPage = 1;
 
@@ -306,7 +307,7 @@
     function renderPage(page) {
         currentPage = page;
         const start = (page - 1) * PAGE_SIZE;
-        const pageItems = allBills.slice(start, start + PAGE_SIZE);
+        const pageItems = filteredBills.slice(start, start + PAGE_SIZE);
         const tbody = $('#purchase-entry-table tbody').empty();
 
         pageItems.forEach((brand, i) => {
@@ -333,12 +334,12 @@
         });
 
         renderPagination();
-        const showing = Math.min(start + PAGE_SIZE, allBills.length);
-        $('#billPaginationInfo').text(`Showing ${start + 1} to ${showing} of ${allBills.length} records`);
+        const showing = Math.min(start + PAGE_SIZE, filteredBills.length);
+        $('#billPaginationInfo').text(`Showing ${start + 1} to ${showing} of ${filteredBills.length} records`);
     }
 
     function renderPagination() {
-        const totalPages = Math.ceil(allBills.length / PAGE_SIZE);
+        const totalPages = Math.ceil(filteredBills.length / PAGE_SIZE);
         const $ul = $('.pagination').empty();
         if (totalPages <= 1) return;
 
@@ -357,7 +358,7 @@
     $(document).on('click', '.pagination .page-link', function(e) {
         e.preventDefault();
         const page = parseInt($(this).data('page'));
-        if (page >= 1 && page <= Math.ceil(allBills.length / PAGE_SIZE)) {
+        if (page >= 1 && page <= Math.ceil(filteredBills.length / PAGE_SIZE)) {
             renderPage(page);
         }
     });
@@ -365,33 +366,38 @@
     function bill_list(response) {
         if (Array.isArray(response) && response.length > 0) {
             allBills = response.slice().reverse();
-            let grandTotal = allBills.reduce((s, b) => s + (parseFloat(b.total_amt) || 0), 0);
-            $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
-            renderPage(1);
+            applySearch();
         } else {
             allBills = [];
+            filteredBills = [];
             showNoRecords();
         }
+    }
+
+    // Matches bill number, staff phone or staff name across ALL loaded bills
+    // (not just the page on screen), then re-pages the matches.
+    function applySearch() {
+        const q = $('#searchBillingNumber').val().trim().toLowerCase();
+        filteredBills = !q ? allBills : allBills.filter(b =>
+            [b.invoiceNo, b.staff_phone, b.staff_name]
+                .some(v => String(v ?? '').toLowerCase().includes(q))
+        );
+
+        if (!filteredBills.length) {
+            showNoRecords();
+            return;
+        }
+
+        const grandTotal = filteredBills.reduce((s, b) => s + (parseFloat(b.total_amt) || 0), 0);
+        $('.grandTotalAmount').html(`<strong>Total Amount: ${grandTotal.toFixed(2)}/-</strong>`);
+        renderPage(1);
     }
 
     $(document).ready(function () {
         api_for_bill();
 
         // SEARCH FUNCTIONALITY
-        $('#searchBillingNumber').on('input', function () {
-            var searchText = $(this).val().toLowerCase();
-            var found = false;
-            $('.bill-row').each(function () {
-                var invoiceNo = $(this).find('td:eq(1)').text().toLowerCase();
-                if (invoiceNo.includes(searchText)) {
-                    $(this).show();
-                    found = true;
-                } else {
-                    $(this).hide();
-                }
-            });
-            $('#noBrandFoundMessage').toggle(!found);
-        });
+        $('#searchBillingNumber').on('input', applySearch);
 
         // VIEW BILL
         $(document).on('click', '.viewBill', function () {
