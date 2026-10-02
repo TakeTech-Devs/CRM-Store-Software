@@ -93,6 +93,13 @@
                 'Customer Billing and Staff Billing: the search box now finds bills by bill number, phone number, or customer/staff name. It searches all bills, not just the page you are viewing, and the Total Amount follows the matches.',
             ],
         ],
+        '1.0.9' => [
+            'label' => 'Version Update',
+            'date'  => '2026-10-02',
+            'notes' => [
+                'Fixed: setting up the store database could fail on older MySQL/MariaDB with "Field \'id\' doesn\'t have a default value" or a similar key-length error. The database is now built correctly on those servers too.',
+            ],
+        ],
     ];
 @endphp
 
