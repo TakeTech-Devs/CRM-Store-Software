@@ -430,6 +430,11 @@ class DataFetchController extends Controller
 
     private function syncInFromAdmin(Request $request, $storeId)
     {
+        // A store's first Sync In pulls the whole catalogue and can run for minutes on a
+        // slow disk or connection. A PHP time limit would kill it half-way (the work is
+        // one transaction, so nothing would be saved), so lift it for the sync only.
+        @set_time_limit(0);
+
         try {
             $storeMetaId = session('storeId') ?: $storeId;
 
@@ -1081,9 +1086,16 @@ class DataFetchController extends Controller
         return $applied;
     }
 
+    // A table's columns can't change while one sync request runs, but this is called
+    // once per synced row — and Schema::getColumnListing() is a query against
+    // information_schema (slow, especially on older MariaDB or a USB drive). Look
+    // each table up once per request, otherwise a first sync of a few thousand rows
+    // runs thousands of metadata queries and blows through PHP's execution time limit.
+    private array $columnCache = [];
+
     private function onlyExistingColumns(string $table, array $payload): array
     {
-        $columns = Schema::getColumnListing($table);
+        $columns = $this->columnCache[$table] ??= Schema::getColumnListing($table);
 
         return array_intersect_key($payload, array_flip($columns));
     }
@@ -1181,6 +1193,9 @@ class DataFetchController extends Controller
 
     public function sendDataToAdminDatabase(Request $request, $storeId)
     {
+        // Same reason as Sync In: a large first push must not be cut off by PHP's time limit.
+        @set_time_limit(0);
+
         DB::beginTransaction();
         try {
             $adminDB = DB::connection('remote_mysql');
