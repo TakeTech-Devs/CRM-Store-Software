@@ -100,6 +100,15 @@
                 'Fixed: setting up the store database could fail on older MySQL/MariaDB with "Field \'id\' doesn\'t have a default value" or a similar key-length error. The database is now built correctly on those servers too.',
             ],
         ],
+        '1.0.10' => [
+            'label' => 'Version Update',
+            'date'  => '2026-11-19',
+            'notes' => [
+                'Fixed: the first Sync In on a store with a large catalogue could stop with "Maximum execution time exceeded". Syncing is now much faster and is no longer cut off by the time limit, for both Sync In and Sync Out.',
+                'Fixed: checking for or downloading an update could fail with "unable to get local issuer certificate" on PCs whose PHP has no certificate list set up. The app now carries its own, so updates no longer depend on the PC\'s PHP settings.',
+                'Fixed: applying an update could be cut off by PHP\'s time limit and leave the update half-applied. Updates now run to completion.',
+            ],
+        ],
     ];
 @endphp
 
