@@ -161,6 +161,21 @@ class UpdateController extends Controller
             ->value('new_version') ?? '1.0.0';
     }
 
+    // The update server is https. PHP on Windows only trusts a site's certificate if
+    // php.ini points curl.cainfo / openssl.cafile at a CA list, and a standalone PHP
+    // (as opposed to the one bundled with XAMPP) usually has none, failing with
+    // "cURL error 60: unable to get local issuer certificate". Verification stays ON;
+    // the app just brings its own CA list so updates don't depend on each PC's php.ini.
+    // The file lives under resources/, so it is refreshed by updates like everything else.
+    private function http(int $timeout)
+    {
+        $bundle = resource_path('certs/cacert.pem');
+
+        return Http::timeout($timeout)->withOptions([
+            'verify' => is_file($bundle) ? $bundle : true,
+        ]);
+    }
+
     private function fetchManifest(): array
     {
         $manifestUrl = config('update.manifest_url');
@@ -168,7 +183,7 @@ class UpdateController extends Controller
             throw new \Exception('Update server is not configured.');
         }
 
-        $response = Http::timeout(10)->get($manifestUrl);
+        $response = $this->http(10)->get($manifestUrl);
         if (!$response->successful()) {
             throw new \Exception('Could not reach the update server.');
         }
@@ -183,7 +198,7 @@ class UpdateController extends Controller
 
     private function downloadZip(string $url, string $destination): void
     {
-        $response = Http::timeout(300)->get($url);
+        $response = $this->http(300)->get($url);
         if (!$response->successful()) {
             throw new \Exception('Failed to download update package (HTTP ' . $response->status() . ').');
         }
