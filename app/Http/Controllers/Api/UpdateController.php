@@ -49,6 +49,14 @@ class UpdateController extends Controller
 
     public function applyUpdate()
     {
+        // Applying an update (download, unzip, copy files, run migrations) can take longer
+        // than PHP's default 30s limit, especially on a slow disk or connection. Hitting
+        // that limit is a fatal error, not an exception, so none of the handling below
+        // would run: the log row would stay "pending" and the files could be left
+        // half-copied. Don't let a time limit, or the browser tab closing, cut it short.
+        @set_time_limit(0);
+        ignore_user_abort(true);
+
         try {
             $manifest = $this->fetchManifest();
             $currentVersion = $this->currentVersion();
