@@ -41,6 +41,7 @@
                             <thead class="sticky-top bg-light">
                                 <tr>
                                     <th>#</th>
+                                    <th>Date</th>
                                     <th>HSN Code</th>
                                     <th>Amount(&#8377;)</th>
                                     <th>GST Rate(%)</th>
@@ -74,6 +75,7 @@
                             html += `
                                 <tr>
                                     <td>${index + 1}</td>
+                                    <td>${sale.billing_date}</td>
                                     <td>${sale.hsn_code}</td>
                                     <td>${sale.total_amount}</td>
                                     <td>${sale.gst}</td>

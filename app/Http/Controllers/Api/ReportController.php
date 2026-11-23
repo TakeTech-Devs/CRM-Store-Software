@@ -282,6 +282,8 @@ class ReportController extends Controller
         try {
             $PurchaseStockEntryList = DB::table('purchase_request')
                 ->join('product', 'purchase_request.product_id', '=', 'product.id')
+                // A batch that is sold out has nothing left to expire.
+                ->where('purchase_request.qty', '>', 0)
                 ->select('purchase_request.*', 'product.product_name as product_name')
                 ->get();
     
@@ -305,7 +307,13 @@ class ReportController extends Controller
             ->join('customer_billing as cb', 'cpb.cb_id', '=', 'cb.id')
             ->join('product as p', 'cpb.productId', '=', 'p.id')
             ->where('cb.total_amt', '>', 0)
-            ->select('cb.billing_date', 'p.hsn_code', 'p.gst', DB::raw('SUM(cb.total_amt) as total_amount'))
+            ->select(
+                'cb.billing_date', 'p.hsn_code', 'p.gst',
+                // Sum the LINE amounts. Summing the bill's total_amt here would add the
+                // whole bill once for every line on it (a 3-line bill counted 3x).
+                DB::raw('SUM(cpb.totalAmount) as total_amount'),
+                DB::raw('SUM(COALESCE(cpb.gstAmount, cpb.totalAmount * p.gst / 100)) as gst_amount')
+            )
             ->groupBy('cb.billing_date', 'p.hsn_code', 'p.gst');
 
         // Fetch the billing data from staff_product_billing
@@ -313,37 +321,46 @@ class ReportController extends Controller
             ->join('staff_billing as cb', 'cpb.cb_id', '=', 'cb.id')
             ->join('product as p', 'cpb.productId', '=', 'p.id')
             ->where('cb.total_amt', '>', 0)
-            ->select('cb.billing_date', 'p.hsn_code', 'p.gst', DB::raw('SUM(cb.total_amt) as total_amount'))
+            ->select(
+                'cb.billing_date', 'p.hsn_code', 'p.gst',
+                DB::raw('SUM(cpb.totalAmount) as total_amount'),
+                DB::raw('SUM(COALESCE(cpb.gstAmount, cpb.totalAmount * p.gst / 100)) as gst_amount')
+            )
             ->groupBy('cb.billing_date', 'p.hsn_code', 'p.gst');
-    
-        // Combine both queries using union
+
+        // Combine both queries using union, then merge customer + staff rows that
+        // share the same date / HSN / rate into one line of the report.
         $bills = $customerBills->union($staffBills)->get();
-    
-        // Map over the combined results to calculate GST
-        $gstReport = $bills->map(function ($bill) {
-            // Log the values for debugging
-            \Log::info('Bill Data', [
+
+        $merged = [];
+        foreach ($bills as $bill) {
+            $key = $bill->billing_date . '|' . $bill->hsn_code . '|' . $bill->gst;
+            $merged[$key] ??= [
                 'billing_date' => $bill->billing_date,
-                'hsn_code' => $bill->hsn_code,
-                'gst' => $bill->gst,
-                'total_amount' => $bill->total_amount,
-            ]);
-    
-            // Ensure values are numeric to avoid NaN
-            $cgst = ($bill->gst ?? 0) / 2;
-            $sgst = ($bill->gst ?? 0) / 2;
-            $totalGst = (($bill->total_amount ?? 0) * ($bill->gst ?? 0)) / 100;
-    
-            return [
-                'billing_date' => $bill->billing_date,
-                'hsn_code' => $bill->hsn_code,
-                'gst' => $bill->gst,
-                'cgst' => number_format($cgst, 2),
-                'sgst' => number_format($sgst, 2),
-                'total_gst' => number_format($totalGst, 2),
-                'total_amount' => number_format($bill->total_amount, 2),
+                'hsn_code'     => $bill->hsn_code,
+                'gst'          => $bill->gst,
+                'amount'       => 0.0,
+                'gst_amount'   => 0.0,
             ];
-        });
+            $merged[$key]['amount']     += (float) $bill->total_amount;
+            $merged[$key]['gst_amount'] += (float) $bill->gst_amount;
+        }
+
+        $gstReport = collect($merged)
+            ->sortBy([['billing_date', 'desc'], ['hsn_code', 'asc']])
+            ->values()
+            ->map(function ($row) {
+                $rate = (float) ($row['gst'] ?? 0);
+                return [
+                    'billing_date' => $row['billing_date'],
+                    'hsn_code'     => $row['hsn_code'],
+                    'gst'          => $row['gst'],
+                    'cgst'         => number_format($rate / 2, 2),
+                    'sgst'         => number_format($rate / 2, 2),
+                    'total_gst'    => number_format($row['gst_amount'], 2),
+                    'total_amount' => number_format($row['amount'], 2),
+                ];
+            });
     
         return response()->json([
             'status' => 'success',

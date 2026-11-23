@@ -1474,65 +1474,25 @@ class DataFetchController extends Controller
 
     public function backupSQL()
     {
-        $database = env('DB_DATABASE');
-        $username = env('DB_USERNAME');
-        $password = env('DB_PASSWORD');
-        $host = env('DB_HOST');
-        $port = env('DB_PORT');
-
-        $fileName = "backup-" . date('Y-m-d_H-i-s') . ".sql";
-        $relativeFilePath = "backup" . DIRECTORY_SEPARATOR . $fileName;
-        $filePath = storage_path("app" . DIRECTORY_SEPARATOR . "public" . DIRECTORY_SEPARATOR . $relativeFilePath);
-
-        if (!file_exists(storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'backup'))) {
-            mkdir(storage_path('app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'backup'), 0777, true);
+        try {
+            $result = app(\App\Services\DatabaseBackup::class)->run('backup');
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => 'Failed to create backup.', 'error' => $e->getMessage()], 500);
         }
 
-        // Provide the full path to mysqldump for XAMPP
-        $mysqldumpPath = "C:\\xampp\\mysql\\bin\\mysqldump.exe"; // Update this path as needed
+        return response()->json(['status' => 'success', 'file' => $result['file'], 'file_url' => $result['url']]);
+    }
 
-        // Ensure correct escaping of arguments and paths
-        $command = "$mysqldumpPath --user=" . escapeshellarg(trim($username)) . " --password=" . escapeshellarg(trim($password)) . " --host=" . escapeshellarg(trim($host)) . " --port=" . intval(trim($port)) . " " . escapeshellarg(trim($database)) . " > \"" . $filePath . "\"";
+    /**
+     * Called quietly by every open page: starts the automatic (three-a-day) backup in the
+     * background when one is due. Cheap when nothing is due — one small query.
+     */
+    public function autoBackupCheck()
+    {
+        $backup = app(\App\Services\DatabaseBackup::class);
+        $started = $backup->autoBackupDue() && $backup->startAutoBackup();
 
-        // Debug command before executing
-        // dd($command);
-
-        // Use proc_open for better control over the command execution
-        $descriptorSpec = [
-            0 => ["pipe", "r"],  // STDIN
-            1 => ["pipe", "w"],  // STDOUT
-            2 => ["pipe", "w"],  // STDERR
-        ];
-
-        $process = proc_open($command, $descriptorSpec, $pipes);
-
-        if (!is_resource($process)) {
-            return response()->json(['status' => 'error', 'message' => 'Failed to create backup.'], 500);
-        }
-
-        // Close the pipes to avoid deadlock
-        fclose($pipes[0]);
-
-        $output = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-
-        $errorOutput = stream_get_contents($pipes[2]);
-        fclose($pipes[2]);
-
-        $result = proc_close($process);
-
-        if ($result !== 0) {
-            return response()->json(['status' => 'error', 'message' => 'Failed to create backup.', 'error' => $errorOutput], 500);
-        }
-
-        $fileUrl = url("storage/{$relativeFilePath}");
-        DB::table('backup')->insert([
-            'date' => date('Y-m-d H:i:s'),
-            'file_path' => $fileUrl,
-            'file_name' => $fileName
-        ]);
-
-        return response()->json(['status' => 'success', 'file' => $fileName, 'file_url' => $fileUrl]);
+        return response()->json(['status' => 'success', 'started' => $started]);
     }
 
     public function deleteBackup($id)

@@ -87,6 +87,23 @@
     <!-- STOCK LIST TABLE  -->
     <div class="container-fluid">
         <div id="loader" class="text-center mt-3"></div>
+
+        <!-- Search / rows -->
+        <div class="row mb-3">
+            <div class="col-md-8 mb-2">
+                <input type="text" id="reportSearch" class="form-control"
+                    placeholder="Search product, brand, category, sub category or HSN code...">
+            </div>
+            <div class="col-md-4 mb-2">
+                <select id="pageSizeSelect" class="form-control select2-manual" title="Rows per page">
+                    <option value="10">Show 10 rows</option>
+                    <option value="25" selected>Show 25 rows</option>
+                    <option value="50">Show 50 rows</option>
+                    <option value="100">Show 100 rows</option>
+                </select>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col">
                 <div class="table-responsive" style="height: 60vh; overflow:auto">
@@ -111,15 +128,15 @@
                             </tr>
                         </tbody>
                     </table>
-                    <div id="noStockFoundMessage" class="text-center mt-3" style="display: none;">No stock found</div>
                 </div>
 
                 <!-- Pagination Section -->
                 <div class="container mt-3">
-                    <div class="row justify-content-end">
+                    <div class="row align-items-center">
+                        <div class="col text-muted small" id="tableInfo"></div>
                         <div class="col-auto">
                             <nav aria-label="...">
-                                <ul class="pagination pagination-sm" id="pagination-links">
+                                <ul class="pagination pagination-sm mb-0" id="pagination-links">
                                     <!-- Pagination links will be added here dynamically -->
                                 </ul>
                             </nav>
@@ -133,142 +150,83 @@
     <!-- END STOCK LIST TABLE -->
 </div>
 
+<script src="{{ asset('assets/js/report-table.js') }}"></script>
 <script>
+    const esc = ReportTable.escapeHtml;
+
+    // Row colour: expired = red, expiring within 30 days = yellow, otherwise green.
+    function stockRowClass(element) {
+        let daysUntilExpiry = Math.ceil((new Date(element?.exp_date).getTime() - Date.now()) / (1000 * 3600 * 24));
+        if (daysUntilExpiry < 0) return 'text-danger';
+        if (daysUntilExpiry <= 30) return 'text-warning';
+        return 'text-success';
+    }
+
+    function stockCells(element) {
+        let expiryDate = element?.exp_date ? new Date(element.exp_date).toLocaleDateString() : 'N/A';
+        return `<td>${esc(element?.product_name || 'N/A')}</td>
+            <td>${esc(element?.brand_name || 'N/A')}</td>
+            <td>${esc(element?.category_name || 'N/A')}</td>
+            <td>${esc(element?.sub_category_name || 'N/A')}</td>
+            <td>${esc(element?.pack_name || 'N/A')}</td>
+            <td>${esc(element?.price_name || 'N/A')}</td>
+            <td>${esc(element?.qty || '0')}</td>
+            <td>${expiryDate}</td>
+            <td>${esc(element?.hsn_code || 'N/A')}</td>
+            <td>${esc(element?.gst || '0')}%</td>`;
+    }
+
+    const table = ReportTable({
+        tbody: '#stock_list',
+        pager: '#pagination-links',
+        info: '#tableInfo',
+        search: '#reportSearch',
+        pageSize: '#pageSizeSelect',
+        colspan: 10,
+        searchText: (el) => [el?.product_name, el?.brand_name, el?.category_name, el?.sub_category_name, el?.hsn_code].join(' '),
+        rowHtml: (el) => `<tr class="${stockRowClass(el)}">${stockCells(el)}</tr>`
+    });
+
     $(document).ready(function() {
-            loadPage(1); // Load the first page initially
-        });
-
-        let allData = [];
-
-        function loadPage(page) {
-            $('#loader').show();
-            $.ajax({
+        $('#loader').show();
+        $.ajax({
             url: '/api/stock-report',
             method: 'GET',
             success: function(res) {
                 $('#loader').hide();
-                $('#stock_list').empty();
-                $('#pagination-links').empty();
-
-                // Save all data to the allData array
-                allData = res.data;
-
-                // Get records for the current page
-                let recordsPerPage = 15;
-                let startIndex = (page - 1) * recordsPerPage;
-                let endIndex = startIndex + recordsPerPage;
-                let currentPageData = allData.slice(startIndex, endIndex);
-
-                if (currentPageData.length === 0) {
-                $('#stock_list').append(
-                    `<tr><td colspan="10" class="text-center">No Data Available</td></tr>`
-                );
-                } else {
-                currentPageData.forEach((element) => {
-                    // Format expiry date
-                    let expiryDate = element?.exp_date ? new Date(element.exp_date).toLocaleDateString() : 'N/A';
-                    
-                    // Check if product is expired or expiring soon
-                    let currentDate = new Date();
-                    let expDate = new Date(element?.exp_date);
-                    let timeDifference = expDate.getTime() - currentDate.getTime();
-                    let daysUntilExpiry = Math.ceil(timeDifference / (1000 * 3600 * 24));
-                    
-                    let rowClass = '';
-                    if (daysUntilExpiry < 0) {
-                        rowClass = 'text-danger'; // Expired
-                    } else if (daysUntilExpiry <= 30) {
-                        rowClass = 'text-warning'; // Expiring within 30 days
-                    } else {
-                        rowClass = 'text-success'; // Good stock
-                    }
-
-                    $('#stock_list').append(
-                        `<tr class="${rowClass}">
-                        <td>${element?.product_name || 'N/A'}</td>
-                        <td>${element?.brand_name || 'N/A'}</td>
-                        <td>${element?.category_name || 'N/A'}</td>
-                        <td>${element?.sub_category_name || 'N/A'}</td>
-                        <td>${element?.pack_name || 'N/A'}</td>
-                        <td>${element?.price_name || 'N/A'}</td>
-                        <td>${element?.qty || '0'}</td>
-                        <td>${expiryDate}</td>
-                        <td>${element?.hsn_code || 'N/A'}</td>
-                        <td>${element?.gst || '0'}%</td>
-                        </tr>`
-                    );
-                });
-                }
-
-                // Generate pagination links
-                let totalPages = Math.ceil(allData.length / recordsPerPage);
-                for (let i = 1; i <= totalPages; i++) {
-                $('#pagination-links').append(
-                    `<li class="page-item${i === page ? ' active' : ''}"><a class="page-link" href="#" onclick="loadPage(${i})">${i}</a></li>`
-                );
-                }
+                table.setData(res.data || []);
             },
             error: function(xhr, status, error) {
                 $('#loader').hide();
-                $('#stock_list').append(
-                    `<tr><td colspan="10" class="text-center text-danger">Error loading data: ${error}</td></tr>`
-                );
+                $('#stock_list').html(`<tr><td colspan="10" class="text-center text-danger">Error loading data: ${esc(error)}</td></tr>`);
             }
-            })
-        }
+        });
+    });
 
-        document.getElementById("printButton").addEventListener("click", function() {
-            printStockReport();
+    document.getElementById("printButton").addEventListener("click", function() {
+        printStockReport();
+    });
+
+    // Prints whatever the search currently shows (all pages, not just the visible one).
+    function printStockReport() {
+        var printContent = '<table class="table text-dark border table-hover text-center"><thead><tr><th>Product Name</th><th>Brand</th><th>Category</th><th>Sub Category</th><th>Pack</th><th>Price</th><th>Quantity</th><th>Expiry Date</th><th>HSN Code</th><th>GST %</th></tr></thead><tbody>';
+
+        table.getFiltered().forEach((element) => {
+            printContent += `<tr class="${stockRowClass(element)}">${stockCells(element)}</tr>`;
         });
 
-        function printStockReport() {
-            var printContent = '<table class="table text-dark border table-hover text-center"><thead><tr><th>Product Name</th><th>Brand</th><th>Category</th><th>Sub Category</th><th>Pack</th><th>Price</th><th>Quantity</th><th>Expiry Date</th><th>HSN Code</th><th>GST %</th></tr></thead><tbody>';
+        printContent += '</tbody></table>';
 
-            // Loop through all the data and build the print content
-            allData.forEach((element) => {
-                let expiryDate = element?.exp_date ? new Date(element.exp_date).toLocaleDateString() : 'N/A';
-                
-                // Check if product is expired or expiring soon
-                let currentDate = new Date();
-                let expDate = new Date(element?.exp_date);
-                let timeDifference = expDate.getTime() - currentDate.getTime();
-                let daysUntilExpiry = Math.ceil(timeDifference / (1000 * 3600 * 24));
-                
-                let rowClass = '';
-                if (daysUntilExpiry < 0) {
-                    rowClass = 'text-danger'; // Expired
-                } else if (daysUntilExpiry <= 30) {
-                    rowClass = 'text-warning'; // Expiring within 30 days
-                } else {
-                    rowClass = 'text-success'; // Good stock
-                }
-
-                printContent += `<tr class="${rowClass}">
-                    <td>${element?.product_name || 'N/A'}</td>
-                    <td>${element?.brand_name || 'N/A'}</td>
-                    <td>${element?.category_name || 'N/A'}</td>
-                    <td>${element?.sub_category_name || 'N/A'}</td>
-                    <td>${element?.pack_name || 'N/A'}</td>
-                    <td>${element?.price_name || 'N/A'}</td>
-                    <td>${element?.qty || '0'}</td>
-                    <td>${expiryDate}</td>
-                    <td>${element?.hsn_code || 'N/A'}</td>
-                    <td>${element?.gst || '0'}%</td>
-                </tr>`;
-            });
-
-            printContent += '</tbody></table>';
-
-            var printWindow = window.open('', '', 'height=800, width=1400');
-            printWindow.document.write('<html><head><title>Stock Report</title>');
-            printWindow.document.write('<style>body {font-family: Arial, sans-serif;} table {width: 100%; border-collapse: collapse;} th, td {padding: 8px; border: 1px solid #ddd; font-size: 12px;} th {background-color: #f2f2f2;} .text-danger {color: #dc3545;} .text-warning {color: #ffc107;} .text-success {color: #28a745;} </style>');
-            printWindow.document.write('</head><body>');
-            printWindow.document.write('<h2>Stock Report</h2>');
-            printWindow.document.write(printContent);
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.print();
-        }
+        var printWindow = window.open('', '', 'height=800, width=1400');
+        printWindow.document.write('<html><head><title>Stock Report</title>');
+        printWindow.document.write('<style>body {font-family: Arial, sans-serif;} table {width: 100%; border-collapse: collapse;} th, td {padding: 8px; border: 1px solid #ddd; font-size: 12px;} th {background-color: #f2f2f2;} .text-danger {color: #dc3545;} .text-warning {color: #ffc107;} .text-success {color: #28a745;} </style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<h2>Stock Report</h2>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
 
 </script>
 @endsection

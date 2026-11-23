@@ -1425,7 +1425,8 @@
             $('.invoiceNo').text(bill.invoiceNo);
             $('.billingDate').text(bill.billing_date);
             $('.customerName').text(bill.customer_name);
-            $('.drName').text(bill.doctor_name || 'N/A');
+            // bill.doctor_name is the doctor's ID; the API resolves the name separately.
+            $('.drName').text(data.doctor_name || 'N/A');
             $('.grandTotal').text(bill.total_amt);
             $('.totalGST').text(bill.gst || 0);
             $('.totalCGST').text(bill.cgst || 0);

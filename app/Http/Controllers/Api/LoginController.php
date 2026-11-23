@@ -20,6 +20,8 @@ class LoginController extends Controller
             ])->first();
             if ($checkCreds) {
                 $request->session()->put('storeId', $storeId);
+                // The dashboard picks this up once and runs Sync In automatically.
+                $request->session()->put('auto_sync_in', true);
                 return redirect('/store/dashboard');
             }else{
                 return redirect('/login-page');

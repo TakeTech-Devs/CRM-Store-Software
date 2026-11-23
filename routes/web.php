@@ -74,6 +74,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/backup', function () {
             return view('store/backup/backup');
         });
+        // Quiet heartbeat from open pages: starts the automatic backup when one is due.
+        Route::post('/backup/auto-check', [DataFetchController::class, 'autoBackupCheck']);
         Route::get('/report', function () {
             return view('store/reports/storeReport');
         });

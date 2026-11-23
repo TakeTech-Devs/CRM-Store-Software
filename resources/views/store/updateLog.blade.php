@@ -109,6 +109,20 @@
                 'Fixed: applying an update could be cut off by PHP\'s time limit and leave the update half-applied. Updates now run to completion.',
             ],
         ],
+        '1.0.11' => [
+            'label' => 'Version Update',
+            'date'  => '2026-11-23',
+            'notes' => [
+                'Automatic Sync In when you log in, and automatic Sync Out when you log out. If Sync Out cannot finish at logout (for example no internet), you are asked whether to log out anyway — nothing is lost, the data goes out on your next Sync Out.',
+                'Closing the browser or tab without logging out now shows a warning first. Moving around inside the app does not.',
+                'Automatic backups three times a day (after 10:00, 14:00 and 18:00) while the store is open. They are kept for 30 days and appear on the Backup page as auto-backup files. The Backup button now also works reliably on every PC.',
+                'Expired Medicine Report: new search box, an Expired / Going to expire soon filter, and a "Show 10/25/50/100 rows" choice. The page list is now short instead of one long row of numbers. Printing follows what you have searched or filtered. Sold-out batches no longer appear as expired.',
+                'Stock Report: new search box and "Show rows" choice, with the same short page list.',
+                'Fixed: the GST Report counted a bill\'s full amount once for every item on it, so totals were too high. It now adds up the actual item amounts and shows the date.',
+                'Fixed: the printed receipt after creating a customer bill showed the doctor\'s number instead of the doctor\'s name.',
+                'Fixed: the Doctor Report and GST Report could show no data when the app was opened on a different address or port.',
+            ],
+        ],
     ];
 @endphp
 

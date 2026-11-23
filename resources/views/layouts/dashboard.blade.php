@@ -10,6 +10,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="store-id" content="{{ session('storeId') }}">
 
     <title>@yield('title')</title>
 
@@ -53,6 +54,7 @@
        <script src="{{ url('assets/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
        <script src="{{ url('assets/js/sb-admin-2.min.js') }}"></script>
        <script src="{{asset('assets/js/master.js')}}"></script>
+       <script src="{{asset('assets/js/session-guard.js')}}"></script>
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>

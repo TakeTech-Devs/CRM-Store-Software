@@ -399,6 +399,31 @@ $(document).ready(function () {
         });
         $('#loadingModal').modal('show');
     });
+
+    // Automatic Sync In straight after login (the login controller sets the flag once).
+    @if (session()->pull('auto_sync_in'))
+    (function autoSyncIn() {
+        const storeId = $('#sessionValue').val();
+        const toast = (icon, title, timer) => Swal.fire({ toast: true, position: 'top-end', icon, title, timer, showConfirmButton: false });
+        const finish = () => { $('#loadingModal').modal('hide'); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); };
+
+        $('#loadingModal').one('shown.bs.modal', function () {
+            ajaxGetData(`/sync-data/${storeId}`, function (res) {
+                finish();
+                if (res?.status == 200) {
+                    // Reload so the dashboard shows the freshly synced figures.
+                    toast('success', 'Synced with head office', 1500).then(() => { window.RightAidGuard?.allowLeave(); location.reload(); });
+                } else {
+                    toast('warning', 'Auto Sync In did not finish. Use the Sync In button to retry.', 7000);
+                }
+            }, function () {
+                finish();
+                toast('warning', 'Auto Sync In failed — check the internet connection, then use Sync In.', 7000);
+            });
+        });
+        $('#loadingModal').modal('show');
+    })();
+    @endif
 });
 </script>
 @endsection
