@@ -62,7 +62,7 @@
     $(document).ready(function() {
         function generateReport() {
             $.ajax({
-                url: "{{ url('http://localhost:8000/api/gst-report') }}",
+                url: "{{ url('/api/gst-report') }}",
                 method: 'GET',
                 success: function(response) {
                     if (response.status === 'success') {

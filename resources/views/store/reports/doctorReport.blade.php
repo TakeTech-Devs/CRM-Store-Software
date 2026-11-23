@@ -120,7 +120,7 @@
         const recordsPerPage = 15;
 
         $.ajax({
-            url: "{{ url('http://127.0.0.1:8000/api/doctor') }}",
+            url: "{{ url('/api/doctor') }}",
             method: 'GET',
             success: function (response) {
                 console.log(response);
