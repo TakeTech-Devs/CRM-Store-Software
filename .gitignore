@@ -1,4 +1,7 @@
 /.phpunit.cache
+/rightaid.installed
+/composer.phar
+*.zip
 /node_modules
 /public/build
 /public/hot
@@ -18,3 +21,7 @@ yarn-error.log
 /.idea
 /.vscode
 composer.lock
+/storage/framework/sessions/
+/storage/framework/cache/
+/storage/framework/views/
+/bootstrap/cache/

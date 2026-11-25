@@ -11,9 +11,13 @@ class DataController extends Controller
     public function customer_data(){
         try {
             $id = request()->id ?? null;
+            $phone = request()->phone ?? null;
             $dataQuery =  DB::table('customer');
             if ($id) {
                 $dataQuery->where('id', $id);
+            }
+            if ($phone) {
+                $dataQuery->where('phone', $phone);
             }
             $data = $dataQuery->get();
             return response()->json([
@@ -28,9 +32,13 @@ class DataController extends Controller
     public function staff_data(){
         try {
             $id = request()->id ?? null;
+            $phone = request()->phone ?? null;
             $dataQuery =  DB::table('staff');
             if ($id) {
                 $dataQuery->where('id', $id);
+            }
+            if ($phone) {
+                $dataQuery->where('phone', $phone);
             }
             $data = $dataQuery->get();
             return response()->json([
@@ -61,15 +69,23 @@ class DataController extends Controller
     }
     public function purchase_bill(){
         try {
-            $id = request()->id ?? null;
+            $productId = request()->product_id ?? null;
+            $packId = request()->pack_id ?? null;
+
             $dataQuery =  DB::table('purchase_request');
-            if ($id) {
-                $dataQuery->where('product_id', $id);
+
+            if ($productId) {
+                $dataQuery->where('product_id', $productId);
             }
+            if ($packId) {
+                $dataQuery->where('pack_id', $packId);
+            }
+
             $data = $dataQuery->get();
+
             return response()->json([
                 'status' => 200,
-                'data' => $data
+                'purchase_request' => $data
             ], 200);
         } catch (\Throwable $th) {
             throw $th;
@@ -80,9 +96,17 @@ class DataController extends Controller
         try {
             $id = request()->id ?? null;
             $dataQuery =  DB::table('product');
+
             if ($id) {
-                $dataQuery->where('id', $id);
+                $dataQuery->where('product.id', $id);
+            } else {
+                // Only fetch products with available stock if no specific ID is requested
+                $dataQuery->join('purchase_request', 'product.id', '=', 'purchase_request.product_id')
+                          ->where('purchase_request.qty', '>', 0)
+                          ->select('product.id', 'product.product_name')
+                          ->distinct();
             }
+
             $data = $dataQuery->get();
             return response()->json([
                 'status' => 200,
@@ -161,22 +185,156 @@ class DataController extends Controller
         }
         
     }
-    public function price_data(){
-        try {
-            $id = request()->id ?? null;
-            $dataQuery =  DB::table('price');
-            if ($id) {
-                $dataQuery->where('id', $id);
+        public function price_data(){
+            try {
+                $id = request()->id ?? null;
+                $dataQuery =  DB::table('price');
+                if ($id) {
+                    $dataQuery->where('id', $id);
+                }
+                $data = $dataQuery->get();
+                return response()->json([
+                    'status' => 200,
+                    'data' => $data
+                ], 200);
+            } catch (\Throwable $th) {
+                throw $th;
             }
-            $data = $dataQuery->get();
-            return response()->json([
-                'status' => 200,
-                'data' => $data
-            ], 200);
+            
+        }
+    
+            public function packs_by_product($productId){
+                try {
+                    $packs = DB::table('purchase_request')
+                        ->join('pack', 'purchase_request.pack_id', '=', 'pack.id')
+                        ->where('purchase_request.product_id', $productId)
+                        ->select('pack.id', 'pack.pack_name')
+                        ->distinct()
+                        ->get();
+
+                    return response()->json([
+                        'status' => 200,
+                        'data' => $packs
+                    ], 200);
+                } catch (\Throwable $th) {
+                    throw $th;
+                }
+            }
+
+    public function billingBrands() {
+        try {
+            $brands = DB::table('brand')
+                ->join('product', 'product.brand_id', '=', 'brand.id')
+                ->join('purchase_request', 'purchase_request.product_id', '=', 'product.id')
+                ->where('purchase_request.qty', '>', 0)
+                ->where(function ($q) {
+                    $q->whereNull('purchase_request.exp_date')
+                      ->orWhere('purchase_request.exp_date', '>', now()->toDateString());
+                })
+                ->select('brand.id', 'brand.brand_name as name')
+                ->distinct()
+                ->orderBy('brand.brand_name')
+                ->get()
+                ->toArray();
+
+            if (DB::table('inhouse_product')->where('status', 1)->exists()) {
+                array_unshift($brands, (object)['id' => 'inhouse', 'name' => 'Inhouse']);
+            }
+
+            return response()->json(['status' => 200, 'data' => $brands], 200);
         } catch (\Throwable $th) {
             throw $th;
         }
-        
     }
-    
+
+    public function billingProductOptions() {
+        try {
+            // Regular store-assigned products
+            $regular = DB::table('purchase_request')
+                ->join('product', 'purchase_request.product_id', '=', 'product.id')
+                ->join('pack', 'purchase_request.pack_id', '=', 'pack.id')
+                ->join('price', 'purchase_request.price_id', '=', 'price.id')
+                ->join('category', 'product.category_id', '=', 'category.id')
+                ->join('sub_category', 'product.sub_category_id', '=', 'sub_category.id')
+                ->where('purchase_request.qty', '>', 0)
+                ->where(function($q) {
+                    $q->whereNull('purchase_request.exp_date')
+                      ->orWhere('purchase_request.exp_date', '>', now()->toDateString());
+                })
+                ->select(
+                    DB::raw("'regular' as type"),
+                    'purchase_request.id as purchase_request_id',
+                    'purchase_request.qty as avail_qty',
+                    'product.id as product_id',
+                    'product.product_name',
+                    'product.gst',
+                    'pack.id as pack_id',
+                    'pack.pack_name',
+                    'price.id as price_id',
+                    'price.price_name',
+                    'product.brand_id',
+                    'category.category_name',
+                    'sub_category.sub_category_name',
+                    DB::raw('NULL as inhouse_product_id')
+                )
+                ->orderBy('product.product_name')
+                ->orderBy('pack.pack_name')
+                ->orderBy('price.price_name')
+                ->get();
+
+            // Inhouse products — no stock, flat price, no GST
+            $inhouse = DB::table('inhouse_product')
+                ->join('category', 'inhouse_product.category_id', '=', 'category.id')
+                ->join('sub_category', 'inhouse_product.sub_category_id', '=', 'sub_category.id')
+                ->join('pack', 'inhouse_product.pack_id', '=', 'pack.id')
+                ->where('inhouse_product.status', 1)
+                ->select(
+                    DB::raw("'inhouse' as type"),
+                    DB::raw('NULL as purchase_request_id'),
+                    DB::raw('NULL as avail_qty'),
+                    DB::raw('NULL as product_id'),
+                    'inhouse_product.product_name',
+                    DB::raw('0 as gst'),
+                    'pack.id as pack_id',
+                    'pack.pack_name',
+                    DB::raw('NULL as price_id'),
+                    'inhouse_product.price as price_name',
+                    DB::raw('NULL as brand_id'),
+                    'category.category_name',
+                    'sub_category.sub_category_name',
+                    'inhouse_product.id as inhouse_product_id'
+                )
+                ->orderBy('inhouse_product.product_name')
+                ->get();
+
+            $data = $regular->concat($inhouse)->values();
+
+            return response()->json(['status' => 200, 'data' => $data], 200);
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    public function getStores(Request $request)
+    {
+        try {
+            $storeMetaId = session('storeId');
+            $localStore  = $storeMetaId ? DB::table('store')->where('store_meta_id', $storeMetaId)->first() : null;
+
+            $query = DB::connection('remote_mysql')
+                ->table('store')
+                ->where('store_status', 1)
+                ->select('id', 'name', 'store_address');
+
+            if ($localStore) {
+                $query->where('id', '!=', $localStore->id);
+            }
+
+            $stores = $query->orderBy('name')->get();
+
+            return response()->json(['status' => 200, 'data' => $stores], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status' => 500, 'message' => $th->getMessage()], 500);
+        }
+    }
 }

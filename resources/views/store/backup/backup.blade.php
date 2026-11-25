@@ -6,20 +6,20 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="text-dark">Backup List</h1>
-        <div class="search-add">
-            <form class="d-flex align-items-center justify-content-between">
-                <!-- <div class="form-group d-flex align-items-center justify-content-center mx-3">
+            <div class="search-add">
+                <form class="d-flex align-items-center justify-content-between">
+                    <!-- <div class="form-group d-flex align-items-center justify-content-center mx-3">
                     <label for="search">Search: </label> &nbsp;&nbsp;
                     <input type="text" class="form-control" id="search">
                 </div> -->
-                <div class="form-group mt-3">
-                    
-                    <button type="button" class="btn btn-md btn-secondary" id="gen_back_up">
-                        Generate Backup
-                    </button>
-                </div>
-            </form>
-        </div>
+                    <div class="form-group mt-3">
+
+                        <button type="button" class="btn btn-md btn-secondary" id="gen_back_up">
+                            Generate Backup
+                        </button>
+                    </div>
+                </form>
+            </div>
     </div>
 
 
@@ -28,8 +28,8 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col">
-                <div class="table-responsive" style="height: 60vh; overflow:auto"  >
-                    <table class="table text-dark border table-hover text-center"  id="backup-table">
+                <div class="table-responsive" style="height: 60vh; overflow:auto">
+                    <table class="table text-dark border table-hover text-center" id="backup-table">
                         <thead class="sticky-top bg-light">
                             <tr>
                                 <th>#</th>
@@ -39,16 +39,18 @@
                             </tr>
                         </thead>
                         <tbody id="backupId">
-                          
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-    </div>  
+    </div>
     <!-- END BACKUP LIST TABLE -->
 
-</div>    
+</div>
 
 <script>
     $(document).ready(function () {
@@ -85,24 +87,27 @@
     });
 
     function list(){
-        ajaxGetData(`/api/backups`, (response)=>{
-            $('#backupId').html('')
-            for (let index = 0; index < response?.data.length; index++) {
-                const element = response?.data[index];
-                $('#backupId').append(`
-                      <tr>
-                                <td>${index+1}</td>
-                                <td>${element?.file_name}</td>
-                                <td>${element?.date}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-danger" id="download" data-file-url="${element?.file_path}" >Downlaod</button>
-                                    <button class="btn btn-sm btn-warning" id="del" value = ${element?.id}>Delete</button>
-                                </td>
-                            </tr>
-                `)
+        ajaxGetData(`/api/backups`, (response) => {
+            const backups = response?.data || [];
+            $('#backupId').html('');
+            if (backups.length > 0) {
+                backups.forEach((element, index) => {
+                    $('#backupId').append(`
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${element.file_name}</td>
+                            <td>${element.date}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" id="download" data-file-url="${element.file_path}" style="min-width: fit-content;">Download</button>
+                                <button class="btn btn-sm btn-warning" id="del" value="${element.id}">Delete</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            } else {
+                $('#backupId').html('<tr><td colspan="4" class="text-center">No backups found.</td></tr>');
             }
-        })
+        });
     }
 </script>
 @endsection
-                    

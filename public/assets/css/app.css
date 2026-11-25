@@ -3,6 +3,27 @@
     padding: 0;
 }
 
+
+::-webkit-scrollbar{
+    width: .3em;
+    height: .5em;
+  }
+   
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    padding: 2px;
+  }
+   
+::-webkit-scrollbar-thumb {
+    background-color: darkgrey;
+    border-radius: 25px;
+    width: 25px !important;
+
+  }
+#content-wrapper {
+    min-height: 100vh;
+}
+
 table{
     z-index: 00000;
 }
@@ -32,6 +53,15 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
     width: 100% !important;
 }
 
+/* Select2 also appends a floating positioning wrapper (same .select2-container
+   class) directly to <body> every time a dropdown opens. The 100% width above
+   was stretching that wrapper to the full page width instead of the narrow
+   size Select2 intends, pushing it off-screen and causing a phantom
+   horizontal scrollbar. Reset just the body-level one back to shrink-to-fit. */
+body > .select2-container {
+    width: auto !important;
+}
+
 .sidebar {
     position: fixed !important;
     top: 0;
@@ -57,3 +87,49 @@ table tbody tr td .btn-danger, table tbody tr td .btn-success, table tbody tr td
 body.sidebar-toggled #wrapper #content-wrapper {
     width: 93.5% !important;
 }
+
+.viewBill{
+    border: none !important;
+}
+
+#dynamicForm .form-control{
+    width: 100%;
+}
+
+.table td, .table th {
+    padding: .25rem !important;
+    vertical-align: top;
+    border-top: 1px solid #e3e6f0;
+}
+
+#data-table-container {
+    margin: 20px auto;
+    width: 80%;
+  }
+
+  #data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  #data-table th, #data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+
+  #pagination-controls {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .pagination-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .pagination-button[disabled] {
+    background-color: #ddd;
+    cursor: not-allowed;
+  }
